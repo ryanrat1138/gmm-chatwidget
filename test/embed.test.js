@@ -1,5 +1,5 @@
-// End-to-end tests for loader/gmm-chat-prefill.js against a mock CloseBot
-// lead form. Run with: node test/prefill.test.js
+// End-to-end tests for loader/embed.js against a mock CloseBot
+// lead form. Run with: node test/embed.test.js
 // Needs Playwright with a Chromium build (PLAYWRIGHT_BROWSERS_PATH or the
 // default install).
 const http = require('http');
@@ -46,7 +46,7 @@ test('session storage: form page details fill the thank-you chat form', async (p
   assert.strictEqual(id.firstName, 'Sam');
   const left = await page.evaluate(() => sessionStorage.getItem('gmmcw_contact'));
   assert.strictEqual(left, null, 'saved contact should be cleared after submit');
-  assert.strictEqual(await page.evaluate(() => GMMChatPrefill.source), 'session');
+  assert.strictEqual(await page.evaluate(() => GMMChat.source), 'session');
 });
 
 test('URL parameters: details are used and removed before later scripts run', async (page) => {
@@ -130,6 +130,61 @@ test('stale saved details (over 30 minutes) are not used', async (page) => {
   await page.waitForSelector('.cb-form-card');
   await page.waitForTimeout(300);
   assert.strictEqual(await page.evaluate(() => window.__identity), null);
+});
+
+test('embed: one tag loads CloseBot inline, after the URL is cleaned, and fills the form', async (page) => {
+  await page.goto(A('embed-inline.html?email=ann%40example.com&phone=6035550142&first_name=Ann'));
+  const id = await identity(page);
+  assert.strictEqual(id.email, 'ann@example.com');
+  assert.strictEqual(id.phone, '+16035550142');
+  assert.strictEqual(await page.evaluate(() => window.__cbSource), 'src_123');
+  const seen = await page.evaluate(() => window.__urlSeenByCloseBot);
+  assert.ok(!/email|phone|first_name/.test(seen), 'CloseBot saw details in URL: ' + seen);
+  const box = await page.evaluate(() => {
+    const c = document.getElementById('cb-widget-container');
+    return { parent: c.parentElement.id, next: c.nextElementSibling && c.nextElementSibling.tagName,
+      hasPanel: !!c.querySelector('.cb-panel'), height: c.style.height };
+  });
+  assert.strictEqual(box.parent, 'slot');
+  assert.ok(box.hasPanel, 'chat should mount inside the container');
+  assert.strictEqual(box.height, '480px');
+});
+
+test('embed: inline box takes no space when no chat is targeted to the page', async (page) => {
+  await page.goto(A('embed-notarget.html'));
+  await page.waitForFunction(() => window.__cbLoads === 1);
+  await page.waitForTimeout(600);
+  const h = await page.evaluate(() => document.getElementById('cb-widget-container').getBoundingClientRect().height);
+  assert.strictEqual(h, 0);
+});
+
+test('embed: bubble layout adds no container, and a second pasted tag is ignored', async (page) => {
+  await page.goto(A('embed-bubble.html?email=bo%40example.com'));
+  const id = await identity(page);
+  assert.strictEqual(id.email, 'bo@example.com');
+  assert.strictEqual(await page.evaluate(() => document.getElementById('cb-widget-container')), null);
+  assert.strictEqual(await page.evaluate(() => window.__cbLoads), 1);
+});
+
+test('embed: tag in the page head falls back to the bubble', async (page) => {
+  await page.goto(A('embed-head.html'));
+  await page.waitForSelector('.cb-panel');
+  assert.strictEqual(await page.evaluate(() => document.getElementById('cb-widget-container')), null);
+});
+
+test('embed: CloseBot already installed on the page is not loaded twice', async (page) => {
+  await page.goto(A('embed-existing.html?email=cy%40example.com'));
+  const id = await identity(page);
+  assert.strictEqual(id.email, 'cy@example.com');
+  assert.strictEqual(await page.evaluate(() => window.__cbLoads), 1);
+});
+
+test('embed: a CloseBot tag further down the page is not doubled', async (page) => {
+  await page.goto(A('embed-existing-after.html?email=di%40example.com'));
+  const id = await identity(page);
+  assert.strictEqual(id.email, 'di@example.com');
+  assert.strictEqual(await page.evaluate(() => window.__cbLoads), 1);
+  assert.ok(!/email/.test(await page.evaluate(() => window.__urlSeenByCloseBot)));
 });
 
 (async () => {

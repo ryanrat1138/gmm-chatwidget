@@ -1,88 +1,67 @@
-# GMM Chat Prefill (loader)
+# GMM Chat Embed
 
-`gmm-chat-prefill.js` fills CloseBot's chat-widget lead form with the name, email and phone the visitor just submitted, then submits it in the background. CloseBot matches on email or phone, so the chat attaches to the visitor's existing HighLevel contact and the AI sees their contact fields from the first message.
+One tag that adds the CloseBot AI chat to a page. On a thank-you page it also fills CloseBot's contact form with the name, email and phone the visitor just submitted and sends it in the background, so the chat starts on their existing HighLevel contact.
 
-No backend is needed for the first three sources below. The webhook path (source 4) needs the Phase 1 service, which is not built yet.
+The easiest way to set it up is the setup page at https://gmm-chatwidget.vercel.app, which writes the tag for you.
 
-## Before you install
-
-1. In CloseBot, open the source's chat widget settings and turn on the **Form** (lead capture) with **Email** and **Phone** fields. The script fills that form; without it there is nothing to fill.
-2. Map form and survey answers to HighLevel contact custom fields, so CloseBot can see them on the contact.
-3. Host `gmm-chat-prefill.js` somewhere public (the client's site, a CDN, or the Phase 1 Vercel project). The examples use `https://YOUR-HOST/gmm-chat-prefill.js`.
-
-## Install
-
-Put the tag **above** the CloseBot widget code, the Sales Intelligence Pixel and any analytics. It removes contact details from the URL as soon as it loads, so later scripts never see them.
-
-### Form page (same site as the thank-you page)
+## The tag
 
 ```html
-<script src="https://YOUR-HOST/gmm-chat-prefill.js"></script>
+<script src="https://gmm-chatwidget.vercel.app/embed.js" data-source="CLOSEBOT_SOURCE_ID"></script>
 ```
 
-It saves what the visitor types (or what an embedded HighLevel form reports) to `sessionStorage` for 30 minutes. This only carries over when the form page and thank-you page are on the same domain.
+Paste the same tag on the form page and the thank-you page. The source ID is in CloseBot under the HighLevel source's Setup tab (the part after `source=` in CloseBot's own script tag).
 
-### Thank-you page on HighLevel (funnel or website page)
+By default the chat shows in the page where the tag is pasted. The box takes no space until a chat appears, so on pages CloseBot's widget isn't targeted to (the form page, say) nothing shows. If the tag is in the page `<head>`, or `data-layout="bubble"` is set, the chat shows as CloseBot's usual corner button instead.
 
-```html
-<script src="https://YOUR-HOST/gmm-chat-prefill.js"
-  data-email="{{contact.email}}"
-  data-phone="{{contact.phone}}"
-  data-first-name="{{contact.first_name}}"
-  data-last-name="{{contact.last_name}}"></script>
-```
+## In CloseBot
 
-HighLevel fills the merge fields after a form submit on its own pages. If a merge field is left unrendered, the script ignores it and tries the next source.
+- Chat widget settings: turn on **Form**, include **Email** and **Phone**, and show it immediately. The embed fills and sends that form; if it has no details, the visitor fills it as usual.
+- Target the widget to the thank-you page URL and put the site's domain on the source's allowed domains.
+- CloseBot's own script tag can stay on the site. The embed won't load CloseBot a second time. Put the embed above it so CloseBot never sees contact details in the address bar.
 
-### Thank-you page after a Typeform
+## Where the visitor's details come from
 
-In Typeform, set **Redirect on completion** to the thank-you page and recall the answers into the URL:
+First match wins:
 
-```
-https://client.com/thank-you?email=@email&phone=@phone&first_name=@first_name
-```
+1. **Same site:** the embed on the form page saves what was submitted in the browser tab for 30 minutes.
+2. **HighLevel thank-you page:** add the merge fields to the tag (the setup page does this when you tick the HighLevel box):
+   ```html
+   data-email="{{contact.email}}" data-phone="{{contact.phone}}"
+   data-first-name="{{contact.first_name}}" data-last-name="{{contact.last_name}}"
+   ```
+3. **Typeform:** in Endings, turn on Redirect to URL and add the answers to the thank-you address, for example `https://site.com/thank-you?email=@Email&phone=@Phone&first_name=@First name` (type `@` and pick each question). The embed removes them from the address bar as soon as it loads.
+4. **Webhook (later):** `data-backend="https://…"` looks the contact up by a one-time code. Needs the backend, not built yet.
 
-Use the recall names of the client's own questions. On the thank-you page:
-
-```html
-<script src="https://YOUR-HOST/gmm-chat-prefill.js"></script>
-```
-
-Also set `Referrer-Policy: no-referrer` on the thank-you page if the host allows it, so the original URL is not sent to third parties as a referrer.
-
-### Webhook path (later, needs the backend)
-
-```html
-<script src="https://YOUR-HOST/gmm-chat-prefill.js" data-backend="https://YOUR-BACKEND"></script>
-```
-
-With `data-backend`, the script puts a one-time `cb_ref` code into forms and HighLevel embeds on the form page, and the thank-you page asks `GET {backend}/api/context?code=…` for the contact (retrying for 10 seconds while the webhook arrives). The response must be `{"contact": {"email": …, "phone": …, "firstName": …, "lastName": …}}`.
-
-## Options
+## All options
 
 | Attribute | Default | What it does |
 | --- | --- | --- |
+| `data-source` | none | CloseBot source ID. Without it the embed only fills the form, for pages that load CloseBot themselves |
+| `data-layout` | `inline` | `inline` shows the chat where the tag is; `bubble` uses the corner button |
+| `data-height` | `600px` | Height of the inline chat |
 | `data-email`, `data-phone`, `data-first-name`, `data-last-name`, `data-name` | none | Contact details rendered into the page, usually HighLevel merge fields |
-| `data-backend` | none | Turns on the webhook-and-code path |
-| `data-autosubmit` | `true` | `false` fills the chat form but leaves the visitor to press submit |
-| `data-form-timeout` | `600000` | How long (ms) to wait for the chat form to appear |
-| `data-hl-origins` | HighLevel domains | Extra origins allowed to send embedded-form messages |
-| `data-debug` | `false` | Logs what it found and did to the console (never logs the values) |
+| `data-autosubmit` | `true` | `false` fills the form but leaves the visitor to press submit |
+| `data-backend` | none | Turns on the webhook-and-code lookup |
+| `data-form-timeout` | `600000` | How long (ms) to wait for CloseBot's form to appear |
+| `data-hl-origins` | HighLevel domains | Extra origins allowed to send embedded HighLevel form messages |
+| `data-closebot-src` | CloseBot's script URL | Override for testing |
+| `data-debug` | `false` | Logs what it found and did to the console (never the values) |
 
-`window.GMMChatPrefill` exposes `version`, `source` (which source was used), `contact.hasEmail` / `contact.hasPhone`, `fill(contact)` to fill manually, and `clear()`.
+`window.GMMChat` exposes `version`, `source` (which of the above was used), `contact.hasEmail` / `contact.hasPhone`, `fill(contact)` and `clear()`.
 
 ## Known limits
 
-- CloseBot does not document this. The script finds the form by its placeholders and class names from the current `cb.js`, so a CloseBot update can break it. If that happens the chat still works; the visitor just types their details.
-- CloseBot hides the lead form after one submit per browser (a `cb_identity_` flag in localStorage). A returning visitor on the same browser keeps their earlier identity.
+- CloseBot doesn't document filling its form from the page. The embed finds it by the class names and placeholders in today's CloseBot script, so a CloseBot update can break the fill. The chat itself keeps working; the visitor just types their details.
+- CloseBot hides its form after one submit per browser, so a returning visitor on the same browser keeps their earlier identity.
 - One CloseBot widget per page.
-- Submitting the form needs an email or a phone. Name alone is not enough to match a contact.
+- Matching needs an email or a phone. A name alone isn't enough.
 
 ## Tests
 
 ```
 npm i -g playwright   # once
-NODE_PATH=$(npm root -g) node test/prefill.test.js
+NODE_PATH=$(npm root -g) node test/embed.test.js
 ```
 
-The tests run the script against a mock of the CloseBot form (`test/fixtures/mock-closebot.js`) covering each source, the URL clean-up, embed origin checks and the 30-minute expiry. They do not prove the live widget accepts a background submit; that needs the live test in Phase 0.
+The tests run the embed against a mock of CloseBot's widget (`test/fixtures/mock-closebot.js`). They don't prove the live widget accepts the background submit; that needs a live test.
