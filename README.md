@@ -17,6 +17,10 @@ See [docs/PLAN.md](docs/PLAN.md) for the architecture, data flow, security notes
 | `test/` | Browser tests for the loader against a mock CloseBot widget |
 | `docs/` | Plan and setup notes |
 
+## Hosting
+
+Vercel builds from the GitHub repo on every push to `main`. The build copies `loader/gmm-chat-prefill.js` into `public/`, so only the script is served, at `https://<project>.vercel.app/gmm-chat-prefill.js`. Settings are in `vercel.json`. The `api/` service will deploy from the same project when it is built.
+
 ## Secrets
 
 Never commit API keys. Put them in `.env.local` (ignored by git) or in the hosting provider's environment settings:
