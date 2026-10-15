@@ -8,12 +8,13 @@ A smart chat for form thank-you pages. After someone submits a HighLevel form, H
 
 See [docs/PLAN.md](docs/PLAN.md) for the architecture, data flow, security notes and phased build. The live version of the plan is at https://claude.ai/code/artifact/5025efa5-0f98-4b86-888c-340c0c85a75f
 
-## Layout (planned)
+## Layout
 
 | Path | What goes there |
 | --- | --- |
-| `api/` | Context service: webhook intake (HighLevel, Typeform), `/api/context`, CloseBot seeding |
-| `loader/` | Script tag for client sites: mints and reads `ref`, renders the greeting, mounts the chat |
+| `api/` | (not built yet) Context service: webhook intake (HighLevel, Typeform), `/api/context`, CloseBot seeding |
+| `loader/` | `gmm-chat-prefill.js`: fills and submits CloseBot's chat lead form in the background. Setup in [loader/README.md](loader/README.md) |
+| `test/` | Browser tests for the loader against a mock CloseBot widget |
 | `docs/` | Plan and setup notes |
 
 ## Secrets

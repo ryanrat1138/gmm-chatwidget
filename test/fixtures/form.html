@@ -1,0 +1,12 @@
+<!doctype html><meta charset="utf-8"><title>Form page</title>
+<script src="/loader/gmm-chat-prefill.js"></script>
+<form id="f" action="/test/fixtures/thanks.html" method="get">
+  <input name="first_name" placeholder="First name" value="">
+  <input name="email" type="email" value="">
+  <input name="phone" type="tel" value="">
+  <button type="submit">Send</button>
+</form>
+<script>
+// Stop the native GET from putting the fields in the URL; navigate plainly.
+document.getElementById('f').addEventListener('submit', function (e) { e.preventDefault(); location.href = '/test/fixtures/thanks.html'; });
+</script>
