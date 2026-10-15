@@ -105,7 +105,11 @@
 </main>
 <script>
 (function () {
-  var EMBED = (/^https?:$/.test(location.protocol) ? location.origin : 'https://gmm-chatwidget.vercel.app') + '/embed.js';
+  // Preview and per-deployment vercel.app URLs are private, so the code always
+  // points at production unless this page is served from a custom domain.
+  var PROD = 'https://gmm-chatwidget.vercel.app';
+  var custom = /^https?:$/.test(location.protocol) && !/\.vercel\.app$/.test(location.hostname);
+  var EMBED = (custom ? location.origin : PROD) + '/embed.js';
   var $ = function (id) { return document.getElementById(id); };
   var source = $('source'), layout = $('layout'), height = $('height'), hl = $('hl'),
       out = $('out'), copy = $('copy'), copied = $('copied'), heightWrap = $('heightWrap');
