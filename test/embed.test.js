@@ -194,6 +194,41 @@ test('form page tag (no data-source) adds no chat and no chat box', async (page)
   assert.strictEqual(await page.evaluate(() => document.getElementById('cb-widget-container')), null);
 });
 
+const visible = (page, sel) => page.evaluate((s) => {
+  const e = document.querySelector(s);
+  return !!e && e.getClientRects().length > 0;
+}, sel);
+
+test('quiet: the visitor never sees the form intro, the fields or "Thanks, got it!"', async (page) => {
+  await page.goto(A('embed-inline.html?email=qu%40example.com'));
+  await identity(page);
+  await page.waitForFunction(() => window.__seen.some((x) => x.name === 'ai-typing'));
+  const seen = await page.evaluate(() => Object.fromEntries(window.__seen.map((x) => [x.name, x.shown])));
+  assert.deepStrictEqual(seen, { intro: false, 'form-typing': false, fields: false, thanks: false, 'ai-typing': false });
+  // The AI's own typing dots and later messages show again once the form is done.
+  await page.waitForFunction(() => !document.documentElement.classList.contains('gmmcw-quiet-typing'));
+  assert.ok(await visible(page, '.cb-ai-typing'), 'AI typing dots should show after the submit');
+  assert.strictEqual(await visible(page, '.cb-form-submitted'), false, '"Thanks, got it!" shown');
+  assert.ok(await visible(page, '.cb-msg-item:not(.cb-form-text-item)'), 'welcome message should stay');
+});
+
+test('quiet: if CloseBot rejects the details, the form shows with its error', async (page) => {
+  await page.addInitScript(() => { window.__mockFail = true; });
+  await page.goto(A('embed-inline.html?email=no%40example.com'));
+  await identity(page);
+  await page.waitForFunction(() => !document.documentElement.classList.contains('gmmcw-quiet'));
+  assert.ok(await visible(page, '.cb-form-card'), 'form should be visible');
+  assert.ok(await visible(page, '.cb-form-error'), 'error should be visible');
+  assert.ok(await visible(page, '.cb-form-text-item'));
+});
+
+test('quiet: with no details found, the form shows as normal', async (page) => {
+  await page.goto(A('embed-inline.html'));
+  await page.waitForSelector('.cb-form-card');
+  assert.ok(await visible(page, '.cb-form-card'));
+  assert.ok(await visible(page, '.cb-form-text-item'));
+});
+
 (async () => {
   const servers = [await serve(PORT_A), await serve(PORT_B)];
   const browser = await chromium.launch();

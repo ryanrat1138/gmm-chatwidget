@@ -1,5 +1,5 @@
 /*!
- * GMM Chat Embed v0.2.1
+ * GMM Chat Embed v0.3.0
  *
  * One tag that adds the CloseBot AI chat to a page and, on a thank-you page,
  * fills CloseBot's lead form with the name, email and phone the visitor just
@@ -47,7 +47,7 @@
 
   if (window.GMMChat) return; // tag pasted twice
 
-  var VERSION = '0.2.1';
+  var VERSION = '0.3.0';
   var STORE_KEY = 'gmmcw_contact';
   var CODE_KEY = 'gmmcw_code';
   var MAX_AGE_MS = 30 * 60 * 1000;
@@ -372,8 +372,56 @@
     return filled;
   }
 
+  // While the embed sends the form for the visitor, CloseBot's form intro,
+  // the typing dots before the fields, the fields and the "Thanks, got it!"
+  // card stay hidden, so the chat opens as a normal conversation. If CloseBot
+  // rejects the details, the form is shown again for the visitor to fix.
+  var QUIET = 'gmmcw-quiet';
+  var QUIET_TYPING = 'gmmcw-quiet-typing';
+
+  function addQuietStyles() {
+    if (document.getElementById('gmmcw-style')) return;
+    var style = document.createElement('style');
+    style.id = 'gmmcw-style';
+    style.textContent =
+      'html.' + QUIET + ' .cb-form-text-item,html.' + QUIET + ' .cb-form-row,' +
+      'html.' + QUIET_TYPING + ' .cb-typing-indicator{display:none!important}';
+    (document.head || document.documentElement).appendChild(style);
+  }
+
+  function setQuiet(on, typingToo) {
+    var cl = document.documentElement.classList;
+    if (on) { addQuietStyles(); cl.add(QUIET); } else cl.remove(QUIET);
+    if (on && typingToo) cl.add(QUIET_TYPING); else cl.remove(QUIET_TYPING);
+  }
+
+  function watchSubmitResult(card) {
+    var done = false;
+    var finish = function (ok) {
+      if (done) return;
+      done = true;
+      obs.disconnect();
+      clearTimeout(timer);
+      setQuiet(ok, false);
+      log(ok ? 'CloseBot accepted the details' : 'CloseBot did not accept the details; showing the form');
+    };
+    var check = function () {
+      if (card.querySelector('.cb-form-submitted')) return finish(true);
+      var err = card.querySelector('.cb-form-error');
+      if (err && !err.classList.contains('hidden') && err.textContent) finish(false);
+    };
+    var obs = new MutationObserver(check);
+    obs.observe(card, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    // No answer either way (say CloseBot refused a field without showing an
+    // error): show the form rather than leave the visitor with a hidden one.
+    var timer = setTimeout(function () { finish(false); }, 15000);
+    check();
+  }
+
   function watchForLeadForm(contact) {
     var handled = false;
+    var quiet = config.autosubmit && hasIdentity(contact);
+    if (quiet) setQuiet(true, true);
     var tryCard = function () {
       if (handled) return;
       var card = document.querySelector('.cb-form-card');
@@ -386,16 +434,22 @@
       log('filled', Object.keys(filled).join(', ') || 'nothing');
       if (config.autosubmit && (filled.email || filled.phone)) {
         setTimeout(function () {
+          watchSubmitResult(card);
           submit.click();
           clearSavedContact();
           log('submitted the lead form');
         }, 50);
+      } else {
+        setQuiet(false);
       }
     };
     var observer = new MutationObserver(tryCard);
     observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
     tryCard();
-    setTimeout(function () { observer.disconnect(); }, config.formTimeoutMs);
+    setTimeout(function () {
+      observer.disconnect();
+      if (!handled) setQuiet(false);
+    }, config.formTimeoutMs);
   }
 
   // ---------- CloseBot: container and script ----------

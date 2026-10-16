@@ -26,7 +26,7 @@ Without `data-source` the embed never adds a chat. It remembers what the visitor
 
 ## In CloseBot
 
-- Chat widget settings: turn on **Form**, include **Email** and **Phone**, and show it immediately. The embed fills and sends that form; if it has no details, the visitor fills it as usual.
+- Chat widget settings: turn on **Form** and include **Email** and **Phone**. The embed fills and sends that form out of sight: the visitor doesn't see the form, its intro message or CloseBot's "Thanks, got it!" note, just the conversation. If the embed has no details, or CloseBot rejects them, the visitor sees the form as usual.
 - Target the widget to the thank-you page URL only, so CloseBot's own script doesn't show it on the form page, and put the site's domain on the source's allowed domains.
 - CloseBot's own script tag can stay on the site. The embed won't load CloseBot a second time. Put the embed above it so CloseBot never sees contact details in the address bar.
 
