@@ -229,6 +229,50 @@ test('quiet: with no details found, the form shows as normal', async (page) => {
   assert.ok(await visible(page, '.cb-form-text-item'));
 });
 
+function captureFieldPosts(page) {
+  const posts = [];
+  return page.route('http://api.test/api/fields', (route) => {
+    posts.push({ body: JSON.parse(route.request().postData()), type: route.request().headers()['content-type'] });
+    route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
+  }).then(() => posts);
+}
+
+test('extra fields: values in the URL go to the service and leave the address bar', async (page) => {
+  const posts = await captureFieldPosts(page);
+  await page.goto(A('thanks-fields.html?email=ed%40example.com&business_info=HVAC&utm_source=fb&other=keep'));
+  await identity(page);
+  await page.waitForFunction(() => window.GMMChat.fieldsSent === true);
+  assert.strictEqual(posts.length, 1);
+  assert.deepStrictEqual(posts[0].body, { email: 'ed@example.com', phone: '', fields: { business_info: 'HVAC' } });
+  assert.ok(/^text\/plain/.test(posts[0].type), 'should be a simple request');
+  const seen = await page.evaluate(() => window.__urlSeenByCloseBot);
+  assert.ok(!/business_info|email/.test(seen), 'CloseBot saw extra details: ' + seen);
+  assert.ok(/other=keep/.test(seen) && /utm_source=fb/.test(seen), 'unrelated params should stay');
+});
+
+test('extra fields: answers in a same-site form are carried to the thank-you page', async (page) => {
+  const posts = await captureFieldPosts(page);
+  await page.goto(A('form-fields.html'));
+  await page.fill('input[name=email]', 'fo@example.com');
+  await page.selectOption('select[name=business_info]', 'Plumbing');
+  await page.check('input[name=team_size][value="6-20"]');
+  await Promise.all([page.waitForURL(/thanks-fields/), page.click('button[type=submit]')]);
+  await identity(page);
+  await page.waitForFunction(() => window.GMMChat.fieldsSent === true);
+  assert.deepStrictEqual(posts[0].body.fields, { business_info: 'Plumbing', team_size: '6-20' });
+  assert.strictEqual(posts[0].body.email, 'fo@example.com');
+});
+
+test('extra fields: nothing is sent without data-fields or without a contact', async (page) => {
+  const posts = await captureFieldPosts(page);
+  await page.goto(A('embed-inline.html?email=nf%40example.com&business_info=HVAC'));
+  await identity(page);
+  await page.goto(A('thanks-fields.html?business_info=HVAC'));
+  await page.waitForSelector('.cb-form-card');
+  await page.waitForTimeout(300);
+  assert.strictEqual(posts.length, 0);
+});
+
 (async () => {
   const servers = [await serve(PORT_A), await serve(PORT_B)];
   const browser = await chromium.launch();

@@ -14,7 +14,7 @@ See [docs/PLAN.md](docs/PLAN.md) for the architecture, data flow, security notes
 
 | Path | What goes there |
 | --- | --- |
-| `api/` | (not built yet) Context service: webhook intake (HighLevel, Typeform), `/api/context`, CloseBot seeding |
+| `api/` | `fields.js`: `POST /api/fields` saves extra details from the thank-you page (e.g. `business_info`) to the HighLevel contact. Webhook intake and `/api/context` are not built yet |
 | `loader/` | `embed.js`: the one-tag embed. Loads CloseBot's chat and fills its contact form in the background. Details in [loader/README.md](loader/README.md) |
 | `site/` | The setup page served at the project's root URL |
 | `test/` | Browser tests for the embed against a mock CloseBot widget |
@@ -22,13 +22,25 @@ See [docs/PLAN.md](docs/PLAN.md) for the architecture, data flow, security notes
 
 ## Hosting
 
-Vercel builds from the GitHub repo on every push to `main`. The build copies `loader/embed.js` and `site/index.html` into `public/`, so only the embed (`/embed.js`) and the setup page (`/`) are served. Settings are in `vercel.json`. The `api/` service will deploy from the same project when it is built.
+Vercel builds from the GitHub repo on every push to `main`. The build copies `loader/embed.js` and `site/index.html` into `public/`, so only the embed (`/embed.js`) and the setup page (`/`) are served. Settings are in `vercel.json`. Functions in `api/` deploy from the same project.
+
+### Extra details for the AI (`/api/fields`)
+
+The embed's `data-fields` sends extra details to `POST /api/fields`, which upserts the HighLevel contact by email or phone and sets the matching custom fields. CloseBot gives the AI every field on the contact. To turn it on, set these in the Vercel project's environment variables and redeploy:
+
+- `HIGHLEVEL_PRIVATE_TOKEN`: a sub-account Private Integration Token with `contacts.write` and `locations/customFields.readonly`
+- `HIGHLEVEL_LOCATION_ID`: the sub-account id
+- `ALLOWED_FIELDS`: custom field keys pages may set, without `contact.` (e.g. `business_info`)
+- `ALLOWED_ORIGINS`: the sites allowed to call it (e.g. `https://greatmountainmarketing.com`)
+
+Each key must already exist as a contact custom field in HighLevel. The service works with one HighLevel sub-account.
 
 ## Secrets
 
 Never commit API keys. Put them in `.env.local` (ignored by git) or in the hosting provider's environment settings:
 
 - `HIGHLEVEL_PRIVATE_TOKEN`
+- `HIGHLEVEL_LOCATION_ID`
 - `CLOSEBOT_API_KEY`
 - `TYPEFORM_WEBHOOK_SECRET`
 - `HIGHLEVEL_HOOK_SECRET`

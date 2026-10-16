@@ -1,5 +1,5 @@
 /*!
- * GMM Chat Embed v0.3.0
+ * GMM Chat Embed v0.4.0
  *
  * One tag that adds the CloseBot AI chat to a page and, on a thank-you page,
  * fills CloseBot's lead form with the name, email and phone the visitor just
@@ -22,6 +22,8 @@
  *     data-layout="inline"                  (inline = chat shows where the tag is;
  *                                            bubble = chat button bottom-right)
  *     data-height="600px"                   (inline only)
+ *     data-fields="business_info"           (extra details to save on the
+ *                                            HighLevel contact for the AI)
  *     data-email="{{contact.email}}"        (optional, HighLevel-hosted pages)
  *     data-phone="{{contact.phone}}"
  *     data-first-name="{{contact.first_name}}"
@@ -29,8 +31,8 @@
  *
  * Without data-source it never adds a chat: it saves form details, and on a
  * page that loads CloseBot's own script it still fills the form.
- * Advanced: data-backend, data-autosubmit, data-form-timeout, data-hl-origins,
- * data-closebot-src, data-debug.
+ * Advanced: data-api, data-backend, data-autosubmit, data-form-timeout,
+ * data-hl-origins, data-closebot-src, data-debug.
  *
  * Where the details come from, first match wins:
  *   1. sessionStorage, saved on the form page at submit (same site only)
@@ -47,7 +49,7 @@
 
   if (window.GMMChat) return; // tag pasted twice
 
-  var VERSION = '0.3.0';
+  var VERSION = '0.4.0';
   var STORE_KEY = 'gmmcw_contact';
   var CODE_KEY = 'gmmcw_code';
   var MAX_AGE_MS = 30 * 60 * 1000;
@@ -68,12 +70,18 @@
     return all[all.length - 1];
   })();
 
+  function scriptOrigin() {
+    try { return new URL(script.src).origin; } catch (_) { return ''; }
+  }
+
   function attr(name) {
     return script ? script.getAttribute('data-' + name) : null;
   }
 
   var config = {
     source: trim(attr('source')),
+    fields: (attr('fields') || '').split(',').map(trim).filter(function (k) { return /^[A-Za-z0-9_]+$/.test(k); }),
+    api: (attr('api') || scriptOrigin()).replace(/\/+$/, ''),
     layout: attr('layout') === 'bubble' ? 'bubble' : 'inline',
     height: attr('height') || '600px',
     closebotSrc: attr('closebot-src') || CLOSEBOT_SRC,
@@ -99,10 +107,11 @@
     try { return window.sessionStorage; } catch (_) { return null; }
   }
 
-  function saveContact(contact, source) {
+  function saveContact(contact, source, extra) {
     var s = store();
     if (!s || !hasIdentity(contact)) return;
     var record = clean(contact);
+    if (extra && Object.keys(extra).length) record.extra = extra;
     record.savedAt = Date.now();
     record.source = source;
     try { s.setItem(STORE_KEY, JSON.stringify(record)); } catch (_) { /* quota or privacy mode */ }
@@ -192,6 +201,21 @@
     return contact;
   }
 
+  // Values of the extra fields named in data-fields, from inputs, selects and
+  // text areas whose name matches.
+  function readExtraFields(form) {
+    var extra = {};
+    config.fields.forEach(function (key) {
+      var els = form.querySelectorAll('[name="' + key + '"]');
+      for (var i = 0; i < els.length; i++) {
+        var el = els[i];
+        if ((el.type === 'radio' || el.type === 'checkbox') && !el.checked) continue;
+        if (trim(el.value)) { extra[key] = trim(el.value); break; }
+      }
+    });
+    return extra;
+  }
+
   function isWidgetElement(el) {
     return !!(el && el.closest && el.closest('.cb-panel, .cb-form-card'));
   }
@@ -199,7 +223,7 @@
   function captureFromPageForms() {
     document.addEventListener('submit', function (e) {
       if (isWidgetElement(e.target)) return;
-      saveContact(readForm(e.target), 'page-form');
+      saveContact(readForm(e.target), 'page-form', readExtraFields(e.target));
     }, true);
     // Many builders (HighLevel funnels included) submit with a button click
     // and no native submit event, so also read the enclosing form on click.
@@ -207,7 +231,7 @@
       var btn = e.target && e.target.closest && e.target.closest('button, input[type="submit"]');
       if (!btn || isWidgetElement(btn)) return;
       var form = btn.closest('form');
-      if (form) saveContact(readForm(form), 'page-form-click');
+      if (form) saveContact(readForm(form), 'page-form-click', readExtraFields(form));
     }, true);
   }
 
@@ -270,7 +294,7 @@
   // Runs synchronously at load, before the pixel or analytics read the URL.
   function takeUrlContact() {
     var url;
-    try { url = new URL(window.location.href); } catch (_) { return { contact: null, code: null }; }
+    try { url = new URL(window.location.href); } catch (_) { return { contact: null, code: null, extra: {} }; }
     var params = url.searchParams;
     var contact = {};
     var removed = false;
@@ -283,6 +307,14 @@
         }
       });
     });
+    var extra = {};
+    config.fields.forEach(function (key) {
+      if (params.has(key)) {
+        if (trim(params.get(key))) extra[key] = trim(params.get(key));
+        params['delete'](key);
+        removed = true;
+      }
+    });
     var code = params.get(CODE_PARAM);
     if (code) { params['delete'](CODE_PARAM); removed = true; }
     if (removed && window.history && window.history.replaceState) {
@@ -290,7 +322,7 @@
       log('removed contact details from the URL');
     }
     contact = clean(contact);
-    return { contact: hasIdentity(contact) ? contact : null, code: code };
+    return { contact: hasIdentity(contact) ? contact : null, code: code, extra: extra };
   }
 
   function attrContact() {
@@ -332,6 +364,24 @@
     if (urlResult.contact) return done(urlResult.contact, 'url');
     var code = urlResult.code || (store() && store().getItem(CODE_KEY));
     fetchBackendContact(code, function (c) { done(c, c ? 'backend' : 'none'); });
+  }
+
+  // Extra details (data-fields) go to the service next to this script, which
+  // writes them to the HighLevel contact, where CloseBot's AI reads them.
+  function sendExtraFields(contact, extra) {
+    if (!config.fields.length || !config.api || !window.fetch) return;
+    if (!Object.keys(extra).length) { log('no extra fields to send'); return; }
+    window.fetch(config.api + '/api/fields', {
+      method: 'POST',
+      // text/plain keeps this a simple request, so there is no CORS preflight.
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ email: contact.email || '', phone: contact.phone || '', fields: extra }),
+      credentials: 'omit',
+      keepalive: true
+    }).then(function (res) {
+      api.fieldsSent = res.ok;
+      log(res.ok ? 'sent extra fields: ' + Object.keys(extra).join(', ') : 'extra fields not saved (' + res.status + ')');
+    })['catch'](function () { api.fieldsSent = false; log('extra fields not sent'); });
   }
 
   // ---------- CloseBot widget: fill the lead form ----------
@@ -519,6 +569,7 @@
     version: VERSION,
     contact: null,
     source: null,
+    fieldsSent: null,
     fill: function (contact) { watchForLeadForm(clean(contact)); },
     clear: clearSavedContact
   };
@@ -530,6 +581,11 @@
       if (!contact) { log('no contact found; visitor fills the form'); return; }
       api.contact = { hasEmail: !!contact.email, hasPhone: !!contact.phone };
       log('contact found via', source);
+      var extra = {};
+      [contact.extra || {}, urlResult.extra].forEach(function (o) {
+        Object.keys(o).forEach(function (k) { extra[k] = o[k]; });
+      });
+      sendExtraFields(contact, extra);
       watchForLeadForm(contact);
     });
   });
