@@ -41,6 +41,13 @@
   ul { margin: 8px 0 0; padding-left: 20px; }
   li { margin: 6px 0; }
   code { font: 14px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+  fieldset.choices { border: 0; padding: 0; margin: 14px 0 0; display: flex; gap: 12px; flex-wrap: wrap; }
+  fieldset.choices legend { font-weight: 600; padding: 0; margin-bottom: 6px; }
+  .choice { flex: 1 1 220px; display: flex; gap: 10px; align-items: flex-start; font-weight: 400; margin: 0;
+    padding: 12px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; background: var(--bg); }
+  .choice:has(input:checked) { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .choice input { margin-top: 5px; }
+  .choice .hint { display: block; }
   .warn { color: var(--muted); font-size: 14px; }
 </style>
 </head>
@@ -50,48 +57,48 @@
   <p class="lead">Adds the CloseBot AI chat to a page with one tag. On the thank-you page it fills in the visitor's name, email and phone from the form they just sent, so the chat starts on their existing HighLevel contact.</p>
 
   <section>
-    <h2><span class="step">1</span>Get the code</h2>
+    <h2><span class="step">1</span>Thank-you page: the chat</h2>
     <label for="source">CloseBot source ID</label>
     <input id="source" type="text" placeholder="Paste the CloseBot script tag or just the source ID" autocomplete="off" spellcheck="false">
     <p class="hint">In CloseBot, open your HighLevel source and go to Setup. Paste the whole script tag here; the ID is the part after <code>source=</code>.</p>
 
-    <div class="row">
-      <div>
-        <label for="layout">Where the chat shows</label>
-        <select id="layout">
-          <option value="inline">In the page, where the code is pasted</option>
-          <option value="bubble">Chat button in the bottom-right corner</option>
-        </select>
-      </div>
-      <div id="heightWrap">
-        <label for="height">Chat height</label>
-        <input id="height" type="text" value="600px" spellcheck="false">
-      </div>
+    <fieldset class="choices">
+      <legend>How the chat shows</legend>
+      <label class="choice"><input type="radio" name="layout" value="inline" checked>
+        <span><strong>In the page</strong><span class="hint">The chat sits where you paste the code, like part of the page.</span></span></label>
+      <label class="choice"><input type="radio" name="layout" value="bubble">
+        <span><strong>Corner chat button</strong><span class="hint">CloseBot's standard button in the bottom-right corner that opens the chat.</span></span></label>
+    </fieldset>
+    <div id="heightWrap">
+      <label for="height">Chat height</label>
+      <input id="height" type="text" value="600px" spellcheck="false">
     </div>
 
     <label class="check"><input id="hl" type="checkbox">
       <span>The thank-you page is a HighLevel funnel or website page<br><span class="hint">Adds HighLevel merge fields so the page passes the contact straight to the chat.</span></span></label>
 
-    <label>Your embed code</label>
+    <label>Thank-you page code</label>
     <pre id="out"></pre>
-    <button id="copy" disabled>Copy code</button><span id="copied" class="status" aria-live="polite"></span>
-  </section>
-
-  <section>
-    <h2><span class="step">2</span>Paste it on two pages</h2>
+    <button id="copy" data-target="out" disabled>Copy code</button><span class="status" aria-live="polite"></span>
     <ul>
-      <li><strong>The page with the form</strong> and <strong>the thank-you page</strong>. Same code on both.</li>
-      <li>On the thank-you page, put it where the chat should appear (for the in-page layout) and above any analytics or tracking code if the builder allows.</li>
-      <li>HighLevel: use a Custom JS/HTML element. WordPress: a Custom HTML block.</li>
-      <li>If CloseBot's own script tag is already on the site, you can leave it; the embed won't load CloseBot twice. Put the embed above it so CloseBot never sees contact details in the address bar.</li>
+      <li id="placeInline">Paste it where the chat should appear. HighLevel: a Custom JS/HTML element. WordPress: a Custom HTML block.</li>
+      <li>Keep it above any analytics or tracking code if the builder allows, so they never see the visitor's details in the address bar.</li>
+      <li>If CloseBot's own script tag is already on the site, you can leave it; the chat won't load twice.</li>
     </ul>
   </section>
 
   <section>
-    <h2><span class="step">3</span>Turn on CloseBot's contact form</h2>
+    <h2><span class="step">2</span>Form page: no chat, just remembers the details</h2>
+    <p>Only needed when the form is on your own website, including a HighLevel form embedded there. Skip it for Typeform and for HighLevel funnel forms. No chat shows on the form page.</p>
+    <pre id="formOut"></pre>
+    <button id="copyForm" data-target="formOut">Copy code</button><span class="status" aria-live="polite"></span>
+  </section>
+
+  <section>
+    <h2><span class="step">3</span>In CloseBot</h2>
     <ul>
       <li>In the chat widget settings, open <strong>Form</strong>, turn it on, include <strong>Email</strong> and <strong>Phone</strong>, and set it to show immediately.</li>
-      <li>Make sure the widget is targeted to the thank-you page URL and the site's domain is on the source's allowed domains.</li>
+      <li>Target the widget to the thank-you page URL only, so CloseBot doesn't show it on the form page either, and put the site's domain on the source's allowed domains.</li>
     </ul>
     <p class="warn">The embed fills and sends that form for the visitor. If it can't find their details, they fill it in themselves as usual.</p>
   </section>
@@ -111,8 +118,14 @@
   var custom = /^https?:$/.test(location.protocol) && !/\.vercel\.app$/.test(location.hostname);
   var EMBED = (custom ? location.origin : PROD) + '/embed.js';
   var $ = function (id) { return document.getElementById(id); };
-  var source = $('source'), layout = $('layout'), height = $('height'), hl = $('hl'),
-      out = $('out'), copy = $('copy'), copied = $('copied'), heightWrap = $('heightWrap');
+  var source = $('source'), height = $('height'), hl = $('hl'), out = $('out'), copy = $('copy'),
+      heightWrap = $('heightWrap'), placeInline = $('placeInline');
+  var layouts = document.querySelectorAll('input[name=layout]');
+
+  function layout() {
+    for (var i = 0; i < layouts.length; i++) if (layouts[i].checked) return layouts[i].value;
+    return 'inline';
+  }
 
   function sourceId(v) {
     v = (v || '').trim();
@@ -122,10 +135,13 @@
   }
 
   function render() {
-    var id = sourceId(source.value);
-    heightWrap.style.display = layout.value === 'inline' ? '' : 'none';
+    var id = sourceId(source.value), inline = layout() === 'inline';
+    heightWrap.style.display = inline ? '' : 'none';
+    placeInline.textContent = inline
+      ? 'Paste it where the chat should appear. HighLevel: a Custom JS/HTML element. WordPress: a Custom HTML block.'
+      : 'Paste it anywhere on the page; the chat button shows in the corner. HighLevel: a Custom JS/HTML element or the page\'s tracking code. WordPress: a Custom HTML block.';
     var lines = ['<script src="' + EMBED + '"', '  data-source="' + (id || 'PASTE_SOURCE_ID') + '"'];
-    if (layout.value === 'bubble') lines.push('  data-layout="bubble"');
+    if (!inline) lines.push('  data-layout="bubble"');
     else if (height.value.trim() && height.value.trim() !== '600px') lines.push('  data-height="' + height.value.trim().replace(/"/g, '') + '"');
     if (hl.checked) {
       lines.push('  data-email="{{contact.email}}"', '  data-phone="{{contact.phone}}"',
@@ -134,21 +150,27 @@
     lines[lines.length - 1] += '></' + 'script>';
     out.textContent = lines.join('\n');
     copy.disabled = !id;
-    copied.textContent = '';
+    copy.nextElementSibling.textContent = '';
   }
 
-  copy.addEventListener('click', function () {
-    var text = out.textContent;
-    var done = function () { copied.textContent = 'Copied'; };
-    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
-    function fallback() {
-      var r = document.createRange(); r.selectNodeContents(out);
-      var s = getSelection(); s.removeAllRanges(); s.addRange(r);
-      copied.textContent = 'Selected. Press Ctrl+C to copy.';
-    }
-  });
+  $('formOut').textContent = '<script src="' + EMBED + '"></' + 'script>';
 
-  [source, layout, height, hl].forEach(function (el) { el.addEventListener('input', render); el.addEventListener('change', render); });
+  function onCopy(e) {
+    var btn = e.currentTarget, pre = $(btn.getAttribute('data-target')), status = btn.nextElementSibling;
+    var fallback = function () {
+      var r = document.createRange(); r.selectNodeContents(pre);
+      var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      status.textContent = 'Selected. Press Ctrl+C to copy.';
+    };
+    if (navigator.clipboard) navigator.clipboard.writeText(pre.textContent).then(function () { status.textContent = 'Copied'; }, fallback);
+    else fallback();
+  }
+  copy.addEventListener('click', onCopy);
+  $('copyForm').addEventListener('click', onCopy);
+
+  [source, height, hl].concat([].slice.call(layouts)).forEach(function (el) {
+    el.addEventListener('input', render); el.addEventListener('change', render);
+  });
   render();
 })();
 </script>

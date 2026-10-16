@@ -1,14 +1,21 @@
 /*!
- * GMM Chat Embed v0.2.0
+ * GMM Chat Embed v0.2.1
  *
  * One tag that adds the CloseBot AI chat to a page and, on a thank-you page,
  * fills CloseBot's lead form with the name, email and phone the visitor just
  * submitted, so the chat lands on their existing HighLevel contact without
  * asking them to type it again.
  *
- * Paste the same tag on the form page and the thank-you page, as high on the
- * page as the builder allows, ahead of analytics. Contact details in the URL
- * are removed before CloseBot or anything after this tag can read them.
+ * Thank-you page: the tag below, with data-source, shows the chat. Put it as
+ * high on the page as the builder allows, ahead of analytics, so contact
+ * details in the URL are removed before CloseBot or anything else reads them.
+ *
+ * Form page (only when the form is on the same site): the bare tag, with no
+ * data-source, saves what the visitor submits and shows no chat.
+ *
+ *   <script src="https://gmm-chatwidget.vercel.app/embed.js"></script>
+ *
+ * Thank-you page:
  *
  *   <script src="https://gmm-chatwidget.vercel.app/embed.js"
  *     data-source="CLOSEBOT_SOURCE_ID"
@@ -20,9 +27,10 @@
  *     data-first-name="{{contact.first_name}}"
  *     data-last-name="{{contact.last_name}}"></script>
  *
- * Without data-source it only does the prefill, for pages that already load
- * CloseBot's own script. Advanced: data-backend, data-autosubmit,
- * data-form-timeout, data-hl-origins, data-closebot-src, data-debug.
+ * Without data-source it never adds a chat: it saves form details, and on a
+ * page that loads CloseBot's own script it still fills the form.
+ * Advanced: data-backend, data-autosubmit, data-form-timeout, data-hl-origins,
+ * data-closebot-src, data-debug.
  *
  * Where the details come from, first match wins:
  *   1. sessionStorage, saved on the form page at submit (same site only)
@@ -39,7 +47,7 @@
 
   if (window.GMMChat) return; // tag pasted twice
 
-  var VERSION = '0.2.0';
+  var VERSION = '0.2.1';
   var STORE_KEY = 'gmmcw_contact';
   var CODE_KEY = 'gmmcw_code';
   var MAX_AGE_MS = 30 * 60 * 1000;
@@ -404,7 +412,7 @@
   // chat into. It takes no space until the chat appears, so pages where no
   // CloseBot widget is targeted (the form page, say) are unaffected.
   function placeContainer() {
-    if (config.layout !== 'inline' || document.getElementById(CONTAINER_ID)) return;
+    if (!config.source || config.layout !== 'inline' || document.getElementById(CONTAINER_ID)) return;
     var parent = script && script.parentNode;
     if (!parent || parent === document.head || !document.body || !document.body.contains(script)) {
       log('tag is not in the page body; using the chat bubble');

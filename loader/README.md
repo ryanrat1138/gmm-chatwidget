@@ -4,27 +4,37 @@ One tag that adds the CloseBot AI chat to a page. On a thank-you page it also fi
 
 The easiest way to set it up is the setup page at https://gmm-chatwidget.vercel.app, which writes the tag for you.
 
-## The tag
+## The tags
+
+**Thank-you page** (shows the chat):
 
 ```html
 <script src="https://gmm-chatwidget.vercel.app/embed.js" data-source="CLOSEBOT_SOURCE_ID"></script>
 ```
 
-Paste the same tag on the form page and the thank-you page. The source ID is in CloseBot under the HighLevel source's Setup tab (the part after `source=` in CloseBot's own script tag).
+The source ID is in CloseBot under the HighLevel source's Setup tab (the part after `source=` in CloseBot's own script tag).
 
-By default the chat shows in the page where the tag is pasted. The box takes no space until a chat appears, so on pages CloseBot's widget isn't targeted to (the form page, say) nothing shows. If the tag is in the page `<head>`, or `data-layout="bubble"` is set, the chat shows as CloseBot's usual corner button instead.
+By default the chat shows in the page where the tag is pasted. Add `data-layout="bubble"` for CloseBot's standard corner chat button instead. A tag in the page `<head>` also uses the corner button.
+
+**Form page** (no chat; only when the form is on your own site, including an embedded HighLevel form):
+
+```html
+<script src="https://gmm-chatwidget.vercel.app/embed.js"></script>
+```
+
+Without `data-source` the embed never adds a chat. It remembers what the visitor submits so the thank-you page can fill CloseBot's form. Skip it for Typeform (the answers come through the redirect URL instead) and for HighLevel funnel forms.
 
 ## In CloseBot
 
 - Chat widget settings: turn on **Form**, include **Email** and **Phone**, and show it immediately. The embed fills and sends that form; if it has no details, the visitor fills it as usual.
-- Target the widget to the thank-you page URL and put the site's domain on the source's allowed domains.
+- Target the widget to the thank-you page URL only, so CloseBot's own script doesn't show it on the form page, and put the site's domain on the source's allowed domains.
 - CloseBot's own script tag can stay on the site. The embed won't load CloseBot a second time. Put the embed above it so CloseBot never sees contact details in the address bar.
 
 ## Where the visitor's details come from
 
 First match wins:
 
-1. **Same site:** the embed on the form page saves what was submitted in the browser tab for 30 minutes.
+1. **Same site:** the form page tag saves what was submitted in the browser tab for 30 minutes.
 2. **HighLevel thank-you page:** add the merge fields to the tag (the setup page does this when you tick the HighLevel box):
    ```html
    data-email="{{contact.email}}" data-phone="{{contact.phone}}"
@@ -37,7 +47,7 @@ First match wins:
 
 | Attribute | Default | What it does |
 | --- | --- | --- |
-| `data-source` | none | CloseBot source ID. Without it the embed only fills the form, for pages that load CloseBot themselves |
+| `data-source` | none | CloseBot source ID. Without it the embed adds no chat: it saves form details, and still fills CloseBot's form on a page that loads CloseBot itself |
 | `data-layout` | `inline` | `inline` shows the chat where the tag is; `bubble` uses the corner button |
 | `data-height` | `600px` | Height of the inline chat |
 | `data-email`, `data-phone`, `data-first-name`, `data-last-name`, `data-name` | none | Contact details rendered into the page, usually HighLevel merge fields |
