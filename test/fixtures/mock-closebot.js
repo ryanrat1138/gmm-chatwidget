@@ -3,6 +3,10 @@
 // placeholders and no names, a type="button" submit that reads .value.
 (function () {
   window.__identity = null;
+  window.__cbLoads = (window.__cbLoads || 0) + 1;
+  var me = document.currentScript;
+  window.__cbSource = me && me.src ? new URL(me.src).searchParams.get('source') : null;
+  window.__urlSeenByCloseBot = location.href;
   function el(tag, attrs) { var e = document.createElement(tag); for (var k in attrs) e.setAttribute(k, attrs[k]); return e; }
   function mount() {
     var panel = el('div', { class: 'cb-panel' });
@@ -26,7 +30,7 @@
     });
     [first, last, email, phone, submit].forEach(function (x) { card.appendChild(x); });
     panel.appendChild(card);
-    document.body.appendChild(panel);
+    (document.getElementById('cb-widget-container') || document.body).appendChild(panel);
   }
-  setTimeout(mount, Number(window.__mockDelay || 400));
+  if (!window.__mockNoMount) setTimeout(mount, Number(window.__mockDelay || 400));
 })();

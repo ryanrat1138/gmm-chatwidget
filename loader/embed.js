@@ -1,22 +1,28 @@
 /*!
- * GMM Chat Prefill v0.1.0
+ * GMM Chat Embed v0.2.0
  *
- * Fills CloseBot's chat-widget lead form on a thank-you page with the name,
- * email and phone the visitor just submitted, so the chat lands on their
- * existing HighLevel contact without asking them to type it again.
+ * One tag that adds the CloseBot AI chat to a page and, on a thank-you page,
+ * fills CloseBot's lead form with the name, email and phone the visitor just
+ * submitted, so the chat lands on their existing HighLevel contact without
+ * asking them to type it again.
  *
- * Use one script tag on both the form page and the thank-you page. Load it
- * BEFORE the CloseBot pixel and any analytics, so contact details in the URL
- * are removed before anything else can read or log them.
+ * Paste the same tag on the form page and the thank-you page, as high on the
+ * page as the builder allows, ahead of analytics. Contact details in the URL
+ * are removed before CloseBot or anything after this tag can read them.
  *
- *   <script src="gmm-chat-prefill.js"
- *     data-email="{{contact.email}}"          (optional, HighLevel-hosted pages)
+ *   <script src="https://gmm-chatwidget.vercel.app/embed.js"
+ *     data-source="CLOSEBOT_SOURCE_ID"
+ *     data-layout="inline"                  (inline = chat shows where the tag is;
+ *                                            bubble = chat button bottom-right)
+ *     data-height="600px"                   (inline only)
+ *     data-email="{{contact.email}}"        (optional, HighLevel-hosted pages)
  *     data-phone="{{contact.phone}}"
  *     data-first-name="{{contact.first_name}}"
- *     data-last-name="{{contact.last_name}}"
- *     data-backend="https://example.vercel.app" (optional, webhook + code)
- *     data-autosubmit="true"                    (false = fill only)
- *     data-debug="false"></script>
+ *     data-last-name="{{contact.last_name}}"></script>
+ *
+ * Without data-source it only does the prefill, for pages that already load
+ * CloseBot's own script. Advanced: data-backend, data-autosubmit,
+ * data-form-timeout, data-hl-origins, data-closebot-src, data-debug.
  *
  * Where the details come from, first match wins:
  *   1. sessionStorage, saved on the form page at submit (same site only)
@@ -31,7 +37,9 @@
 (function (window, document) {
   'use strict';
 
-  var VERSION = '0.1.0';
+  if (window.GMMChat) return; // tag pasted twice
+
+  var VERSION = '0.2.0';
   var STORE_KEY = 'gmmcw_contact';
   var CODE_KEY = 'gmmcw_code';
   var MAX_AGE_MS = 30 * 60 * 1000;
@@ -43,6 +51,8 @@
     lastName: ['last_name', 'lastname', 'cb_last_name'],
     name: ['name', 'full_name', 'cb_name']
   };
+  var CLOSEBOT_SRC = 'https://api.closebot.com/scripts/cb.js';
+  var CONTAINER_ID = 'cb-widget-container';
   var HL_ORIGIN_RE = /(^|\.)(leadconnectorhq\.com|msgsndr\.com|gohighlevel\.com)$/i;
 
   var script = document.currentScript || (function () {
@@ -55,6 +65,10 @@
   }
 
   var config = {
+    source: trim(attr('source')),
+    layout: attr('layout') === 'bubble' ? 'bubble' : 'inline',
+    height: attr('height') || '600px',
+    closebotSrc: attr('closebot-src') || CLOSEBOT_SRC,
     backend: (attr('backend') || '').replace(/\/+$/, ''),
     autosubmit: attr('autosubmit') !== 'false',
     debug: attr('debug') === 'true',
@@ -67,7 +81,7 @@
   function log() {
     if (!config.debug || !window.console) return;
     var args = Array.prototype.slice.call(arguments);
-    args.unshift('[gmm-chat-prefill]');
+    args.unshift('[gmm-chat]');
     window.console.log.apply(window.console, args);
   }
 
@@ -376,6 +390,53 @@
     setTimeout(function () { observer.disconnect(); }, config.formTimeoutMs);
   }
 
+  // ---------- CloseBot: container and script ----------
+
+  function closebotLoaded() {
+    var all = document.getElementsByTagName('script');
+    for (var i = 0; i < all.length; i++) {
+      if ((all[i].src || '').indexOf('/scripts/cb.js') !== -1) return true;
+    }
+    return false;
+  }
+
+  // Inline layout: an empty box right after this tag that CloseBot mounts the
+  // chat into. It takes no space until the chat appears, so pages where no
+  // CloseBot widget is targeted (the form page, say) are unaffected.
+  function placeContainer() {
+    if (config.layout !== 'inline' || document.getElementById(CONTAINER_ID)) return;
+    var parent = script && script.parentNode;
+    if (!parent || parent === document.head || !document.body || !document.body.contains(script)) {
+      log('tag is not in the page body; using the chat bubble');
+      return;
+    }
+    var box = document.createElement('div');
+    box.id = CONTAINER_ID;
+    box.style.width = '100%';
+    box.style.maxWidth = '100%';
+    parent.insertBefore(box, script.nextSibling);
+    var grow = function () {
+      if (!box.firstElementChild) return false;
+      box.style.height = config.height;
+      return true;
+    };
+    if (!grow()) {
+      var obs = new MutationObserver(function () { if (grow()) obs.disconnect(); });
+      obs.observe(box, { childList: true });
+    }
+  }
+
+  function loadCloseBot() {
+    if (!config.source) return;
+    if (closebotLoaded()) { log('CloseBot script already on the page'); return; }
+    var el = document.createElement('script');
+    var src = config.closebotSrc;
+    el.src = src + (src.indexOf('?') === -1 ? '?' : '&') + 'source=' + encodeURIComponent(config.source);
+    el.async = true;
+    (document.head || document.documentElement).appendChild(el);
+    log('loading CloseBot');
+  }
+
   // ---------- boot ----------
 
   function onReady(fn) {
@@ -384,6 +445,10 @@
   }
 
   var urlResult = takeUrlContact();
+  placeContainer();
+  // Wait for the page to finish parsing, so a CloseBot tag further down the
+  // page is seen and CloseBot is not loaded twice.
+  onReady(loadCloseBot);
   captureFromPageForms();
   captureFromHighLevelEmbeds();
   tagFormsWithCode();
@@ -395,7 +460,7 @@
     fill: function (contact) { watchForLeadForm(clean(contact)); },
     clear: clearSavedContact
   };
-  window.GMMChatPrefill = api;
+  window.GMMChat = api;
 
   onReady(function () {
     resolveContact(urlResult, function (contact, source) {

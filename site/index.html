@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Chat Embed Setup</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --text: #1d1d1b; --muted: #5f5f5a; --line: #e2e1dc;
+    --accent: #2f6f4f; --accent-text: #ffffff; --code-bg: #f0efea; --ok: #2f6f4f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161615; --panel: #1f1f1d; --text: #ecebe6; --muted: #a3a29b; --line: #34332f;
+      --accent: #6fbf94; --accent-text: #10241a; --code-bg: #262623; --ok: #6fbf94; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 16px 64px; }
+  h1 { font-size: 28px; line-height: 1.2; margin: 0 0 8px; }
+  h2 { font-size: 18px; margin: 0 0 12px; }
+  p.lead { color: var(--muted); margin: 0 0 28px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .step { display: inline-block; min-width: 24px; height: 24px; border-radius: 12px; background: var(--accent);
+    color: var(--accent-text); font-size: 13px; font-weight: 600; text-align: center; line-height: 24px; margin-right: 8px; }
+  label { display: block; font-weight: 600; margin: 14px 0 6px; }
+  .hint { color: var(--muted); font-size: 14px; margin: 4px 0 0; }
+  input[type=text], select { width: 100%; padding: 10px 12px; font: inherit; color: var(--text);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .row > div { flex: 1 1 200px; }
+  .check { display: flex; gap: 10px; align-items: flex-start; font-weight: 400; }
+  .check input { margin-top: 5px; }
+  pre { background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 14px;
+    overflow-x: auto; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre; margin: 0; }
+  button { font: inherit; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 0;
+    background: var(--accent); color: var(--accent-text); cursor: pointer; margin-top: 12px; }
+  button:disabled { opacity: .5; cursor: default; }
+  .status { margin-left: 10px; color: var(--ok); font-size: 14px; }
+  ul { margin: 8px 0 0; padding-left: 20px; }
+  li { margin: 6px 0; }
+  code { font: 14px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+  .warn { color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Chat embed setup</h1>
+  <p class="lead">Adds the CloseBot AI chat to a page with one tag. On the thank-you page it fills in the visitor's name, email and phone from the form they just sent, so the chat starts on their existing HighLevel contact.</p>
+
+  <section>
+    <h2><span class="step">1</span>Get the code</h2>
+    <label for="source">CloseBot source ID</label>
+    <input id="source" type="text" placeholder="Paste the CloseBot script tag or just the source ID" autocomplete="off" spellcheck="false">
+    <p class="hint">In CloseBot, open your HighLevel source and go to Setup. Paste the whole script tag here; the ID is the part after <code>source=</code>.</p>
+
+    <div class="row">
+      <div>
+        <label for="layout">Where the chat shows</label>
+        <select id="layout">
+          <option value="inline">In the page, where the code is pasted</option>
+          <option value="bubble">Chat button in the bottom-right corner</option>
+        </select>
+      </div>
+      <div id="heightWrap">
+        <label for="height">Chat height</label>
+        <input id="height" type="text" value="600px" spellcheck="false">
+      </div>
+    </div>
+
+    <label class="check"><input id="hl" type="checkbox">
+      <span>The thank-you page is a HighLevel funnel or website page<br><span class="hint">Adds HighLevel merge fields so the page passes the contact straight to the chat.</span></span></label>
+
+    <label>Your embed code</label>
+    <pre id="out"></pre>
+    <button id="copy" disabled>Copy code</button><span id="copied" class="status" aria-live="polite"></span>
+  </section>
+
+  <section>
+    <h2><span class="step">2</span>Paste it on two pages</h2>
+    <ul>
+      <li><strong>The page with the form</strong> and <strong>the thank-you page</strong>. Same code on both.</li>
+      <li>On the thank-you page, put it where the chat should appear (for the in-page layout) and above any analytics or tracking code if the builder allows.</li>
+      <li>HighLevel: use a Custom JS/HTML element. WordPress: a Custom HTML block.</li>
+      <li>If CloseBot's own script tag is already on the site, you can leave it; the embed won't load CloseBot twice. Put the embed above it so CloseBot never sees contact details in the address bar.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="step">3</span>Turn on CloseBot's contact form</h2>
+    <ul>
+      <li>In the chat widget settings, open <strong>Form</strong>, turn it on, include <strong>Email</strong> and <strong>Phone</strong>, and set it to show immediately.</li>
+      <li>Make sure the widget is targeted to the thank-you page URL and the site's domain is on the source's allowed domains.</li>
+    </ul>
+    <p class="warn">The embed fills and sends that form for the visitor. If it can't find their details, they fill it in themselves as usual.</p>
+  </section>
+
+  <section>
+    <h2><span class="step">4</span>Typeform only: send the answers to the thank-you page</h2>
+    <p>In Typeform, open <strong>Endings</strong>, turn on <strong>Redirect to URL</strong>, and enter the thank-you page address followed by the answers:</p>
+    <pre>https://your-site.com/thank-you?email=<em>@Email</em>&amp;phone=<em>@Phone</em>&amp;first_name=<em>@First name</em></pre>
+    <p class="hint">Type the part before each @ yourself, then type <code>@</code> and pick the matching question from the list. The embed removes these details from the address bar as soon as the page opens.</p>
+  </section>
+</main>
+<script>
+(function () {
+  // Preview and per-deployment vercel.app URLs are private, so the code always
+  // points at production unless this page is served from a custom domain.
+  var PROD = 'https://gmm-chatwidget.vercel.app';
+  var custom = /^https?:$/.test(location.protocol) && !/\.vercel\.app$/.test(location.hostname);
+  var EMBED = (custom ? location.origin : PROD) + '/embed.js';
+  var $ = function (id) { return document.getElementById(id); };
+  var source = $('source'), layout = $('layout'), height = $('height'), hl = $('hl'),
+      out = $('out'), copy = $('copy'), copied = $('copied'), heightWrap = $('heightWrap');
+
+  function sourceId(v) {
+    v = (v || '').trim();
+    var m = v.match(/[?&]source=([^"'&\s>]+)/);
+    if (m) return decodeURIComponent(m[1]);
+    return /^[A-Za-z0-9_-]+$/.test(v) ? v : '';
+  }
+
+  function render() {
+    var id = sourceId(source.value);
+    heightWrap.style.display = layout.value === 'inline' ? '' : 'none';
+    var lines = ['<script src="' + EMBED + '"', '  data-source="' + (id || 'PASTE_SOURCE_ID') + '"'];
+    if (layout.value === 'bubble') lines.push('  data-layout="bubble"');
+    else if (height.value.trim() && height.value.trim() !== '600px') lines.push('  data-height="' + height.value.trim().replace(/"/g, '') + '"');
+    if (hl.checked) {
+      lines.push('  data-email="{{contact.email}}"', '  data-phone="{{contact.phone}}"',
+        '  data-first-name="{{contact.first_name}}"', '  data-last-name="{{contact.last_name}}"');
+    }
+    lines[lines.length - 1] += '></' + 'script>';
+    out.textContent = lines.join('\n');
+    copy.disabled = !id;
+    copied.textContent = '';
+  }
+
+  copy.addEventListener('click', function () {
+    var text = out.textContent;
+    var done = function () { copied.textContent = 'Copied'; };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+    function fallback() {
+      var r = document.createRange(); r.selectNodeContents(out);
+      var s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      copied.textContent = 'Selected. Press Ctrl+C to copy.';
+    }
+  });
+
+  [source, layout, height, hl].forEach(function (el) { el.addEventListener('input', render); el.addEventListener('change', render); });
+  render();
+})();
+</script>
+</body>
+</html>

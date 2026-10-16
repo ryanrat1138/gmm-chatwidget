@@ -2,16 +2,28 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "",
-  "buildCommand": "mkdir -p public && cp loader/gmm-chat-prefill.js public/gmm-chat-prefill.js",
+  "buildCommand": "mkdir -p public && cp loader/embed.js public/embed.js && cp site/index.html public/index.html",
   "outputDirectory": "public",
   "headers": [
     {
-      "source": "/gmm-chat-prefill.js",
+      "source": "/embed.js",
       "headers": [
-        { "key": "Content-Type", "value": "text/javascript; charset=utf-8" },
-        { "key": "Cache-Control", "value": "public, max-age=300, s-maxage=300" },
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" }
+        {
+          "key": "Content-Type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, s-maxage=300"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
       ]
     }
   ]
