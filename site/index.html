@@ -77,6 +77,10 @@
     <label class="check"><input id="hl" type="checkbox">
       <span>The thank-you page is a HighLevel funnel or website page<br><span class="hint">Adds HighLevel merge fields so the page passes the contact straight to the chat.</span></span></label>
 
+    <label for="fields">Extra details for the AI (optional)</label>
+    <input id="fields" type="text" placeholder="business_info, team_size" autocomplete="off" spellcheck="false">
+    <p class="hint">Names of details passed in the thank-you page address or asked on your own form, separated by commas. Each is saved to the HighLevel contact field with the same key, which the AI can read. The field must exist in HighLevel and be on the service's allowed list.</p>
+
     <label>Thank-you page code</label>
     <pre id="out"></pre>
     <button id="copy" data-target="out" disabled>Copy code</button><span class="status" aria-live="polite"></span>
@@ -106,7 +110,7 @@
   <section>
     <h2><span class="step">4</span>Typeform only: send the answers to the thank-you page</h2>
     <p>In Typeform, open <strong>Endings</strong>, turn on <strong>Redirect to URL</strong>, and enter the thank-you page address followed by the answers:</p>
-    <pre>https://your-site.com/thank-you?email=<em>@Email</em>&amp;phone=<em>@Phone</em>&amp;first_name=<em>@First name</em></pre>
+    <pre id="tfUrl"></pre>
     <p class="hint">Type the part before each @ yourself, then type <code>@</code> and pick the matching question from the list. The embed removes these details from the address bar as soon as the page opens.</p>
   </section>
 </main>
@@ -134,7 +138,13 @@
     return /^[A-Za-z0-9_-]+$/.test(v) ? v : '';
   }
 
+  function fieldList() {
+    return $('fields').value.split(',').map(function (k) { return k.trim(); })
+      .filter(function (k) { return /^[A-Za-z0-9_]+$/.test(k); }).join(',');
+  }
+
   function render() {
+    renderFormTag();
     var id = sourceId(source.value), inline = layout() === 'inline';
     heightWrap.style.display = inline ? '' : 'none';
     placeInline.textContent = inline
@@ -142,6 +152,8 @@
       : 'Paste it anywhere on the page; the chat button shows in the corner. HighLevel: a Custom JS/HTML element or the page\'s tracking code. WordPress: a Custom HTML block.';
     var lines = ['<script src="' + EMBED + '"', '  data-source="' + (id || 'PASTE_SOURCE_ID') + '"'];
     if (!inline) lines.push('  data-layout="bubble"');
+    var f = fieldList();
+    if (f) lines.push('  data-fields="' + f + '"');
     else if (height.value.trim() && height.value.trim() !== '600px') lines.push('  data-height="' + height.value.trim().replace(/"/g, '') + '"');
     if (hl.checked) {
       lines.push('  data-email="{{contact.email}}"', '  data-phone="{{contact.phone}}"',
@@ -153,7 +165,12 @@
     copy.nextElementSibling.textContent = '';
   }
 
-  $('formOut').textContent = '<script src="' + EMBED + '"></' + 'script>';
+  function renderFormTag() {
+    var f = fieldList();
+    $('formOut').textContent = '<script src="' + EMBED + '"' + (f ? ' data-fields="' + f + '"' : '') + '></' + 'script>';
+    var extra = f ? f.split(',').map(function (k) { return '&amp;' + k + '=<em>@' + k + '</em>'; }).join('') : '';
+    $('tfUrl').innerHTML = 'https://your-site.com/thank-you?email=<em>@Email</em>&amp;phone=<em>@Phone</em>&amp;first_name=<em>@First name</em>' + extra;
+  }
 
   function onCopy(e) {
     var btn = e.currentTarget, pre = $(btn.getAttribute('data-target')), status = btn.nextElementSibling;
@@ -168,7 +185,7 @@
   copy.addEventListener('click', onCopy);
   $('copyForm').addEventListener('click', onCopy);
 
-  [source, height, hl].concat([].slice.call(layouts)).forEach(function (el) {
+  [source, height, hl, $('fields')].concat([].slice.call(layouts)).forEach(function (el) {
     el.addEventListener('input', render); el.addEventListener('change', render);
   });
   render();

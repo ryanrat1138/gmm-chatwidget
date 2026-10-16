@@ -1,0 +1,12 @@
+<!doctype html><meta charset="utf-8"><title>Form page (extra fields)</title>
+<script src="/loader/embed.js" data-fields="business_info,team_size" data-api="http://api.test"></script>
+<form id="f" action="/test/fixtures/thanks-fields.html" method="get">
+  <input name="email" type="email" value="">
+  <select name="business_info"><option value="">Pick one</option><option>HVAC</option><option>Plumbing</option></select>
+  <label><input type="radio" name="team_size" value="1-5"> 1-5</label>
+  <label><input type="radio" name="team_size" value="6-20"> 6-20</label>
+  <button type="submit">Send</button>
+</form>
+<script>
+document.getElementById('f').addEventListener('submit', function (e) { e.preventDefault(); location.href = '/test/fixtures/thanks-fields.html'; });
+</script>

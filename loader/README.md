@@ -43,6 +43,10 @@ First match wins:
 3. **Typeform:** in Endings, turn on Redirect to URL and add the answers to the thank-you address, for example `https://site.com/thank-you?email=@Email&phone=@Phone&first_name=@First name` (type `@` and pick each question). The embed removes them from the address bar as soon as it loads.
 4. **Webhook (later):** `data-backend="https://…"` looks the contact up by a one-time code. Needs the backend, not built yet.
 
+### Extra details
+
+With `data-fields="business_info"`, a thank-you URL like `...?email=@Email&business_info=@Business` saves `business_info` on the HighLevel contact, so the AI knows it. The value is removed from the address bar like the contact details. A Typeform answer can also reach the contact through the Typeform-to-HighLevel connection by mapping the question to the custom field.
+
 ## All options
 
 | Attribute | Default | What it does |
@@ -50,6 +54,8 @@ First match wins:
 | `data-source` | none | CloseBot source ID. Without it the embed adds no chat: it saves form details, and still fills CloseBot's form on a page that loads CloseBot itself |
 | `data-layout` | `inline` | `inline` shows the chat where the tag is; `bubble` uses the corner button |
 | `data-height` | `600px` | Height of the inline chat |
+| `data-fields` | none | Extra details to save on the HighLevel contact for the AI, comma separated (e.g. `business_info`). Read from the thank-you page URL, or from same-named fields on a same-site form page (put it on the form page tag too). Needs `/api/fields` configured; see the main README |
+| `data-api` | the embed's own site | Where `/api/fields` lives |
 | `data-email`, `data-phone`, `data-first-name`, `data-last-name`, `data-name` | none | Contact details rendered into the page, usually HighLevel merge fields |
 | `data-autosubmit` | `true` | `false` fills the form but leaves the visitor to press submit |
 | `data-backend` | none | Turns on the webhook-and-code lookup |
@@ -72,6 +78,7 @@ First match wins:
 ```
 npm i -g playwright   # once
 NODE_PATH=$(npm root -g) node test/embed.test.js
+node test/api.test.js
 ```
 
 The tests run the embed against a mock of CloseBot's widget (`test/fixtures/mock-closebot.js`). They don't prove the live widget accepts the background submit; that needs a live test.
