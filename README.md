@@ -6,7 +6,7 @@ A smart chat for form thank-you pages. After someone submits a HighLevel form, H
 - **CRM of record:** HighLevel
 - **AI:** CloseBot (API + chat widget)
 
-**Setup:** open https://gmm-chatwidget.vercel.app, paste the CloseBot source ID, and copy the one-line embed tag onto the form page and the thank-you page.
+**Setup:** open https://gmm-chatwidget.vercel.app, paste the CloseBot source ID, and copy the tag onto the thank-you page. A second, chat-free tag goes on the form page when the form is on your own site.
 
 See [docs/PLAN.md](docs/PLAN.md) for the architecture, data flow, security notes and phased build. The live version of the plan is at https://claude.ai/code/artifact/5025efa5-0f98-4b86-888c-340c0c85a75f
 

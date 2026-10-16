@@ -187,6 +187,13 @@ test('embed: a CloseBot tag further down the page is not doubled', async (page) 
   assert.ok(!/email/.test(await page.evaluate(() => window.__urlSeenByCloseBot)));
 });
 
+test('form page tag (no data-source) adds no chat and no chat box', async (page) => {
+  await page.goto(A('form.html'));
+  await page.waitForTimeout(300);
+  assert.strictEqual(await page.evaluate(() => window.__cbLoads), undefined);
+  assert.strictEqual(await page.evaluate(() => document.getElementById('cb-widget-container')), null);
+});
+
 (async () => {
   const servers = [await serve(PORT_A), await serve(PORT_B)];
   const browser = await chromium.launch();
