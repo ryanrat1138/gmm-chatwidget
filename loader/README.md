@@ -53,7 +53,20 @@ With `data-fields="business_info"`, a thank-you URL like `...?email=@Email&busin
 | --- | --- | --- |
 | `data-source` | none | CloseBot source ID. Without it the embed adds no chat: it saves form details, and still fills CloseBot's form on a page that loads CloseBot itself |
 | `data-layout` | `inline` | `inline` shows the chat where the tag is; `bubble` uses the corner button |
-| `data-height` | `600px` | Height of the inline chat |
+| `data-height` | `600px` | Height of the inline chat; on the bubble layout, the chat window height on desktop |
+| `data-color` | CloseBot's | Brand color: header, visitor messages, send and corner button |
+| `data-font` | CloseBot's | `site` for the page's font, or a font name already loaded on the page |
+| `data-font-size` | `14px` | Message and input text size |
+| `data-radius` | `12px` | Corner roundness of the chat window, bubbles and inputs |
+| `data-background`, `data-text-color` | CloseBot's | Chat area background and text |
+| `data-bot-bubble`, `data-bot-text` | CloseBot's | Bot message colors |
+| `data-visitor-bubble`, `data-visitor-text` | brand color, white | Visitor message colors |
+| `data-header-text` | white | Header title color |
+| `data-header` | shown | `hide` removes the header in the inline layout (the bubble layout keeps it for its close button) |
+| `data-shadow` | CloseBot's | `none`, `soft` or `strong` |
+| `data-border` | CloseBot's | `on` (thin line) or `off` |
+| `data-position` | right | `left` puts the corner button and window on the left (bubble layout) |
+| `data-width` | `360px` | Chat window width on desktop (bubble layout); `data-height` sets its height |
 | `data-greeting` | `Hey {first_name}, what can I help you with today?` | First bot message when the visitor is identified and the chat would otherwise be empty. `{first_name}` becomes their first name, or "there". `off` for none. A CloseBot Welcome Message or past conversation takes its place |
 | `data-fields` | none | Extra details to save on the HighLevel contact for the AI, comma separated (e.g. `business_info`). Read from the thank-you page URL, or from same-named fields on a same-site form page (put it on the form page tag too). Needs `/api/fields` configured; see the main README |
 | `data-api` | the embed's own site | Where `/api/fields` lives |
@@ -83,3 +96,7 @@ node test/api.test.js
 ```
 
 The tests run the embed against a mock of CloseBot's widget (`test/fixtures/mock-closebot.js`). They don't prove the live widget accepts the background submit; that needs a live test.
+
+## Styling
+
+The look options restyle CloseBot's chat with CSS, using CloseBot's own class names as seen in cb.js on 2026-10-19. They are not a public API: if a CloseBot release renames them, that part of the chat falls back to CloseBot's look. Anything the options don't cover can go in a `<style>` block next to the tag, targeting `[data-cb]` elements; the setup page's Custom CSS box writes that block.

@@ -1,5 +1,5 @@
 /*!
- * GMM Chat Embed v0.5.3
+ * GMM Chat Embed v0.6.0
  *
  * One tag that adds the CloseBot AI chat to a page and, on a thank-you page,
  * fills CloseBot's lead form with the name, email and phone the visitor just
@@ -32,6 +32,22 @@
  *     data-first-name="{{contact.first_name}}"
  *     data-last-name="{{contact.last_name}}"></script>
  *
+ * Look (all optional; leave one out to keep CloseBot's own setting):
+ *   data-color="#1d4ed8"        brand color: header, visitor bubbles, button
+ *   data-font="site"            "site" for the page's font, or a font name
+ *   data-font-size="15px"       message and input text size
+ *   data-radius="16px"          corner roundness of the chat and bubbles
+ *   data-background="#ffffff"   chat area background
+ *   data-text-color="#111827"   chat text
+ *   data-bot-bubble / data-bot-text          bot message colors
+ *   data-visitor-bubble / data-visitor-text  visitor message colors
+ *   data-header-text="#ffffff"  header title color
+ *   data-header="hide"          no header (inline layout only)
+ *   data-shadow="none|soft|strong"  data-border="on|off"
+ *   data-position="left"        corner button on the left (bubble layout)
+ *   data-width="400px"          chat window width (bubble layout, desktop)
+ *   data-height on the bubble layout sets the chat window height (desktop).
+ *
  * Without data-source it never adds a chat: it saves form details, and on a
  * page that loads CloseBot's own script it still fills the form.
  * Advanced: data-api, data-backend, data-autosubmit, data-form-timeout,
@@ -52,7 +68,7 @@
 
   if (window.GMMChat) return; // tag pasted twice
 
-  var VERSION = '0.5.3';
+  var VERSION = '0.6.0';
   var STORE_KEY = 'gmmcw_contact';
   var NAME_KEY = 'gmmcw_first_name';
   var DEFAULT_GREETING = 'Hey {first_name}, what can I help you with today?';
@@ -89,6 +105,7 @@
     api: (attr('api') || scriptOrigin()).replace(/\/+$/, ''),
     layout: attr('layout') === 'bubble' ? 'bubble' : 'inline',
     height: attr('height') || '600px',
+    look: parseLook(attr),
     greeting: greetingSetting(attr('greeting')),
     closebotSrc: attr('closebot-src') || CLOSEBOT_SRC,
     backend: (attr('backend') || '').replace(/\/+$/, ''),
@@ -99,6 +116,122 @@
   };
 
   function trim(s) { return (s || '').replace(/^\s+|\s+$/g, ''); }
+
+  // ---------- look ----------
+
+  // Values go into a style sheet, so each is checked against what that kind
+  // of value can contain; anything else is dropped.
+  function lookColor(v) {
+    v = trim(v);
+    return /^[#a-zA-Z0-9(),.%\s-]{1,40}$/.test(v) ? v : '';
+  }
+
+  function lookSize(v) {
+    v = trim(v);
+    if (/^\d{1,4}$/.test(v)) v += 'px';
+    return /^\d{1,4}(\.\d+)?(px|rem|em|%|vh|vw)$/.test(v) ? v : '';
+  }
+
+  function lookFont(v) {
+    v = trim(v);
+    if (/^(site|inherit|page)$/i.test(v)) return 'inherit';
+    return /^[A-Za-z0-9 ,'"-]{1,80}$/.test(v) ? v : '';
+  }
+
+  function parseLook(get) {
+    var pick = function (name) { var v = get(name); return v === null || v === undefined ? '' : String(v); };
+    var word = function (name, allowed) {
+      var v = trim(pick(name)).toLowerCase();
+      return allowed.indexOf(v) === -1 ? '' : v;
+    };
+    return {
+      color: lookColor(pick('color')),
+      font: lookFont(pick('font')),
+      fontSize: lookSize(pick('font-size')),
+      radius: lookSize(pick('radius')),
+      background: lookColor(pick('background')),
+      textColor: lookColor(pick('text-color')),
+      botBubble: lookColor(pick('bot-bubble')),
+      botText: lookColor(pick('bot-text')),
+      visitorBubble: lookColor(pick('visitor-bubble')),
+      visitorText: lookColor(pick('visitor-text')),
+      headerText: lookColor(pick('header-text')),
+      header: word('header', ['hide']),
+      shadow: word('shadow', ['none', 'soft', 'strong']),
+      border: word('border', ['on', 'off']),
+      position: word('position', ['left', 'right']),
+      width: lookSize(pick('width')),
+      // data-height is the inline chat's height; on the bubble layout it sizes
+      // the chat window instead.
+      windowHeight: get('layout') === 'bubble' ? lookSize(pick('height')) : ''
+    };
+  }
+
+  // CSS that restyles CloseBot's chat. CloseBot sets some of its look inline
+  // (brand color, button color), so every rule is !important. Selectors come
+  // from cb.js as inspected on 2026-10-19 and may change with a release, in
+  // which case the chat simply keeps CloseBot's own look.
+  function lookCss(l) {
+    var P = '[data-cb].cb-panel';
+    var out = [];
+    var add = function (sel, decl) { out.push(sel + '{' + decl + '}'); };
+    var imp = function (prop, v) { return prop + ':' + v + '!important;'; };
+    if (l.color) {
+      add(P, imp('--cb-color', l.color));
+      add('.cb-btn', imp('background', l.color));
+    }
+    if (l.background) add(P, imp('--cb-bg', l.background));
+    if (l.textColor) add(P, imp('--cb-text', l.textColor));
+    if (l.font) {
+      add(P, imp('font-family', l.font));
+      add(P + ' *', imp('font-family', 'inherit'));
+    }
+    if (l.fontSize) add(P + ' .cb-messages,' + P + ' .cb-input', imp('font-size', l.fontSize));
+    if (l.radius) {
+      var n = parseFloat(l.radius);
+      var unit = l.radius.replace(/^[\d.]+/, '');
+      var bubble = unit === 'px' ? Math.min(n, 20) + 'px' : l.radius;
+      var tail = unit === 'px' ? Math.min(n, 4) + 'px' : '4px';
+      add(P, imp('border-radius', l.radius));
+      add(P + ' .cb-msg', imp('border-radius', bubble));
+      add(P + ' .cb-msg.bot', imp('border-bottom-left-radius', tail));
+      add(P + ' .cb-msg.lead', imp('border-bottom-right-radius', tail));
+      add(P + ' .cb-input,' + P + ' .cb-send,' + P + ' .cb-form-input,' + P + ' .cb-form-submit', imp('border-radius', bubble));
+    }
+    if (l.botBubble) add(P + ' .cb-msg.bot', imp('background', l.botBubble));
+    if (l.botText) add(P + ' .cb-msg.bot', imp('color', l.botText));
+    if (l.visitorBubble) add(P + ' .cb-msg.lead', imp('background', l.visitorBubble));
+    if (l.visitorText) add(P + ' .cb-msg.lead', imp('color', l.visitorText));
+    if (l.headerText) add(P + ' .cb-header', imp('color', l.headerText));
+    // The header holds the close button, so it only goes in the inline layout.
+    if (l.header === 'hide') add(P + '.cb-container-mode .cb-header', imp('display', 'none'));
+    if (l.shadow) {
+      var shadows = { none: 'none', soft: '0 4px 16px rgba(0,0,0,.10)', strong: '0 12px 40px rgba(0,0,0,.28)' };
+      add(P, imp('box-shadow', shadows[l.shadow]));
+    }
+    if (l.border === 'on') add(P, imp('border', '1px solid var(--cb-border, #e5e7eb)'));
+    if (l.border === 'off') add(P, imp('border', 'none'));
+    if (l.position === 'left') {
+      add('.cb-btn', imp('left', '20px') + imp('right', 'auto'));
+      add(P + ':not(.cb-container-mode)', imp('left', '20px') + imp('right', 'auto'));
+    }
+    // Window size on desktop only; CloseBot's own phone layout stays.
+    var size = '';
+    if (l.width) size += imp('width', l.width);
+    if (l.windowHeight) size += imp('height', l.windowHeight);
+    if (size) out.push('@media (min-width:481px){' + P + ':not(.cb-container-mode){' + size + '}}');
+    return out.join('\n');
+  }
+
+  function applyLook() {
+    var css = lookCss(config.look);
+    if (!css || document.getElementById('gmmcw-look')) return;
+    var style = document.createElement('style');
+    style.id = 'gmmcw-look';
+    style.textContent = css;
+    (document.head || document.documentElement).appendChild(style);
+    log('applied look');
+  }
 
   function greetingSetting(v) {
     if (v === null) return DEFAULT_GREETING;
@@ -703,6 +836,7 @@
 
   var urlResult = takeUrlContact();
   placeContainer();
+  applyLook();
   // Wait for the page to finish parsing, so a CloseBot tag further down the
   // page is seen and CloseBot is not loaded twice.
   onReady(loadCloseBot);
@@ -716,7 +850,11 @@
     source: null,
     fieldsSent: null,
     fill: function (contact) { watchForLeadForm(clean(contact)); },
-    clear: clearSavedContact
+    clear: clearSavedContact,
+    // For the setup page preview: CSS for a set of data-* look options.
+    lookCss: function (options) {
+      return lookCss(parseLook(function (name) { return options ? options[name] : null; }));
+    }
   };
   window.GMMChat = api;
 
