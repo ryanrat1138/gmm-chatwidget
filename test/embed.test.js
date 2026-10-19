@@ -448,6 +448,123 @@ test('extra fields: nothing is sent without data-fields or without a contact', a
   assert.strictEqual(posts.length, 0);
 });
 
+
+function captureMessages(page, statuses = []) {
+  const sent = [];
+  return page.route('**/chat-widget/**', (route) => {
+    sent.push(JSON.parse(route.request().postData()).message);
+    route.fulfill({ status: statuses.shift() || 200, contentType: 'application/json', body: '{}' });
+  }).then(() => sent);
+}
+
+async function say(page, text) {
+  await page.fill('.cb-input', text);
+  await page.click('.cb-send');
+}
+
+test('note: form answers go to the AI with the first message only, unseen by the visitor', async (page) => {
+  const posts = await captureFieldPosts(page);
+  const sent = await captureMessages(page);
+  await page.goto(A('thanks-note.html?email=nn%40example.com&business_info=HVAC&team_size=6-20'));
+  await identity(page);
+  await page.waitForSelector('.cb-input');
+  await say(page, 'How much does it cost?');
+  await page.waitForFunction(() => window.__sendStatus === 200);
+  await say(page, 'Thanks');
+  await page.waitForFunction(() => document.querySelectorAll('.cb-msg-item.lead').length === 2);
+  await page.waitForTimeout(200);
+  assert.deepStrictEqual(sent, [
+    'How much does it cost?\n\n[Form answers, for reference: Business info: HVAC; Team size: 6-20]',
+    'Thanks'
+  ]);
+  const shown = await page.evaluate(() => [...document.querySelectorAll('.cb-msg-item.lead')].map((e) => e.textContent));
+  assert.deepStrictEqual(shown, ['How much does it cost?', 'Thanks']);
+  assert.strictEqual(posts.length, 0, 'answers should not go to the service without data-save-fields');
+});
+
+test('note: kept through a reload and a failed send until a message goes through', async (page) => {
+  const sent = await captureMessages(page, [500]);
+  await page.goto(A('thanks-note.html?business_info=Roofing'));
+  await page.waitForSelector('.cb-form-card');
+  await page.reload();
+  await page.waitForSelector('.cb-input');
+  await say(page, 'Hi');
+  await page.waitForFunction(() => window.__sendStatus === 500);
+  await say(page, 'Hello?');
+  await page.waitForFunction(() => window.__sendStatus === 200);
+  await say(page, 'Ok');
+  await page.waitForFunction(() => document.querySelectorAll('.cb-msg-item.lead').length === 3);
+  await page.waitForTimeout(200);
+  const note = '\n\n[Form answers, for reference: Business info: Roofing]';
+  assert.deepStrictEqual(sent, ['Hi' + note, 'Hello?' + note, 'Ok']);
+});
+
+test('note: cut from the visitor message when the conversation comes back', async (page) => {
+  await page.addInitScript(() => {
+    window.__mockWelcome = false; window.__mockRemember = true;
+    window.__mockHistory = [['lead', 'Is it expensive?\n\n[Form answers, for reference: Business info: HVAC]'], ['bot', 'Not at all.']];
+    localStorage.setItem('cb_identity_mock', '1');
+  });
+  await page.goto(A('thanks-note.html'));
+  await page.waitForSelector('.cb-msg-item.lead');
+  await page.waitForTimeout(100);
+  const shown = await page.evaluate(() => [...document.querySelectorAll('.cb-msg-item')].map((e) => e.textContent));
+  assert.deepStrictEqual(shown, ['Is it expensive?', 'Not at all.']);
+});
+
+test('call to action: inline card above the chat greets by name and starts the chat', async (page) => {
+  await page.goto(A('embed-inline.html?email=cta%40example.com&first_name=Pat'));
+  await page.waitForSelector('#gmmcw-cta');
+  await identity(page);
+  const r = await page.evaluate(() => {
+    const cta = document.getElementById('gmmcw-cta');
+    return {
+      next: cta.nextElementSibling && cta.nextElementSibling.id,
+      title: cta.querySelector('.gmmcw-cta-title').textContent,
+      button: cta.querySelector('.gmmcw-cta-btn').textContent,
+      inline: cta.classList.contains('gmmcw-cta-inline')
+    };
+  });
+  assert.deepStrictEqual(r, { next: 'cb-widget-container', title: 'You’re all set, Pat!', button: 'Start chatting↓', inline: true });
+  await page.waitForFunction(() => document.getElementById('gmmcw-cta').style.getPropertyValue('--gmmcw-accent') === '#3b82f6');
+  await page.click('.gmmcw-cta-btn');
+  await page.waitForFunction(() => document.activeElement && document.activeElement.classList.contains('cb-input'));
+});
+
+test('call to action: bubble button opens the chat and follows the look options', async (page) => {
+  await page.addInitScript(() => { window.__mockClosed = true; });
+  await page.goto(A('embed-cta-bubble.html'));
+  await page.waitForSelector('#gmmcw-cta');
+  const r = await page.evaluate(() => {
+    const cta = document.getElementById('gmmcw-cta');
+    const btn = cta.querySelector('.gmmcw-cta-btn');
+    return {
+      after: cta.nextElementSibling && cta.nextElementSibling.id,
+      title: cta.querySelector('.gmmcw-cta-title').textContent,
+      label: cta.querySelector('.gmmcw-cta-label').textContent,
+      bg: getComputedStyle(btn).backgroundColor,
+      radius: getComputedStyle(cta).borderTopLeftRadius,
+      font: getComputedStyle(cta).fontFamily,
+      open: !document.querySelector('.cb-panel').classList.contains('hidden')
+    };
+  });
+  assert.deepStrictEqual(r, { after: 'after', title: 'You’re all set!', label: 'Ask our assistant',
+    bg: 'rgb(15, 118, 110)', radius: '6px', font: 'Georgia', open: false });
+  await page.click('.gmmcw-cta-btn');
+  assert.strictEqual(await page.evaluate(() => !document.querySelector('.cb-panel').classList.contains('hidden')), true);
+});
+
+test('call to action: none with data-cta="off" or when no chat shows', async (page) => {
+  await page.goto(A('embed-cta-off.html'));
+  await page.waitForSelector('.cb-panel');
+  await page.waitForTimeout(200);
+  assert.strictEqual(await page.evaluate(() => !!document.querySelector('.gmmcw-cta')), false);
+  await page.addInitScript(() => { window.__mockNoMount = true; });
+  await page.goto(A('embed-inline.html'));
+  await page.waitForTimeout(800);
+  assert.strictEqual(await page.evaluate(() => !!document.querySelector('.gmmcw-cta')), false);
+});
+
 (async () => {
   const servers = [await serve(PORT_A), await serve(PORT_B)];
   const browser = await chromium.launch();

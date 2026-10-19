@@ -64,6 +64,12 @@
   textarea { width: 100%; min-height: 90px; padding: 10px 12px; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; resize: vertical; }
   .look-body input[type=text], .look-body select { background: var(--panel); }
+  .cta-body { padding: 4px 14px 16px; }
+  .cta-body label { font-size: 14px; }
+  .cta-body .check { font-size: 16px; }
+  .cta-body input[type=text] { background: var(--panel); }
+  #ctaPreview { margin-top: 6px; padding: 18px; border-radius: 10px; background: #fff; color: #111827; border: 1px dashed var(--line); }
+  #ctaPreview .gmmcw-cta { margin: 0; animation: none; }
   .preview-wrap { position: sticky; top: 16px; align-self: start; }
   #preview { position: relative; height: 520px; margin-top: 12px; padding: 16px; border-radius: 10px; overflow: hidden;
     background: repeating-linear-gradient(45deg, #ecebe6, #ecebe6 10px, #e4e3dd 10px, #e4e3dd 20px);
@@ -123,9 +129,28 @@
     <label class="check"><input id="hl" type="checkbox">
       <span>The thank-you page is a HighLevel funnel or website page<br><span class="hint">Adds HighLevel merge fields so the page passes the contact straight to the chat.</span></span></label>
 
-    <label for="fields">Extra details for the AI (optional)</label>
+    <label for="fields">Form answers for the AI (optional)</label>
     <input id="fields" type="text" placeholder="business_info, team_size" autocomplete="off" spellcheck="false">
-    <p class="hint">Names of details passed in the thank-you page address or asked on your own form, separated by commas. Each is saved to the HighLevel contact field with the same key, which the AI can read. The field must exist in HighLevel and be on the service's allowed list.</p>
+    <p class="hint">Names of form answers passed in the thank-you page address or asked on your own form, separated by commas. They go to the AI along with the visitor's first chat message, so it has them right away, even before HighLevel has the contact's fields. The visitor doesn't see them; they do show in the HighLevel conversation.</p>
+
+    <details class="look" id="cta" open>
+      <summary>Call to action on the page</summary>
+      <div class="cta-body">
+        <label class="check"><input id="cta-on" type="checkbox" checked>
+          <span>Show a card that greets the visitor by name and points them to the chat<br><span class="hint" id="ctaHint"></span></span></label>
+        <div id="ctaFields">
+          <label for="cta-title">Heading</label>
+          <input id="cta-title" type="text" autocomplete="off">
+          <label for="cta-text">Text</label>
+          <input id="cta-text" type="text" autocomplete="off">
+          <label for="cta-button">Button</label>
+          <input id="cta-button" type="text" autocomplete="off">
+          <p class="hint"><code>{first_name}</code> becomes their first name; with no name, "You're all set, {first_name}!" reads "You're all set!". It uses the style settings below and your CloseBot color unless you pick a brand color.</p>
+          <label>Preview</label>
+          <div id="ctaPreview"></div>
+        </div>
+      </div>
+    </details>
 
     <details class="look" id="look">
       <summary>Style the chat (optional)</summary>
@@ -261,6 +286,11 @@
   var custom = /^https?:$/.test(location.protocol) && !/\.vercel\.app$/.test(location.hostname);
   var EMBED = (custom ? location.origin : PROD) + '/embed.js';
   var DEFAULT_GREETING = 'Hey {first_name}, what can I help you with today?';
+  var CTA = {
+    title: 'You\u2019re all set, {first_name}!',
+    inline: { text: 'Have a question while you wait? Our virtual assistant is right below and ready to chat.', button: 'Start chatting' },
+    bubble: { text: 'Have a question while you wait? Our virtual assistant is ready to chat.', button: 'Chat with us' }
+  };
   var $ = function (id) { return document.getElementById(id); };
   var source = $('source'), height = $('height'), hl = $('hl'), out = $('out'), copy = $('copy'),
       heightWrap = $('heightWrap'), placeInline = $('placeInline');
@@ -302,6 +332,8 @@
       lines.push('  data-email="{{contact.email}}"', '  data-phone="{{contact.phone}}"',
         '  data-first-name="{{contact.first_name}}"', '  data-last-name="{{contact.last_name}}"');
     }
+    var cta = ctaOptions(inline);
+    Object.keys(cta).forEach(function (k) { lines.push('  data-' + k + '="' + attrValue(cta[k]) + '"'); });
     var look = lookOptions(inline);
     Object.keys(look).forEach(function (k) { lines.push('  data-' + k + '="' + attrValue(look[k]) + '"'); });
     lines[lines.length - 1] += '></' + 'script>';
@@ -309,6 +341,7 @@
     if (css) lines.push('<style>\n' + css + '\n</style>');
     out.textContent = lines.join('\n');
     renderPreview(inline, look);
+    renderCtaPreview(inline, look);
     copy.disabled = !id;
     copy.nextElementSibling.textContent = '';
   }
@@ -351,6 +384,41 @@
     style.textContent = window.GMMChat && window.GMMChat.lookCss ? window.GMMChat.lookCss(opts) : '';
   }
 
+  // Call to action: placeholders show the defaults for the chosen layout, and
+  // only changed text goes in the tag.
+  function ctaOptions(inline) {
+    var d = CTA[inline ? 'inline' : 'bubble'];
+    $('cta-title').placeholder = CTA.title;
+    $('cta-text').placeholder = d.text;
+    $('cta-button').placeholder = d.button;
+    $('ctaFields').style.display = $('cta-on').checked ? '' : 'none';
+    $('ctaHint').textContent = inline
+      ? 'Shows right above the chat, with a button that takes them to it.'
+      : 'Shows where you paste the code, with a button that opens the chat.';
+    if (!$('cta-on').checked) return { cta: 'off' };
+    var o = {};
+    ['title', 'text', 'button'].forEach(function (k) {
+      var v = $('cta-' + k).value.trim();
+      if (v) o['cta-' + k] = v;
+    });
+    return o;
+  }
+
+  function renderCtaPreview(inline, look) {
+    var box = $('ctaPreview');
+    box.innerHTML = '';
+    if (!$('cta-on').checked || !window.GMMChat || !window.GMMChat.ctaPreview) return;
+    var opts = { layout: inline ? 'inline' : 'bubble' };
+    Object.keys(look).forEach(function (k) { opts[k] = look[k]; });
+    ['title', 'text', 'button'].forEach(function (k) {
+      var v = $('cta-' + k).value.trim();
+      if (v) opts['cta-' + k] = v;
+    });
+    var el = window.GMMChat.ctaPreview(opts, 'Ryan');
+    el.querySelector('button').tabIndex = -1;
+    box.appendChild(el);
+  }
+
   // Color pickers fill the text box next to them; a typed hex moves the picker.
   [].forEach.call(document.querySelectorAll('.color input[type=color]'), function (picker) {
     var text = $(picker.getAttribute('data-for'));
@@ -378,7 +446,7 @@
   copy.addEventListener('click', onCopy);
   $('copyForm').addEventListener('click', onCopy);
 
-  [source, height, hl, $('fields'), $('greeting'), $('lk-font'), $('lk-font-name'), $('lk-window-height'), $('lk-css')]
+  [source, height, hl, $('fields'), $('greeting'), $('cta-on'), $('cta-title'), $('cta-text'), $('cta-button'), $('lk-font'), $('lk-font-name'), $('lk-window-height'), $('lk-css')]
     .concat(LOOK_FIELDS.map(function (k) { return $('lk-' + k); })).concat([].slice.call(layouts)).forEach(function (el) {
     el.addEventListener('input', render); el.addEventListener('change', render);
   });

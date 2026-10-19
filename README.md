@@ -26,7 +26,7 @@ Vercel builds from the GitHub repo on every push to `main`. The build copies `lo
 
 ### Extra details for the AI (`/api/fields`)
 
-The embed's `data-fields` sends extra details to `POST /api/fields`, which upserts the HighLevel contact by email or phone and sets the matching custom fields. CloseBot gives the AI every field on the contact. To turn it on, set these in the Vercel project's environment variables and redeploy:
+Optional: by default the embed passes `data-fields` answers to the AI with the visitor's first chat message (see `loader/README.md`). With `data-save-fields="true"` it also sends them to `POST /api/fields`, which upserts the HighLevel contact by email or phone and sets the matching custom fields. CloseBot gives the AI every field on the contact. To turn it on, set these in the Vercel project's environment variables and redeploy:
 
 - `HIGHLEVEL_PRIVATE_TOKEN`: a sub-account Private Integration Token with `contacts.write` and `locations/customFields.readonly`
 - `HIGHLEVEL_LOCATION_ID`: the sub-account id

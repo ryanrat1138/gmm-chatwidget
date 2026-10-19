@@ -8,7 +8,8 @@
 // Options: __mockWelcome = false for no Welcome Message, __mockNoAiReply for
 // no AI typing after the submit (what the live widget does), __mockRemember
 // to skip the form once cb_identity_ is in localStorage, as cb.js does, and
-// replay __mockHistory ([['bot'|'lead', text], ...]) as the saved conversation.
+// replay __mockHistory ([['bot'|'lead', text], ...]) as the saved conversation,
+// and __mockClosed to start the bubble layout's chat window closed.
 (function () {
   window.__identity = null;
   window.__cbLoads = (window.__cbLoads || 0) + 1;
@@ -33,7 +34,34 @@
     var messages = el('div', { class: 'cb-messages' });
     panel.appendChild(messages);
     if (window.__mockWelcome !== false) messages.appendChild(el('div', { class: 'cb-msg-item bot' }, 'Hi! How can I help?'));
+    // Message box: posts each message the way cb.js does (fetch, JSON body).
+    var footer = el('div', { class: 'cb-footer' });
+    var input = el('input', { class: 'cb-input', type: 'text', placeholder: 'Type a message' });
+    var send = el('button', { class: 'cb-send', type: 'button' }, 'Send');
+    send.addEventListener('click', function () {
+      var text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      var item = el('div', { class: 'cb-msg-item lead' });
+      item.appendChild(el('div', { class: 'cb-msg lead' }, text));
+      messages.appendChild(item);
+      fetch(location.origin + '/chat-widget/pk_mock/session/sess_1/message', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text })
+      }).then(function (r) { window.__sendStatus = r.status; }, function () { window.__sendStatus = 'error'; });
+    });
+    footer.appendChild(input);
+    footer.appendChild(send);
+    panel.appendChild(footer);
+    if (!box && window.__mockClosed) {
+      document.head.appendChild(el('style', {}, '.cb-panel.hidden{display:none}'));
+      panel.classList.add('hidden');
+    }
+    if (!box) {
+      document.querySelector('.cb-btn').addEventListener('click', function () { panel.classList.toggle('hidden'); });
+    }
     (document.getElementById('cb-widget-container') || document.body).appendChild(panel);
+    // cb.js sets the brand color on the panel once its settings arrive.
+    setTimeout(function () { panel.style.setProperty('--cb-color', '#3b82f6'); }, 100);
     if (window.__mockRemember && localStorage.getItem('cb_identity_mock')) {
       // Saved conversation, as cb.js loads it from the server on a return visit.
       setTimeout(function () {
