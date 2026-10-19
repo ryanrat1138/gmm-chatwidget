@@ -1,5 +1,5 @@
 /*!
- * GMM Chat Embed v0.5.0
+ * GMM Chat Embed v0.5.1
  *
  * One tag that adds the CloseBot AI chat to a page and, on a thank-you page,
  * fills CloseBot's lead form with the name, email and phone the visitor just
@@ -52,7 +52,7 @@
 
   if (window.GMMChat) return; // tag pasted twice
 
-  var VERSION = '0.5.0';
+  var VERSION = '0.5.1';
   var STORE_KEY = 'gmmcw_contact';
   var NAME_KEY = 'gmmcw_first_name';
   var DEFAULT_GREETING = 'Hey {first_name}, what can I help you with today?';
@@ -440,6 +440,27 @@
   // rejects the details, the form is shown again for the visitor to fix.
   var QUIET = 'gmmcw-quiet';
   var QUIET_TYPING = 'gmmcw-quiet-typing';
+  var HIDDEN = 'gmmcw-hidden';
+  var FORM_ECHO = 'Thanks, got it!';
+
+  // CloseBot saves its "Thanks, got it!" note in the conversation, so it comes
+  // back as a bot message when the visitor returns to the page. Hide that too.
+  function isFormEcho(item) {
+    if (item.classList.contains(HIDDEN)) return true;
+    if (!item.classList.contains('bot') || trim(item.textContent) !== FORM_ECHO) return false;
+    item.classList.add(HIDDEN);
+    return true;
+  }
+
+  function hideFormEchoes() {
+    var scan = function () {
+      var items = document.querySelectorAll('.cb-messages .cb-msg-item.bot');
+      for (var i = 0; i < items.length; i++) isFormEcho(items[i]);
+    };
+    addQuietStyles();
+    new MutationObserver(scan).observe(document.documentElement, { childList: true, subtree: true });
+    scan();
+  }
 
   function addQuietStyles() {
     if (document.getElementById('gmmcw-style')) return;
@@ -447,7 +468,7 @@
     style.id = 'gmmcw-style';
     style.textContent =
       'html.' + QUIET + ' .cb-form-text-item,html.' + QUIET + ' .cb-form-row,' +
-      'html.' + QUIET_TYPING + ' .cb-typing-indicator{display:none!important}';
+      'html.' + QUIET_TYPING + ' .cb-typing-indicator,.' + HIDDEN + '{display:none!important}';
     (document.head || document.documentElement).appendChild(style);
   }
 
@@ -554,7 +575,7 @@
     if (list.querySelector('.gmmcw-greeting')) return 'talk';
     var items = list.querySelectorAll('.cb-msg-item');
     for (var i = 0; i < items.length; i++) {
-      if (!items[i].classList.contains('cb-form-text-item')) return 'talk';
+      if (!items[i].classList.contains('cb-form-text-item') && !isFormEcho(items[i])) return 'talk';
     }
     if (list.querySelector('.cb-typing-indicator, .cb-ai-typing')) return 'wait';
     var card = list.querySelector('.cb-form-card');
@@ -575,7 +596,7 @@
 
   // CloseBot's config, past conversation and form all arrive on their own
   // schedule, so unless the embed has just sent the form itself, the chat
-  // has to look empty on two checks in a row before the greeting goes in.
+  // has to look empty for two seconds before the greeting goes in.
   // A Welcome Message or past conversation wins.
   function watchForEmptyChat() {
     if (!config.source || !config.greeting) return;
@@ -585,7 +606,7 @@
       var state = list ? chatState(list) : 'wait';
       if (state === 'talk') return stop();
       emptyChecks = state === 'empty' && identifiedWithCloseBot() ? emptyChecks + 1 : 0;
-      if (emptyChecks >= (formJustSent ? 1 : 2)) { addGreeting(list); stop(); }
+      if (emptyChecks >= (formJustSent ? 1 : 4)) { addGreeting(list); stop(); }
     };
     var poll = setInterval(check, 500);
     var giveUp = setTimeout(stop, config.formTimeoutMs);
@@ -665,6 +686,7 @@
   };
   window.GMMChat = api;
 
+  onReady(hideFormEchoes);
   onReady(watchForEmptyChat);
   onReady(function () {
     resolveContact(urlResult, function (contact, source) {

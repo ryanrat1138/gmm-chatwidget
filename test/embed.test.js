@@ -285,6 +285,32 @@ test('greeting: custom text, "there" when no name is known, and "off"', async (p
   assert.strictEqual(await page.evaluate(() => !!document.querySelector('.gmmcw-greeting')), false);
 });
 
+test('return visit: saved "Thanks, got it!" is hidden and the greeting shows', async (page) => {
+  await page.addInitScript(() => {
+    window.__mockWelcome = false; window.__mockNoAiReply = true; window.__mockRemember = true;
+    window.__mockHistory = [['bot', 'Thanks, got it!']];
+    localStorage.setItem('cb_identity_mock', '1');
+  });
+  await page.goto(A('embed-inline.html'));
+  await page.waitForSelector('.gmmcw-greeting', { timeout: 5000 });
+  assert.strictEqual(await visible(page, '.cb-msg-item.bot:not(.gmmcw-greeting)'), false, '"Thanks, got it!" shown');
+  assert.strictEqual(await greeting(page), 'Hey there, what can I help you with today?');
+});
+
+test('return visit: past conversation shows without the "Thanks, got it!" and no greeting', async (page) => {
+  await page.addInitScript(() => {
+    window.__mockWelcome = false; window.__mockNoAiReply = true; window.__mockRemember = true;
+    window.__mockHistory = [['bot', 'Thanks, got it!'], ['lead', 'Hello'], ['bot', 'Hi! What can I do for you?']];
+    localStorage.setItem('cb_identity_mock', '1');
+  });
+  await page.goto(A('embed-inline.html'));
+  await page.waitForSelector('.cb-msg-item.lead');
+  await page.waitForTimeout(2000);
+  const shown = await page.evaluate(() => [...document.querySelectorAll('.cb-messages .cb-msg-item')]
+    .filter((e) => e.getClientRects().length).map((e) => e.textContent));
+  assert.deepStrictEqual(shown, ['Hello', 'Hi! What can I do for you?']);
+});
+
 function captureFieldPosts(page) {
   const posts = [];
   return page.route('http://api.test/api/fields', (route) => {

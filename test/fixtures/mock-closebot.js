@@ -7,7 +7,8 @@
 // .cb-form-error. Set window.__mockFail to make the submit fail.
 // Options: __mockWelcome = false for no Welcome Message, __mockNoAiReply for
 // no AI typing after the submit (what the live widget does), __mockRemember
-// to skip the form once cb_identity_ is in localStorage, as cb.js does.
+// to skip the form once cb_identity_ is in localStorage, as cb.js does, and
+// replay __mockHistory ([['bot'|'lead', text], ...]) as the saved conversation.
 (function () {
   window.__identity = null;
   window.__cbLoads = (window.__cbLoads || 0) + 1;
@@ -30,7 +31,15 @@
     panel.appendChild(messages);
     if (window.__mockWelcome !== false) messages.appendChild(el('div', { class: 'cb-msg-item bot' }, 'Hi! How can I help?'));
     (document.getElementById('cb-widget-container') || document.body).appendChild(panel);
-    if (window.__mockRemember && localStorage.getItem('cb_identity_mock')) return;
+    if (window.__mockRemember && localStorage.getItem('cb_identity_mock')) {
+      // Saved conversation, as cb.js loads it from the server on a return visit.
+      setTimeout(function () {
+        (window.__mockHistory || []).forEach(function (m) {
+          messages.appendChild(el('div', { class: 'cb-msg-item ' + m[0] }, m[1]));
+        });
+      }, 200);
+      return;
+    }
     note(messages.appendChild(el('div', { class: 'cb-msg-item bot cb-form-text-item' }, 'Before we chat, can I get your details?')), 'intro');
     var typing = note(messages.appendChild(el('div', { class: 'cb-typing-indicator' }, '...')), 'form-typing');
 
