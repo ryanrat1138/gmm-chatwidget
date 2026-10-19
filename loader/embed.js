@@ -1,5 +1,5 @@
 /*!
- * GMM Chat Embed v0.7.0
+ * GMM Chat Embed v0.7.1
  *
  * One tag that adds the CloseBot AI chat to a page and, on a thank-you page,
  * fills CloseBot's lead form with the name, email and phone the visitor just
@@ -51,10 +51,12 @@
  *   data-width="400px"          chat window width (bubble layout, desktop)
  *   data-height on the bubble layout sets the chat window height (desktop).
  *
- * Call to action (shown once the chat loads; data-cta="off" for none). It
- * greets the visitor by name above the inline chat, or, in the bubble layout,
- * sits where the tag is with a button that opens the chat. It uses the look
- * options above, and CloseBot's color when data-color isn't set.
+ * Call to action (data-cta="off" for none). It greets the visitor by name
+ * above the inline chat, or, in the bubble layout, sits where the tag is with
+ * a button that opens the chat. It shows as soon as the page is ready, its
+ * button loading until the chat is (data-cta-wait ms, default 20000, before
+ * it gives up). It uses the look options above, and CloseBot's color when
+ * data-color isn't set.
  *   data-cta-title="You're all set, {first_name}!"
  *   data-cta-text="Have a question while you wait? ..."   (empty for none)
  *   data-cta-button="Chat with us"
@@ -80,7 +82,7 @@
 
   if (window.GMMChat) return; // tag pasted twice
 
-  var VERSION = '0.7.0';
+  var VERSION = '0.7.1';
   var STORE_KEY = 'gmmcw_contact';
   var NAME_KEY = 'gmmcw_first_name';
   var DEFAULT_GREETING = 'Hey {first_name}, what can I help you with today?';
@@ -131,6 +133,7 @@
     autosubmit: attr('autosubmit') !== 'false',
     debug: attr('debug') === 'true',
     formTimeoutMs: parseInt(attr('form-timeout') || '600000', 10),
+    ctaWaitMs: parseInt(attr('cta-wait') || '20000', 10),
     hlOrigins: (attr('hl-origins') || '').split(',').map(trim).filter(Boolean)
   };
 
@@ -888,12 +891,13 @@
   // does, so it never points at a chat that isn't there.
   var CTA_ID = 'gmmcw-cta';
   var CTA_DEFAULTS = {
-    title: 'You’re all set, {first_name}!',
+    title: 'You\u2019re all set, {first_name}!',
     inline: { text: 'Have a question while you wait? Our virtual assistant is right below and ready to chat.', button: 'Start chatting' },
     bubble: { text: 'Have a question while you wait? Our virtual assistant is ready to chat.', button: 'Chat with us' }
   };
   var CTA_ICON = '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01" stroke-width="2.6"/></svg>';
-  var CTA_ARROW = { inline: '↓', bubble: '→' };
+  var CTA_ARROW = { inline: '\u2193', bubble: '\u2192' };
+  var CTA_PENDING_COLOR = '#9ca3af'; // until CloseBot's color is known
 
   function addCtaStyles() {
     if (document.getElementById('gmmcw-cta-style')) return;
@@ -919,11 +923,25 @@
       C + ' .gmmcw-cta-btn{flex:none;display:inline-flex;align-items:center;gap:8px;margin:0;padding:12px 22px;' +
         'border:0;border-radius:var(--gmmcw-btn-radius,999px);background:var(--gmmcw-accent);color:var(--gmmcw-on-accent);' +
         'font-size:1em;font-weight:600;line-height:1.2;cursor:pointer;-webkit-appearance:none;appearance:none;' +
-        'box-shadow:0 2px 8px color-mix(in srgb,var(--gmmcw-accent) 35%,transparent);transition:transform .15s,box-shadow .15s,filter .15s}',
+        'box-shadow:0 2px 8px color-mix(in srgb,var(--gmmcw-accent) 35%,transparent);' +
+        'position:relative;transition:transform .15s,box-shadow .15s,filter .15s,background-color .3s}',
       C + ' .gmmcw-cta-btn:hover{transform:translateY(-1px);filter:brightness(1.06);' +
         'box-shadow:0 6px 18px color-mix(in srgb,var(--gmmcw-accent) 40%,transparent)}',
       C + ' .gmmcw-cta-btn:focus-visible{outline:2px solid var(--gmmcw-accent);outline-offset:3px}',
       C + ' .gmmcw-cta-arrow{display:inline-block;transition:transform .15s}',
+      C + '::before,' + C + ' .gmmcw-cta-icon{transition:background-color .3s}',
+      // Loading: the button keeps its size, with dots in place of its label.
+      C + ' .gmmcw-cta-dots{display:none}',
+      C + '.gmmcw-cta-loading .gmmcw-cta-btn{cursor:progress;transform:none;filter:none}',
+      C + '.gmmcw-cta-loading .gmmcw-cta-label,' + C + '.gmmcw-cta-loading .gmmcw-cta-arrow{visibility:hidden}',
+      C + '.gmmcw-cta-loading .gmmcw-cta-dots{display:flex;position:absolute;top:0;right:0;bottom:0;left:0;' +
+        'align-items:center;justify-content:center;gap:5px}',
+      C + ' .gmmcw-cta-dots i{display:block;width:6px;height:6px;border-radius:50%;background:currentColor;' +
+        'animation:gmmcw-cta-dot 1s ease-in-out infinite both}',
+      C + ' .gmmcw-cta-dots i:nth-child(2){animation-delay:.15s}',
+      C + ' .gmmcw-cta-dots i:nth-child(3){animation-delay:.3s}',
+      '@keyframes gmmcw-cta-dot{0%,80%,100%{opacity:.35;transform:scale(.75)}40%{opacity:1;transform:none}}',
+      C + '.gmmcw-cta-out{opacity:0;transition:opacity .3s}',
       C + '.gmmcw-cta-inline .gmmcw-cta-btn:hover .gmmcw-cta-arrow{transform:translateY(2px)}',
       C + '.gmmcw-cta-bubble .gmmcw-cta-btn:hover .gmmcw-cta-arrow{transform:translateX(2px)}',
       '@keyframes gmmcw-cta-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}',
@@ -970,7 +988,8 @@
     el.innerHTML = '<div class="gmmcw-cta-icon">' + CTA_ICON + '</div>' +
       '<div class="gmmcw-cta-body"><p class="gmmcw-cta-title"></p><p class="gmmcw-cta-text"></p></div>' +
       '<button type="button" class="gmmcw-cta-btn"><span class="gmmcw-cta-label"></span>' +
-      '<span class="gmmcw-cta-arrow" aria-hidden="true">' + CTA_ARROW[layout] + '</span></button>';
+      '<span class="gmmcw-cta-arrow" aria-hidden="true">' + CTA_ARROW[layout] + '</span>' +
+      '<span class="gmmcw-cta-dots" aria-hidden="true"><i></i><i></i><i></i></span></button>';
     var title = texts.title === null || texts.title === undefined ? CTA_DEFAULTS.title : texts.title;
     el.querySelector('.gmmcw-cta-title').textContent = ctaTitleText(title, name);
     el.querySelector('.gmmcw-cta-text').textContent = texts.text === null || texts.text === undefined ? d.text : texts.text;
@@ -1018,36 +1037,68 @@
     return function (el) { parent.insertBefore(el, (box && box.parentNode === parent ? box : script).nextSibling); };
   }
 
+  var CTA_COLOR_KEY = 'gmmcw_cb_color';
+
+  function panelColor(panel) {
+    try { return lookColor(getComputedStyle(panel).getPropertyValue('--cb-color')); } catch (_) { return ''; }
+  }
+
+  // The card goes in as soon as the page is ready, with its button showing
+  // loading dots until CloseBot's chat is there to open. CloseBot's color is
+  // remembered for next time, so a returning visitor sees it from the start.
+  // If the chat never shows, the card goes away again.
   function showCta() {
-    if (!config.source || !config.cta) return;
+    if (!config.source || !config.cta || ctaEl || document.getElementById(CTA_ID)) return;
     var layout = document.getElementById(CONTAINER_ID) ? 'inline' : 'bubble';
-    var place = function () {
-      if (ctaEl || document.getElementById(CTA_ID)) return true;
+    var put = ctaPlace(layout);
+    if (!put) { log('no spot for the call to action on the page'); return; }
+    var cached = '';
+    try { cached = lookColor(window.localStorage.getItem(CTA_COLOR_KEY) || ''); } catch (_) { /* storage blocked */ }
+    ctaEl = buildCta(layout, { title: config.ctaTitle, text: config.ctaText, button: config.ctaButton }, config.look, greetingName, cached || CTA_PENDING_COLOR);
+    ctaEl.id = CTA_ID;
+    var btn = ctaEl.querySelector('.gmmcw-cta-btn');
+    var ready = false;
+    ctaEl.classList.add('gmmcw-cta-loading');
+    btn.setAttribute('aria-disabled', 'true');
+    btn.setAttribute('aria-busy', 'true');
+    btn.addEventListener('click', function () { if (ready) openChat(layout); });
+    put(ctaEl);
+    log('added call to action; waiting for the chat');
+
+    var setAccent = function (panel) {
+      if (config.look.color) return;
+      var c = panelColor(panel);
+      if (!c) return;
+      ctaEl.style.setProperty('--gmmcw-accent', c);
+      try { window.localStorage.setItem(CTA_COLOR_KEY, c); } catch (_) { /* storage blocked */ }
+    };
+    var activate = function () {
       var panel = closebotPanel();
       if (!panel) return false;
-      var put = ctaPlace(layout);
-      if (!put) { log('no spot for the call to action on the page'); return true; }
-      var accent = '';
-      try { accent = trim(getComputedStyle(panel).getPropertyValue('--cb-color')); } catch (_) { /* ignore */ }
-      ctaEl = buildCta(layout, { title: config.ctaTitle, text: config.ctaText, button: config.ctaButton }, config.look, greetingName, lookColor(accent));
-      ctaEl.id = CTA_ID;
-      ctaEl.querySelector('.gmmcw-cta-btn').addEventListener('click', function () { openChat(layout); });
-      put(ctaEl);
+      ready = true;
+      ctaEl.classList.remove('gmmcw-cta-loading');
+      btn.removeAttribute('aria-disabled');
+      btn.removeAttribute('aria-busy');
+      setAccent(panel);
       // CloseBot sets its color once its settings load, which can be later.
       if (!config.look.color) {
-        new MutationObserver(function () {
-          var c = '';
-          try { c = lookColor(getComputedStyle(panel).getPropertyValue('--cb-color')); } catch (_) { /* ignore */ }
-          if (c) ctaEl.style.setProperty('--gmmcw-accent', c);
-        }).observe(panel, { attributes: true, attributeFilter: ['style'] });
+        new MutationObserver(function () { setAccent(panel); }).observe(panel, { attributes: true, attributeFilter: ['style'] });
       }
-      log('added call to action');
+      log('chat is ready; call to action active');
       return true;
     };
-    if (place()) return;
-    var obs = new MutationObserver(function () { if (place()) obs.disconnect(); });
+    if (activate()) return;
+    var obs = new MutationObserver(function () { if (activate()) { obs.disconnect(); clearTimeout(giveUp); } });
     obs.observe(document.documentElement, { childList: true, subtree: true });
-    setTimeout(function () { obs.disconnect(); }, config.formTimeoutMs);
+    var giveUp = setTimeout(function () {
+      obs.disconnect();
+      if (ready || !ctaEl) return;
+      log('no chat showed; removing the call to action');
+      var el = ctaEl;
+      ctaEl = null;
+      el.classList.add('gmmcw-cta-out');
+      setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 300);
+    }, config.ctaWaitMs);
   }
 
   // The name can arrive after the card (backend lookup).
@@ -1148,7 +1199,9 @@
   onReady(watchForEmptyChat);
   onReady(function () {
     rememberName(null);
-    showCta();
+    // Contact details already on hand resolve right away, so the card goes in
+    // with the name; a backend lookup fills it in later.
+    setTimeout(showCta, 0);
     resolveContact(urlResult, function (contact, source) {
       api.source = source;
       rememberName(contact);
