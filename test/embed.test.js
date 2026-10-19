@@ -299,6 +299,21 @@ test('greeting: custom text, "there" when no name is known, and "off"', async (p
   assert.strictEqual(await page.evaluate(() => !!document.querySelector('.gmmcw-greeting')), false);
 });
 
+test('return visit with details in the link: no stuck typing dots, greeting shows', async (page) => {
+  await page.addInitScript(() => {
+    window.__mockWelcome = false; window.__mockNoAiReply = true; window.__mockRemember = true;
+    localStorage.setItem('cb_identity_mock', '1');
+  });
+  await page.goto(A('embed-inline.html?email=again%40example.com&first_name=Al'));
+  await page.waitForSelector('.gmmcw-greeting', { timeout: 6000 });
+  assert.strictEqual(await greeting(page), 'Hey Al, what can I help you with today?');
+  const state = await page.evaluate(() => ({
+    dots: !!document.querySelector('.gmmcw-thinking'),
+    quiet: document.documentElement.className
+  }));
+  assert.deepStrictEqual(state, { dots: false, quiet: '' });
+});
+
 test('return visit: saved "Thanks, got it!" is hidden and the greeting shows', async (page) => {
   await page.addInitScript(() => {
     window.__mockWelcome = false; window.__mockNoAiReply = true; window.__mockRemember = true;

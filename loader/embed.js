@@ -1,5 +1,5 @@
 /*!
- * GMM Chat Embed v0.5.2
+ * GMM Chat Embed v0.5.3
  *
  * One tag that adds the CloseBot AI chat to a page and, on a thank-you page,
  * fills CloseBot's lead form with the name, email and phone the visitor just
@@ -52,7 +52,7 @@
 
   if (window.GMMChat) return; // tag pasted twice
 
-  var VERSION = '0.5.2';
+  var VERSION = '0.5.3';
   var STORE_KEY = 'gmmcw_contact';
   var NAME_KEY = 'gmmcw_first_name';
   var DEFAULT_GREETING = 'Hey {first_name}, what can I help you with today?';
@@ -495,7 +495,9 @@
     if (thinkingObserver) return;
     var place = function () {
       var list = document.querySelector('.cb-messages');
-      if (!list) return;
+      // Only once CloseBot has started its form: a visitor it already knows
+      // never gets one, and the chat must not sit on dots forever.
+      if (!list || !list.querySelector('.cb-form-text-item, .cb-form-row, .cb-form-card')) return;
       var el = list.querySelector('.' + THINKING);
       if (!el) {
         el = document.createElement('div');
@@ -534,6 +536,7 @@
   }
 
   function watchForLeadForm(contact) {
+    if (identifiedWithCloseBot()) { log('CloseBot already knows this visitor; no form to fill'); return; }
     var handled = false;
     var quiet = config.autosubmit && hasIdentity(contact);
     if (quiet) setQuiet(true, true);
