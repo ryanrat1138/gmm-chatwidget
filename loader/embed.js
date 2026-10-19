@@ -1,5 +1,5 @@
 /*!
- * GMM Chat Embed v0.5.1
+ * GMM Chat Embed v0.5.2
  *
  * One tag that adds the CloseBot AI chat to a page and, on a thank-you page,
  * fills CloseBot's lead form with the name, email and phone the visitor just
@@ -52,7 +52,7 @@
 
   if (window.GMMChat) return; // tag pasted twice
 
-  var VERSION = '0.5.1';
+  var VERSION = '0.5.2';
   var STORE_KEY = 'gmmcw_contact';
   var NAME_KEY = 'gmmcw_first_name';
   var DEFAULT_GREETING = 'Hey {first_name}, what can I help you with today?';
@@ -441,6 +441,7 @@
   var QUIET = 'gmmcw-quiet';
   var QUIET_TYPING = 'gmmcw-quiet-typing';
   var HIDDEN = 'gmmcw-hidden';
+  var THINKING = 'gmmcw-thinking';
   var FORM_ECHO = 'Thanks, got it!';
 
   // CloseBot saves its "Thanks, got it!" note in the conversation, so it comes
@@ -468,7 +469,8 @@
     style.id = 'gmmcw-style';
     style.textContent =
       'html.' + QUIET + ' .cb-form-text-item,html.' + QUIET + ' .cb-form-row,' +
-      'html.' + QUIET_TYPING + ' .cb-typing-indicator,.' + HIDDEN + '{display:none!important}';
+      'html.' + QUIET_TYPING + ' .cb-typing-indicator:not(.' + THINKING + '),' +
+      'html.' + QUIET_TYPING + ' .cb-form-notice,.' + HIDDEN + '{display:none!important}';
     (document.head || document.documentElement).appendChild(style);
   }
 
@@ -476,6 +478,35 @@
     var cl = document.documentElement.classList;
     if (on) { addQuietStyles(); cl.add(QUIET); } else cl.remove(QUIET);
     if (on && typingToo) cl.add(QUIET_TYPING); else cl.remove(QUIET_TYPING);
+    showThinking(on && typingToo);
+  }
+
+  // While the details are being sent, the chat shows CloseBot's own typing
+  // dots, kept below anything else in the chat, instead of an empty panel.
+  var thinkingObserver = null;
+
+  function showThinking(on) {
+    var dots = document.querySelector('.' + THINKING);
+    if (!on) {
+      if (thinkingObserver) { thinkingObserver.disconnect(); thinkingObserver = null; }
+      if (dots && dots.parentNode) dots.parentNode.removeChild(dots);
+      return;
+    }
+    if (thinkingObserver) return;
+    var place = function () {
+      var list = document.querySelector('.cb-messages');
+      if (!list) return;
+      var el = list.querySelector('.' + THINKING);
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'cb-typing-indicator ' + THINKING;
+        el.innerHTML = '<div class="cb-typing-dots"><span></span><span></span><span></span></div>';
+      }
+      if (list.lastElementChild !== el) list.appendChild(el);
+    };
+    thinkingObserver = new MutationObserver(place);
+    thinkingObserver.observe(document.documentElement, { childList: true, subtree: true });
+    place();
   }
 
   function watchSubmitResult(card) {
