@@ -514,7 +514,7 @@ test('note: cut from the visitor message when the conversation comes back', asyn
 
 test('call to action: inline card above the chat greets by name and starts the chat', async (page) => {
   await page.goto(A('embed-inline.html?email=cta%40example.com&first_name=Pat'));
-  await page.waitForSelector('#gmmcw-cta');
+  await page.waitForSelector('#gmmcw-cta:not(.gmmcw-cta-loading)');
   await identity(page);
   const r = await page.evaluate(() => {
     const cta = document.getElementById('gmmcw-cta');
@@ -534,7 +534,7 @@ test('call to action: inline card above the chat greets by name and starts the c
 test('call to action: bubble button opens the chat and follows the look options', async (page) => {
   await page.addInitScript(() => { window.__mockClosed = true; });
   await page.goto(A('embed-cta-bubble.html'));
-  await page.waitForSelector('#gmmcw-cta');
+  await page.waitForSelector('#gmmcw-cta:not(.gmmcw-cta-loading)');
   const r = await page.evaluate(() => {
     const cta = document.getElementById('gmmcw-cta');
     const btn = cta.querySelector('.gmmcw-cta-btn');
@@ -554,15 +554,44 @@ test('call to action: bubble button opens the chat and follows the look options'
   assert.strictEqual(await page.evaluate(() => !document.querySelector('.cb-panel').classList.contains('hidden')), true);
 });
 
-test('call to action: none with data-cta="off" or when no chat shows', async (page) => {
+test('call to action: shows before the chat, loading, then turns on with CloseBot\'s color', async (page) => {
+  await page.addInitScript(() => { window.__mockDelay = 1200; });
+  await page.goto(A('embed-inline.html?email=early%40example.com&first_name=Eve'));
+  await page.waitForSelector('#gmmcw-cta');
+  const early = await page.evaluate(() => {
+    const cta = document.getElementById('gmmcw-cta');
+    return {
+      chat: !!document.querySelector('.cb-panel'),
+      loading: cta.classList.contains('gmmcw-cta-loading'),
+      busy: cta.querySelector('.gmmcw-cta-btn').getAttribute('aria-busy'),
+      dots: getComputedStyle(cta.querySelector('.gmmcw-cta-dots')).display,
+      label: getComputedStyle(cta.querySelector('.gmmcw-cta-label')).visibility,
+      title: cta.querySelector('.gmmcw-cta-title').textContent,
+      accent: cta.style.getPropertyValue('--gmmcw-accent')
+    };
+  });
+  assert.deepStrictEqual(early, { chat: false, loading: true, busy: 'true', dots: 'flex', label: 'hidden',
+    title: 'You\u2019re all set, Eve!', accent: '#9ca3af' });
+  await page.click('.gmmcw-cta-btn');
+  await page.waitForSelector('.cb-panel');
+  await page.waitForFunction(() => !document.getElementById('gmmcw-cta').classList.contains('gmmcw-cta-loading'));
+  await page.waitForFunction(() => document.getElementById('gmmcw-cta').style.getPropertyValue('--gmmcw-accent') === '#3b82f6');
+  assert.strictEqual(await page.evaluate(() => document.querySelector('.gmmcw-cta-btn').hasAttribute('aria-busy')), false);
+  // Next visit: CloseBot's color from the start.
+  await page.goto(A('embed-inline.html'));
+  await page.waitForSelector('#gmmcw-cta');
+  assert.strictEqual(await page.evaluate(() => document.getElementById('gmmcw-cta').style.getPropertyValue('--gmmcw-accent')), '#3b82f6');
+});
+
+test('call to action: none with data-cta="off", and it goes away when no chat shows', async (page) => {
   await page.goto(A('embed-cta-off.html'));
   await page.waitForSelector('.cb-panel');
   await page.waitForTimeout(200);
   assert.strictEqual(await page.evaluate(() => !!document.querySelector('.gmmcw-cta')), false);
   await page.addInitScript(() => { window.__mockNoMount = true; });
-  await page.goto(A('embed-inline.html'));
-  await page.waitForTimeout(800);
-  assert.strictEqual(await page.evaluate(() => !!document.querySelector('.gmmcw-cta')), false);
+  await page.goto(A('embed-cta-nochat.html'));
+  await page.waitForSelector('#gmmcw-cta');
+  await page.waitForSelector('#gmmcw-cta', { state: 'detached', timeout: 3000 });
 });
 
 (async () => {
