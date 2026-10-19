@@ -212,6 +212,19 @@ test('quiet: the visitor never sees the form intro, the fields or "Thanks, got i
   assert.ok(await visible(page, '.cb-msg-item:not(.cb-form-text-item)'), 'welcome message should stay');
 });
 
+test('quiet: typing dots show while the details are sent, then make way', async (page) => {
+  await page.addInitScript(() => { window.__mockWelcome = false; window.__mockNoAiReply = true; });
+  await page.addInitScript(() => { window.__mockDelay = 600; });
+  await page.goto(A('embed-inline.html?email=dots%40example.com&first_name=Dee'));
+  await page.waitForSelector('.cb-form-text-item', { state: 'attached' });
+  assert.ok(await visible(page, '.gmmcw-thinking'), 'typing dots should show while sending');
+  const last = await page.evaluate(() => document.querySelector('.cb-messages').lastElementChild.className);
+  assert.ok(/gmmcw-thinking/.test(last), 'dots should stay below everything else');
+  await identity(page);
+  await page.waitForSelector('.gmmcw-greeting', { timeout: 5000 });
+  assert.strictEqual(await page.evaluate(() => !!document.querySelector('.gmmcw-thinking')), false);
+});
+
 test('quiet: if CloseBot rejects the details, the form shows with its error', async (page) => {
   await page.addInitScript(() => { window.__mockFail = true; });
   await page.goto(A('embed-inline.html?email=no%40example.com'));
@@ -219,6 +232,7 @@ test('quiet: if CloseBot rejects the details, the form shows with its error', as
   await page.waitForFunction(() => !document.documentElement.classList.contains('gmmcw-quiet'));
   assert.ok(await visible(page, '.cb-form-card'), 'form should be visible');
   assert.ok(await visible(page, '.cb-form-error'), 'error should be visible');
+  assert.strictEqual(await page.evaluate(() => !!document.querySelector('.gmmcw-thinking')), false);
   assert.ok(await visible(page, '.cb-form-text-item'));
 });
 
