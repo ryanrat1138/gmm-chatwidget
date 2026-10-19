@@ -26,7 +26,10 @@
   window.__seen = [];
   function note(e, name) { window.__seen.push({ name: name, shown: e.getClientRects().length > 0 }); return e; }
   function mount() {
-    var panel = el('div', { class: 'cb-panel' });
+    var box = document.getElementById('cb-widget-container');
+    var panel = el('div', { class: 'cb-panel' + (box ? ' cb-container-mode' : ''), 'data-cb': '' });
+    panel.appendChild(el('div', { class: 'cb-header' }, 'Chat'));
+    if (!box) document.body.appendChild(el('button', { class: 'cb-btn', 'data-cb': '', style: 'background:#3b82f6;right:20px' }));
     var messages = el('div', { class: 'cb-messages' });
     panel.appendChild(messages);
     if (window.__mockWelcome !== false) messages.appendChild(el('div', { class: 'cb-msg-item bot' }, 'Hi! How can I help?'));

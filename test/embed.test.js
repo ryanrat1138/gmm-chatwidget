@@ -340,6 +340,70 @@ test('return visit: past conversation shows without the "Thanks, got it!" and no
   assert.deepStrictEqual(shown, ['Hello', 'Hi! What can I do for you?']);
 });
 
+test('look: inline options restyle the chat', async (page) => {
+  await page.goto(A('embed-look.html'));
+  await page.waitForSelector('.cb-panel');
+  const st = await page.evaluate(() => {
+    const panel = document.querySelector('.cb-panel');
+    const bot = panel.appendChild(Object.assign(document.createElement('div'), { className: 'cb-msg bot', textContent: 'hi' }));
+    const lead = panel.appendChild(Object.assign(document.createElement('div'), { className: 'cb-msg lead', textContent: 'yo' }));
+    const cs = (e) => getComputedStyle(e);
+    return {
+      color: cs(panel).getPropertyValue('--cb-color').trim(),
+      font: cs(panel.querySelector('.cb-header')).fontFamily,
+      radius: cs(panel).borderTopLeftRadius,
+      header: cs(panel.querySelector('.cb-header')).display,
+      shadow: cs(panel).boxShadow,
+      border: cs(panel).borderTopWidth,
+      botBg: cs(bot).backgroundColor,
+      botRadius: cs(bot).borderTopLeftRadius,
+      botTail: cs(bot).borderBottomLeftRadius,
+      leadColor: cs(lead).color
+    };
+  });
+  assert.deepStrictEqual(st, {
+    color: '#123456', font: 'Georgia, serif', radius: '18px', header: 'none', shadow: 'none', border: '1px',
+    botBg: 'rgb(1, 2, 3)', botRadius: '18px', botTail: '4px', leadColor: 'rgb(255, 255, 255)'
+  });
+});
+
+test('look: bubble options move the button, size the window, and reject unsafe values', async (page) => {
+  await page.setViewportSize({ width: 1200, height: 900 });
+  await page.goto(A('embed-look-bubble.html'));
+  await page.waitForSelector('.cb-panel');
+  const st = await page.evaluate(() => {
+    const panel = document.querySelector('.cb-panel'), btn = document.querySelector('.cb-btn');
+    panel.style.position = 'fixed';
+    return {
+      css: document.getElementById('gmmcw-look').textContent,
+      btnLeft: getComputedStyle(btn).left,
+      btnBg: getComputedStyle(btn).backgroundColor,
+      width: getComputedStyle(panel).width,
+      height: getComputedStyle(panel).height,
+      header: getComputedStyle(panel.querySelector('.cb-header')).display,
+      bodyShown: getComputedStyle(document.body).display
+    };
+  });
+  assert.ok(!/red|display:none!important;}body/.test(st.css), 'unsafe color should be dropped: ' + st.css);
+  assert.strictEqual(st.btnLeft, '20px');
+  assert.strictEqual(st.btnBg, 'rgb(59, 130, 246)', 'CloseBot color kept');
+  assert.strictEqual(st.width, '420px');
+  assert.strictEqual(st.height, '500px');
+  assert.notStrictEqual(st.header, 'none', 'header stays in the bubble layout (it has the close button)');
+  assert.strictEqual(st.bodyShown, 'block');
+});
+
+test('look: no look options adds no styles, and lookCss is available for the setup page', async (page) => {
+  await page.goto(A('embed-inline.html'));
+  await page.waitForSelector('.cb-panel');
+  const r = await page.evaluate(() => ({
+    style: !!document.getElementById('gmmcw-look'),
+    css: window.GMMChat.lookCss({ color: '#000', radius: '8' })
+  }));
+  assert.strictEqual(r.style, false);
+  assert.ok(/--cb-color:#000!important/.test(r.css) && /border-radius:8px!important/.test(r.css), r.css);
+});
+
 function captureFieldPosts(page) {
   const posts = [];
   return page.route('http://api.test/api/fields', (route) => {

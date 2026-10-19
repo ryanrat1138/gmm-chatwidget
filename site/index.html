@@ -49,6 +49,48 @@
   .choice input { margin-top: 5px; }
   .choice .hint { display: block; }
   .warn { color: var(--muted); font-size: 14px; }
+  details.look { margin-top: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+  details.look > summary { cursor: pointer; padding: 12px 14px; font-weight: 600; }
+  details.look[open] > summary { border-bottom: 1px solid var(--line); }
+  .look-body { padding: 4px 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 340px); gap: 20px; }
+  @media (max-width: 720px) { .look-body { grid-template-columns: minmax(0, 1fr); } }
+  .look-body label { margin-top: 12px; font-size: 14px; }
+  .look-body h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 18px 0 0; }
+  .look-body h3:first-child { margin-top: 10px; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .color { display: flex; gap: 6px; align-items: center; }
+  .color input[type=color] { flex: 0 0 40px; width: 40px; height: 40px; padding: 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); cursor: pointer; }
+  .color input[type=text] { min-width: 0; }
+  textarea { width: 100%; min-height: 90px; padding: 10px 12px; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; resize: vertical; }
+  .look-body input[type=text], .look-body select { background: var(--panel); }
+  .preview-wrap { position: sticky; top: 16px; align-self: start; }
+  #preview { position: relative; height: 520px; margin-top: 12px; padding: 16px; border-radius: 10px; overflow: hidden;
+    background: repeating-linear-gradient(45deg, #ecebe6, #ecebe6 10px, #e4e3dd 10px, #e4e3dd 20px);
+    display: flex; justify-content: center; align-items: flex-start; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  /* Approximation of CloseBot's widget, for the preview only. */
+  #preview .cb-panel { --cb-bg: #fff; --cb-border: #e5e7eb; --cb-text: #111827; --cb-soft-bg: #f3f4f6; --cb-input-bg: #fff;
+    width: 360px; max-width: 100%; height: 420px; max-height: 100%; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,.18);
+    background: var(--cb-bg); display: flex; flex-direction: column; overflow: hidden; font-family: sans-serif; text-align: left; }
+  #preview .cb-panel.cb-container-mode { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+  #preview .cb-header { padding: 14px 16px; color: #fff; display: flex; align-items: center; gap: 8px; background: var(--cb-color); }
+  #preview .cb-header-title { font-weight: 600; font-size: 15px; }
+  #preview .cb-header-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
+  #preview .cb-header-close { margin-left: auto; font-size: 18px; }
+  #preview .cb-messages { flex: 1; overflow: hidden; padding: 12px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; background: var(--cb-bg); }
+  #preview .cb-msg-item { display: flex; max-width: 85%; }
+  #preview .cb-msg-item.bot { align-self: flex-start; }
+  #preview .cb-msg-item.lead { align-self: flex-end; }
+  #preview .cb-msg { padding: 8px 12px; border-radius: 12px; line-height: 1.45; }
+  #preview .cb-msg.bot { background: var(--cb-soft-bg); color: var(--cb-text); border-bottom-left-radius: 4px; }
+  #preview .cb-msg.lead { background: var(--cb-color); color: #fff; border-bottom-right-radius: 4px; }
+  #preview .cb-footer { padding: 8px; border-top: 1px solid var(--cb-border); display: flex; gap: 6px; background: var(--cb-bg); }
+  #preview .cb-input { flex: 1; border: 1px solid var(--cb-border); border-radius: 8px; padding: 8px 12px; font-size: 14px; color: #9ca3af; background: var(--cb-input-bg); }
+  #preview .cb-send { border-radius: 8px; padding: 8px 12px; color: #fff; background: var(--cb-color); font-size: 14px; }
+  #preview .cb-btn { position: absolute; bottom: 16px; right: 16px; width: 56px; height: 56px; border-radius: 50%; background: #3b82f6;
+    box-shadow: 0 4px 12px rgba(0,0,0,.2); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 22px; }
+  #preview.inline .cb-btn { display: none; }
+  #preview.bubble .cb-panel { margin-bottom: 72px; }
 </style>
 </head>
 <body>
@@ -85,6 +127,98 @@
     <input id="fields" type="text" placeholder="business_info, team_size" autocomplete="off" spellcheck="false">
     <p class="hint">Names of details passed in the thank-you page address or asked on your own form, separated by commas. Each is saved to the HighLevel contact field with the same key, which the AI can read. The field must exist in HighLevel and be on the service's allowed list.</p>
 
+    <details class="look" id="look">
+      <summary>Style the chat (optional)</summary>
+      <div class="look-body">
+        <div>
+          <p class="hint">Leave any setting empty to keep what's set in CloseBot.</p>
+          <h3>Colors</h3>
+          <label for="lk-color">Brand color</label>
+          <div class="color"><input type="color" data-for="lk-color" value="#3b82f6" aria-label="Pick brand color"><input id="lk-color" type="text" placeholder="CloseBot's color" spellcheck="false"></div>
+          <p class="hint">Header, the visitor's messages, the send button and the corner button.</p>
+          <div class="pair">
+            <div><label for="lk-background">Chat background</label>
+              <div class="color"><input type="color" data-for="lk-background" value="#ffffff" aria-label="Pick chat background"><input id="lk-background" type="text" placeholder="Default" spellcheck="false"></div></div>
+            <div><label for="lk-text-color">Text color</label>
+              <div class="color"><input type="color" data-for="lk-text-color" value="#111827" aria-label="Pick text color"><input id="lk-text-color" type="text" placeholder="Default" spellcheck="false"></div></div>
+          </div>
+          <div class="pair">
+            <div><label for="lk-bot-bubble">Bot bubble</label>
+              <div class="color"><input type="color" data-for="lk-bot-bubble" value="#f3f4f6" aria-label="Pick bot bubble color"><input id="lk-bot-bubble" type="text" placeholder="Default" spellcheck="false"></div></div>
+            <div><label for="lk-bot-text">Bot text</label>
+              <div class="color"><input type="color" data-for="lk-bot-text" value="#111827" aria-label="Pick bot text color"><input id="lk-bot-text" type="text" placeholder="Default" spellcheck="false"></div></div>
+          </div>
+          <div class="pair">
+            <div><label for="lk-visitor-bubble">Visitor bubble</label>
+              <div class="color"><input type="color" data-for="lk-visitor-bubble" value="#3b82f6" aria-label="Pick visitor bubble color"><input id="lk-visitor-bubble" type="text" placeholder="Default" spellcheck="false"></div></div>
+            <div><label for="lk-visitor-text">Visitor text</label>
+              <div class="color"><input type="color" data-for="lk-visitor-text" value="#ffffff" aria-label="Pick visitor text color"><input id="lk-visitor-text" type="text" placeholder="Default" spellcheck="false"></div></div>
+          </div>
+          <label for="lk-header-text">Header text</label>
+          <div class="color"><input type="color" data-for="lk-header-text" value="#ffffff" aria-label="Pick header text color"><input id="lk-header-text" type="text" placeholder="Default" spellcheck="false"></div>
+
+          <h3>Text</h3>
+          <div class="pair">
+            <div><label for="lk-font">Font</label>
+              <select id="lk-font"><option value="">CloseBot's (sans-serif)</option><option value="site">Your site's font</option><option value="custom">Another font…</option></select></div>
+            <div><label for="lk-font-size">Text size</label>
+              <input id="lk-font-size" type="text" placeholder="14px" spellcheck="false"></div>
+          </div>
+          <div id="lk-font-name-wrap" style="display:none"><label for="lk-font-name">Font name</label>
+            <input id="lk-font-name" type="text" placeholder="Montserrat, sans-serif" spellcheck="false">
+            <p class="hint">The font must already be loaded on your site.</p></div>
+
+          <h3>Shape</h3>
+          <div class="pair">
+            <div><label for="lk-radius">Corner roundness</label>
+              <input id="lk-radius" type="text" placeholder="12px" spellcheck="false"></div>
+            <div><label for="lk-shadow">Shadow</label>
+              <select id="lk-shadow"><option value="">CloseBot's</option><option value="none">None</option><option value="soft">Soft</option><option value="strong">Strong</option></select></div>
+          </div>
+          <div class="pair">
+            <div><label for="lk-border">Border</label>
+              <select id="lk-border"><option value="">CloseBot's</option><option value="on">Thin line</option><option value="off">None</option></select></div>
+            <div id="lk-header-wrap"><label for="lk-header">Header</label>
+              <select id="lk-header"><option value="">Show</option><option value="hide">Hide</option></select></div>
+          </div>
+
+          <div id="lk-bubble-opts">
+            <h3>Corner button</h3>
+            <div class="pair">
+              <div><label for="lk-position">Side</label>
+                <select id="lk-position"><option value="">Right</option><option value="left">Left</option></select></div>
+              <div><label for="lk-width">Window width</label>
+                <input id="lk-width" type="text" placeholder="360px" spellcheck="false"></div>
+            </div>
+            <label for="lk-window-height">Window height</label>
+            <input id="lk-window-height" type="text" placeholder="560px" spellcheck="false">
+            <p class="hint">Window size applies on computers; phones keep CloseBot's full-screen layout.</p>
+          </div>
+
+          <h3>Anything else</h3>
+          <label for="lk-css">Custom CSS</label>
+          <textarea id="lk-css" spellcheck="false" placeholder="[data-cb] .cb-header-title { letter-spacing: .02em; }"></textarea>
+          <p class="hint">Added after the tag as a style block. Not shown in the preview.</p>
+        </div>
+        <div class="preview-wrap">
+          <label>Preview</label>
+          <div id="preview" class="inline" aria-hidden="true">
+            <div class="cb-panel cb-container-mode" data-cb style="--cb-color:#3b82f6">
+              <div class="cb-header"><span class="cb-header-title">Chat</span><span class="cb-header-dot"></span><span class="cb-header-close">&#x2715;</span></div>
+              <div class="cb-messages">
+                <div class="cb-msg-item bot"><div class="cb-msg bot">Hey Ryan, what can I help you with today?</div></div>
+                <div class="cb-msg-item lead"><div class="cb-msg lead">I'd like a quote for my HVAC business.</div></div>
+                <div class="cb-msg-item bot"><div class="cb-msg bot">Happy to help! How many locations do you have?</div></div>
+              </div>
+              <div class="cb-footer"><div class="cb-input">Type a message&hellip;</div><div class="cb-send">&#x27A4;</div></div>
+            </div>
+            <div class="cb-btn" data-cb>&#x1F4AC;</div>
+          </div>
+          <p class="hint">A close approximation of CloseBot's chat. The blue stands in for your CloseBot color.</p>
+        </div>
+      </div>
+    </details>
+
     <label>Thank-you page code</label>
     <pre id="out"></pre>
     <button id="copy" data-target="out" disabled>Copy code</button><span class="status" aria-live="polite"></span>
@@ -118,6 +252,7 @@
     <p class="hint">Type the part before each @ yourself, then type <code>@</code> and pick the matching question from the list. The embed removes these details from the address bar as soon as the page opens.</p>
   </section>
 </main>
+<script src="embed.js"></script>
 <script>
 (function () {
   // Preview and per-deployment vercel.app URLs are private, so the code always
@@ -167,11 +302,61 @@
       lines.push('  data-email="{{contact.email}}"', '  data-phone="{{contact.phone}}"',
         '  data-first-name="{{contact.first_name}}"', '  data-last-name="{{contact.last_name}}"');
     }
+    var look = lookOptions(inline);
+    Object.keys(look).forEach(function (k) { lines.push('  data-' + k + '="' + attrValue(look[k]) + '"'); });
     lines[lines.length - 1] += '></' + 'script>';
+    var css = $('lk-css').value.trim().replace(/<\/style/gi, '<\\/style');
+    if (css) lines.push('<style>\n' + css + '\n</style>');
     out.textContent = lines.join('\n');
+    renderPreview(inline, look);
     copy.disabled = !id;
     copy.nextElementSibling.textContent = '';
   }
+
+  var LOOK_FIELDS = ['color', 'background', 'text-color', 'bot-bubble', 'bot-text', 'visitor-bubble', 'visitor-text',
+    'header-text', 'font-size', 'radius', 'shadow', 'border', 'header', 'position', 'width'];
+
+  function attrValue(v) { return String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+
+  function lookOptions(inline) {
+    var o = {};
+    LOOK_FIELDS.forEach(function (k) {
+      var v = $('lk-' + k).value.trim();
+      if (!v) return;
+      if (inline && (k === 'position' || k === 'width')) return;
+      if (!inline && k === 'header') return;
+      o[k] = v;
+    });
+    var font = $('lk-font').value;
+    $('lk-font-name-wrap').style.display = font === 'custom' ? '' : 'none';
+    if (font === 'site') o.font = 'site';
+    if (font === 'custom' && $('lk-font-name').value.trim()) o.font = $('lk-font-name').value.trim();
+    if (!inline && $('lk-window-height').value.trim()) o.height = $('lk-window-height').value.trim();
+    return o;
+  }
+
+  function renderPreview(inline, look) {
+    var box = $('preview');
+    box.className = inline ? 'inline' : 'bubble';
+    box.querySelector('.cb-panel').classList.toggle('cb-container-mode', inline);
+    $('lk-bubble-opts').style.display = inline ? 'none' : '';
+    $('lk-header-wrap').style.visibility = inline ? '' : 'hidden';
+    var style = $('previewLook');
+    if (!style) { style = document.createElement('style'); style.id = 'previewLook'; document.head.appendChild(style); }
+    var opts = {};
+    Object.keys(look).forEach(function (k) { opts[k] = look[k]; });
+    opts.layout = inline ? 'inline' : 'bubble';
+    // The preview box is smaller than a real window, so size stays as is there.
+    delete opts.width; delete opts.height;
+    style.textContent = window.GMMChat && window.GMMChat.lookCss ? window.GMMChat.lookCss(opts) : '';
+  }
+
+  // Color pickers fill the text box next to them; a typed hex moves the picker.
+  [].forEach.call(document.querySelectorAll('.color input[type=color]'), function (picker) {
+    var text = $(picker.getAttribute('data-for'));
+    picker.addEventListener('input', function () { text.value = picker.value; render(); });
+    text.addEventListener('input', function () { if (/^#[0-9a-f]{6}$/i.test(text.value.trim())) picker.value = text.value.trim(); });
+  });
 
   function renderFormTag() {
     var f = fieldList();
@@ -193,7 +378,8 @@
   copy.addEventListener('click', onCopy);
   $('copyForm').addEventListener('click', onCopy);
 
-  [source, height, hl, $('fields'), $('greeting')].concat([].slice.call(layouts)).forEach(function (el) {
+  [source, height, hl, $('fields'), $('greeting'), $('lk-font'), $('lk-font-name'), $('lk-window-height'), $('lk-css')]
+    .concat(LOOK_FIELDS.map(function (k) { return $('lk-' + k); })).concat([].slice.call(layouts)).forEach(function (el) {
     el.addEventListener('input', render); el.addEventListener('change', render);
   });
   render();
