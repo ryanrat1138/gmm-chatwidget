@@ -43,9 +43,15 @@ First match wins:
 3. **Typeform:** in Endings, turn on Redirect to URL and add the answers to the thank-you address, for example `https://site.com/thank-you?email=@Email&phone=@Phone&first_name=@First name` (type `@` and pick each question). The embed removes them from the address bar as soon as it loads.
 4. **Webhook (later):** `data-backend="https://…"` looks the contact up by a one-time code. Needs the backend, not built yet.
 
-### Extra details
+### Form answers for the AI
 
-With `data-fields="business_info"`, a thank-you URL like `...?email=@Email&business_info=@Business` saves `business_info` on the HighLevel contact, so the AI knows it. The value is removed from the address bar like the contact details. A Typeform answer can also reach the contact through the Typeform-to-HighLevel connection by mapping the question to the custom field.
+With `data-fields="business_info,team_size"`, a thank-you URL like `...?email=@Email&business_info=@Business&team_size=@Team` hands those answers to CloseBot's AI along with the visitor's first chat message, as a note after it: `[Form answers, for reference: Business info: HVAC; Team size: 6-20]`. The AI has them for its first reply, even while HighLevel is still filling in the contact's fields. The visitor's chat shows only what they typed, and the note is cut out again when CloseBot reloads the conversation, but HighLevel's conversation view shows it as part of their message. The answers are removed from the address bar like the contact details, and kept for the browser tab until a message goes through. `data-note="off"` turns this off.
+
+`data-save-fields="true"` also writes the answers to the HighLevel contact through `/api/fields` (see the main README). Most setups don't need it: the Typeform-to-HighLevel connection already maps answers to custom fields.
+
+### Call to action
+
+Once the chat loads, the embed adds a card to the page that greets the visitor by name ("You're all set, Ann!") and points them to the chat. In the inline layout it sits right above the chat, and its button scrolls to the chat and puts the cursor in the message box. In the bubble layout it sits where the tag is, and its button opens the chat window. It follows the look options (color, font, font size, radius, background, text color, shadow, border) and uses CloseBot's color when `data-color` isn't set. With no name known, the heading drops the name ("You're all set!").
 
 ## All options
 
@@ -68,8 +74,15 @@ With `data-fields="business_info"`, a thank-you URL like `...?email=@Email&busin
 | `data-position` | right | `left` puts the corner button and window on the left (bubble layout) |
 | `data-width` | `360px` | Chat window width on desktop (bubble layout); `data-height` sets its height |
 | `data-greeting` | `Hey {first_name}, what can I help you with today?` | First bot message when the visitor is identified and the chat would otherwise be empty. `{first_name}` becomes their first name, or "there". `off` for none. A CloseBot Welcome Message or past conversation takes its place |
-| `data-fields` | none | Extra details to save on the HighLevel contact for the AI, comma separated (e.g. `business_info`). Read from the thank-you page URL, or from same-named fields on a same-site form page (put it on the form page tag too). Needs `/api/fields` configured; see the main README |
+| `data-fields` | none | Form answers to pass to the AI with the visitor's first message, comma separated (e.g. `business_info`). Read from the thank-you page URL, or from same-named fields on a same-site form page (put it on the form page tag too) |
+| `data-note` | `on` | `off` stops the answers going with the first message |
+| `data-save-fields` | `false` | `true` also saves the answers on the HighLevel contact through `/api/fields`, which needs configuring; see the main README |
 | `data-api` | the embed's own site | Where `/api/fields` lives |
+| `data-cta` | `on` | `off` for no call-to-action card on the page |
+| `data-cta-title` | `You're all set, {first_name}!` | Card heading. `{first_name}` becomes the first name; with none, the name and the comma before it drop out |
+| `data-cta-text` | "Have a question while you wait? Our virtual assistant is …" | Card text; empty for none |
+| `data-cta-button` | `Start chatting` (inline), `Chat with us` (bubble) | Button label |
+| `data-cta-target` | next to the chat or tag | A CSS selector (e.g. `#chat-cta`) for an element to put the card in instead |
 | `data-email`, `data-phone`, `data-first-name`, `data-last-name`, `data-name` | none | Contact details rendered into the page, usually HighLevel merge fields |
 | `data-autosubmit` | `true` | `false` fills the form but leaves the visitor to press submit |
 | `data-backend` | none | Turns on the webhook-and-code lookup |
@@ -78,7 +91,7 @@ With `data-fields="business_info"`, a thank-you URL like `...?email=@Email&busin
 | `data-closebot-src` | CloseBot's script URL | Override for testing |
 | `data-debug` | `false` | Logs what it found and did to the console (never the values) |
 
-`window.GMMChat` exposes `version`, `source` (which of the above was used), `contact.hasEmail` / `contact.hasPhone`, `fill(contact)` and `clear()`.
+`window.GMMChat` exposes `version`, `source` (which of the above was used), `contact.hasEmail` / `contact.hasPhone`, `fill(contact)` and `clear()`, plus `lookCss(options)` and `ctaPreview(options, name)` for the setup page.
 
 ## Known limits
 
@@ -86,6 +99,7 @@ With `data-fields="business_info"`, a thank-you URL like `...?email=@Email&busin
 - CloseBot hides its form after one submit per browser, so a returning visitor on the same browser keeps their earlier identity.
 - One CloseBot widget per page.
 - Matching needs an email or a phone. A name alone isn't enough.
+- The form answers reach the AI only once the visitor sends a message. They ride on CloseBot's message request, which isn't a public API either; if CloseBot changes it, the note is simply left off.
 
 ## Tests
 

@@ -1,5 +1,5 @@
 /*!
- * GMM Chat Embed v0.6.0
+ * GMM Chat Embed v0.7.0
  *
  * One tag that adds the CloseBot AI chat to a page and, on a thank-you page,
  * fills CloseBot's lead form with the name, email and phone the visitor just
@@ -22,8 +22,11 @@
  *     data-layout="inline"                  (inline = chat shows where the tag is;
  *                                            bubble = chat button bottom-right)
  *     data-height="600px"                   (inline only)
- *     data-fields="business_info"           (extra details to save on the
- *                                            HighLevel contact for the AI)
+ *     data-fields="business_info"           (extra details from the form, passed
+ *                                            to the AI with the visitor's first
+ *                                            chat message; data-note="off" for
+ *                                            not; data-save-fields="true" also
+ *                                            saves them on the HighLevel contact)
  *     data-greeting="Hey {first_name}, what can I help you with today?"
  *                                           (first message once the visitor is
  *                                            identified; "off" for none)
@@ -48,6 +51,15 @@
  *   data-width="400px"          chat window width (bubble layout, desktop)
  *   data-height on the bubble layout sets the chat window height (desktop).
  *
+ * Call to action (shown once the chat loads; data-cta="off" for none). It
+ * greets the visitor by name above the inline chat, or, in the bubble layout,
+ * sits where the tag is with a button that opens the chat. It uses the look
+ * options above, and CloseBot's color when data-color isn't set.
+ *   data-cta-title="You're all set, {first_name}!"
+ *   data-cta-text="Have a question while you wait? ..."   (empty for none)
+ *   data-cta-button="Chat with us"
+ *   data-cta-target="#chat-cta"  put it inside this element instead
+ *
  * Without data-source it never adds a chat: it saves form details, and on a
  * page that loads CloseBot's own script it still fills the form.
  * Advanced: data-api, data-backend, data-autosubmit, data-form-timeout,
@@ -68,7 +80,7 @@
 
   if (window.GMMChat) return; // tag pasted twice
 
-  var VERSION = '0.6.0';
+  var VERSION = '0.7.0';
   var STORE_KEY = 'gmmcw_contact';
   var NAME_KEY = 'gmmcw_first_name';
   var DEFAULT_GREETING = 'Hey {first_name}, what can I help you with today?';
@@ -107,6 +119,13 @@
     height: attr('height') || '600px',
     look: parseLook(attr),
     greeting: greetingSetting(attr('greeting')),
+    note: attr('note') !== 'off',
+    saveFields: attr('save-fields') === 'true',
+    cta: attr('cta') !== 'off',
+    ctaTitle: attr('cta-title'),
+    ctaText: attr('cta-text'),
+    ctaButton: attr('cta-button'),
+    ctaTarget: attr('cta-target'),
     closebotSrc: attr('closebot-src') || CLOSEBOT_SRC,
     backend: (attr('backend') || '').replace(/\/+$/, ''),
     autosubmit: attr('autosubmit') !== 'false',
@@ -511,10 +530,10 @@
     fetchBackendContact(code, function (c) { done(c, c ? 'backend' : 'none'); });
   }
 
-  // Extra details (data-fields) go to the service next to this script, which
-  // writes them to the HighLevel contact, where CloseBot's AI reads them.
+  // With data-save-fields="true", extra details (data-fields) also go to the
+  // service next to this script, which writes them to the HighLevel contact.
   function sendExtraFields(contact, extra) {
-    if (!config.fields.length || !config.api || !window.fetch) return;
+    if (!config.saveFields || !config.fields.length || !config.api || !window.fetch) return;
     if (!Object.keys(extra).length) { log('no extra fields to send'); return; }
     window.fetch(config.api + '/api/fields', {
       method: 'POST',
@@ -527,6 +546,83 @@
       api.fieldsSent = res.ok;
       log(res.ok ? 'sent extra fields: ' + Object.keys(extra).join(', ') : 'extra fields not saved (' + res.status + ')');
     })['catch'](function () { api.fieldsSent = false; log('extra fields not sent'); });
+  }
+
+  // ---------- form answers note for the AI ----------
+
+  // The data-fields answers ride along with the visitor's first chat message,
+  // after a marker, so CloseBot's AI has them for its first reply even while
+  // HighLevel is still filling in the contact. The visitor's bubble shows only
+  // what they typed, and the note is cut from the conversation when CloseBot
+  // shows it again on a return visit. HighLevel's conversation keeps it.
+  var NOTE_KEY = 'gmmcw_note';
+  var NOTE_MARK = '[Form answers, for reference:';
+  var MESSAGE_URL = /\/chat-widget\/[^\/?#]+\/session\/[^\/?#]+\/message(\?|$)/;
+  var noteText = '';
+
+  function fieldLabel(key) {
+    var s = key.replace(/_+/g, ' ');
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  function setNote(extra) {
+    var parts = Object.keys(extra).map(function (k) {
+      return fieldLabel(k) + ': ' + String(extra[k]).replace(/\s+/g, ' ').slice(0, 500);
+    });
+    if (!parts.length) return;
+    noteText = '\n\n' + NOTE_MARK + ' ' + parts.join('; ') + ']';
+    var s = store();
+    if (s) { try { s.setItem(NOTE_KEY, noteText); } catch (_) { /* ignore */ } }
+    log('form answers will go with the first chat message:', Object.keys(extra).join(', '));
+  }
+
+  function forgetNote() {
+    noteText = '';
+    var s = store();
+    if (s) { try { s.removeItem(NOTE_KEY); } catch (_) { /* ignore */ } }
+  }
+
+  // CloseBot posts each visitor message with fetch, so the note is added to
+  // the request on its way out, once.
+  function addNoteToFirstMessage() {
+    if (!config.source || !config.note || !window.fetch) return;
+    var s = store();
+    if (s) { try { noteText = s.getItem(NOTE_KEY) || ''; } catch (_) { /* ignore */ } }
+    var original = window.fetch;
+    window.fetch = function (input, init) {
+      var url = typeof input === 'string' ? input : (input && input.url) || '';
+      if (noteText && init && typeof init.body === 'string' && MESSAGE_URL.test(url) &&
+          String(init.method || '').toUpperCase() === 'POST') {
+        var body = null;
+        try { body = JSON.parse(init.body); } catch (_) { /* not JSON: leave it */ }
+        if (body && typeof body.message === 'string' && body.message.indexOf(NOTE_MARK) === -1) {
+          var note = noteText;
+          var changed = {};
+          for (var k in init) changed[k] = init[k];
+          body.message += note;
+          changed.body = JSON.stringify(body);
+          noteText = '';
+          return original.call(window, input, changed).then(function (res) {
+            if (res.ok) { forgetNote(); log('form answers sent with the first message'); } else noteText = note;
+            return res;
+          }, function (err) { noteText = note; throw err; });
+        }
+      }
+      return original.apply(window, arguments);
+    };
+  }
+
+  // Cut the note out of a visitor message CloseBot shows again from history.
+  function hideNote(item) {
+    if (item.textContent.indexOf(NOTE_MARK) === -1) return;
+    var walker = document.createTreeWalker(item, NodeFilter.SHOW_TEXT, null, false);
+    var node, cut = false, after = [];
+    while ((node = walker.nextNode())) {
+      if (cut) { after.push(node); continue; }
+      var at = node.data.indexOf(NOTE_MARK);
+      if (at !== -1) { node.data = node.data.slice(0, at).replace(/\s+$/, ''); cut = true; }
+    }
+    after.forEach(function (n) { n.data = ''; });
   }
 
   // ---------- CloseBot widget: fill the lead form ----------
@@ -590,6 +686,8 @@
     var scan = function () {
       var items = document.querySelectorAll('.cb-messages .cb-msg-item.bot');
       for (var i = 0; i < items.length; i++) isFormEcho(items[i]);
+      var mine = document.querySelectorAll('.cb-messages .cb-msg-item.lead');
+      for (var j = 0; j < mine.length; j++) hideNote(mine[j]);
     };
     addQuietStyles();
     new MutationObserver(scan).observe(document.documentElement, { childList: true, subtree: true });
@@ -721,6 +819,7 @@
     } else if (!greetingName && s) {
       try { greetingName = s.getItem(NAME_KEY) || ''; } catch (_) { /* ignore */ }
     }
+    updateCtaName();
   }
 
   function greetingText() {
@@ -780,6 +879,184 @@
     function stop() { clearInterval(poll); clearTimeout(giveUp); }
   }
 
+  // ---------- call to action on the page ----------
+
+  // A card on the page that greets the visitor by name and points them at the
+  // chat: above the chat in the inline layout, or where the tag is with a
+  // button that opens the chat in the bubble layout. It uses the look options,
+  // and CloseBot's own color when data-color isn't set. It shows once the chat
+  // does, so it never points at a chat that isn't there.
+  var CTA_ID = 'gmmcw-cta';
+  var CTA_DEFAULTS = {
+    title: 'You’re all set, {first_name}!',
+    inline: { text: 'Have a question while you wait? Our virtual assistant is right below and ready to chat.', button: 'Start chatting' },
+    bubble: { text: 'Have a question while you wait? Our virtual assistant is ready to chat.', button: 'Chat with us' }
+  };
+  var CTA_ICON = '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01" stroke-width="2.6"/></svg>';
+  var CTA_ARROW = { inline: '↓', bubble: '→' };
+
+  function addCtaStyles() {
+    if (document.getElementById('gmmcw-cta-style')) return;
+    var C = '.gmmcw-cta';
+    var style = document.createElement('style');
+    style.id = 'gmmcw-cta-style';
+    style.textContent = [
+      C + '{--gmmcw-accent:#2563eb;--gmmcw-on-accent:#fff;--gmmcw-bg:#fff;--gmmcw-text:#111827;--gmmcw-radius:14px;' +
+        '--gmmcw-shadow:0 6px 24px rgba(17,24,39,.08);--gmmcw-border:1px solid rgba(17,24,39,.08);' +
+        'box-sizing:border-box;position:relative;overflow:hidden;display:flex;align-items:center;gap:18px;' +
+        'width:100%;margin:0 0 16px;padding:22px 24px 22px 28px;background:var(--gmmcw-bg);color:var(--gmmcw-text);' +
+        'border:var(--gmmcw-border);border-radius:var(--gmmcw-radius);box-shadow:var(--gmmcw-shadow);' +
+        'font-family:var(--gmmcw-font,inherit);font-size:var(--gmmcw-size,16px);line-height:1.45;text-align:left;' +
+        'letter-spacing:normal;text-transform:none;animation:gmmcw-cta-in .4s ease-out both}',
+      C + ' *{box-sizing:border-box;font-family:inherit;letter-spacing:inherit;text-transform:none}',
+      C + '::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--gmmcw-accent)}',
+      C + ' .gmmcw-cta-icon{flex:none;display:flex;align-items:center;justify-content:center;width:52px;height:52px;' +
+        'border-radius:50%;background:var(--gmmcw-accent);color:var(--gmmcw-on-accent);' +
+        'box-shadow:0 0 0 6px color-mix(in srgb,var(--gmmcw-accent) 14%,transparent)}',
+      C + ' .gmmcw-cta-body{flex:1;min-width:0}',
+      C + ' .gmmcw-cta-title{margin:0 0 4px;padding:0;font-size:1.3em;font-weight:700;line-height:1.25;color:inherit}',
+      C + ' .gmmcw-cta-text{margin:0;padding:0;font-size:.95em;color:inherit;opacity:.78}',
+      C + ' .gmmcw-cta-btn{flex:none;display:inline-flex;align-items:center;gap:8px;margin:0;padding:12px 22px;' +
+        'border:0;border-radius:var(--gmmcw-btn-radius,999px);background:var(--gmmcw-accent);color:var(--gmmcw-on-accent);' +
+        'font-size:1em;font-weight:600;line-height:1.2;cursor:pointer;-webkit-appearance:none;appearance:none;' +
+        'box-shadow:0 2px 8px color-mix(in srgb,var(--gmmcw-accent) 35%,transparent);transition:transform .15s,box-shadow .15s,filter .15s}',
+      C + ' .gmmcw-cta-btn:hover{transform:translateY(-1px);filter:brightness(1.06);' +
+        'box-shadow:0 6px 18px color-mix(in srgb,var(--gmmcw-accent) 40%,transparent)}',
+      C + ' .gmmcw-cta-btn:focus-visible{outline:2px solid var(--gmmcw-accent);outline-offset:3px}',
+      C + ' .gmmcw-cta-arrow{display:inline-block;transition:transform .15s}',
+      C + '.gmmcw-cta-inline .gmmcw-cta-btn:hover .gmmcw-cta-arrow{transform:translateY(2px)}',
+      C + '.gmmcw-cta-bubble .gmmcw-cta-btn:hover .gmmcw-cta-arrow{transform:translateX(2px)}',
+      '@keyframes gmmcw-cta-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}',
+      '@media (max-width:560px){' + C + '{flex-wrap:wrap;align-items:flex-start;gap:14px;padding:20px 18px 20px 22px}' +
+        C + ' .gmmcw-cta-icon{width:44px;height:44px}' + C + ' .gmmcw-cta-body{flex-basis:calc(100% - 62px)}' +
+        C + ' .gmmcw-cta-btn{width:100%;justify-content:center}}',
+      '@media (prefers-reduced-motion:reduce){' + C + ',' + C + ' *{animation:none!important;transition:none!important}}'
+    ].join('\n');
+    (document.head || document.documentElement).appendChild(style);
+  }
+
+  function ctaTitleText(template, name) {
+    if (name) return template.replace(/\{\s*first_?name\s*\}/gi, name);
+    // No name: "You're all set, {first_name}!" reads "You're all set!"
+    return trim(template.replace(/[,\s]*\{\s*first_?name\s*\}/gi, ''));
+  }
+
+  // The look options that fit a card on the page; size options are the chat's.
+  function styleCta(el, l, accent) {
+    var set = function (prop, v) { if (v) el.style.setProperty(prop, v); };
+    set('--gmmcw-accent', l.color || accent);
+    set('--gmmcw-on-accent', l.visitorText || l.headerText);
+    set('--gmmcw-bg', l.background);
+    set('--gmmcw-text', l.textColor);
+    set('--gmmcw-font', l.font);
+    set('--gmmcw-size', l.fontSize);
+    if (l.radius) {
+      set('--gmmcw-radius', l.radius);
+      var n = parseFloat(l.radius);
+      set('--gmmcw-btn-radius', /px$/.test(l.radius) ? Math.min(n, 999) + 'px' : l.radius);
+    }
+    if (l.shadow) set('--gmmcw-shadow', { none: 'none', soft: '0 4px 16px rgba(0,0,0,.10)', strong: '0 12px 40px rgba(0,0,0,.28)' }[l.shadow]);
+    if (l.border === 'off') set('--gmmcw-border', '0 solid transparent');
+    if (l.border === 'on') set('--gmmcw-border', '1px solid #e5e7eb');
+  }
+
+  function buildCta(layout, texts, look, name, accent) {
+    addCtaStyles();
+    var d = CTA_DEFAULTS[layout];
+    var el = document.createElement('div');
+    el.className = 'gmmcw-cta gmmcw-cta-' + layout;
+    el.setAttribute('role', 'region');
+    el.setAttribute('aria-label', 'Chat with us');
+    el.innerHTML = '<div class="gmmcw-cta-icon">' + CTA_ICON + '</div>' +
+      '<div class="gmmcw-cta-body"><p class="gmmcw-cta-title"></p><p class="gmmcw-cta-text"></p></div>' +
+      '<button type="button" class="gmmcw-cta-btn"><span class="gmmcw-cta-label"></span>' +
+      '<span class="gmmcw-cta-arrow" aria-hidden="true">' + CTA_ARROW[layout] + '</span></button>';
+    var title = texts.title === null || texts.title === undefined ? CTA_DEFAULTS.title : texts.title;
+    el.querySelector('.gmmcw-cta-title').textContent = ctaTitleText(title, name);
+    el.querySelector('.gmmcw-cta-text').textContent = texts.text === null || texts.text === undefined ? d.text : texts.text;
+    el.querySelector('.gmmcw-cta-label').textContent = trim(texts.button) || d.button;
+    if (!trim(el.querySelector('.gmmcw-cta-title').textContent)) el.querySelector('.gmmcw-cta-title').style.display = 'none';
+    if (!trim(el.querySelector('.gmmcw-cta-text').textContent)) el.querySelector('.gmmcw-cta-text').style.display = 'none';
+    styleCta(el, look, accent);
+    return el;
+  }
+
+  function closebotPanel() {
+    return document.querySelector('[data-cb].cb-panel') || document.querySelector('.cb-panel');
+  }
+
+  // Inline: bring the chat into view and put the cursor in its message box.
+  // Bubble: open the chat window, as CloseBot's corner button does.
+  function openChat(layout) {
+    var panel = closebotPanel();
+    if (!panel) return;
+    var input = panel.querySelector('.cb-input');
+    if (layout === 'inline') {
+      var box = document.getElementById(CONTAINER_ID) || panel;
+      try { box.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) { box.scrollIntoView(); }
+      if (input) setTimeout(function () { try { input.focus({ preventScroll: true }); } catch (_) { input.focus(); } }, 350);
+      return;
+    }
+    var btn = document.querySelector('.cb-btn[data-cb]') || document.querySelector('.cb-btn');
+    if (panel.classList.contains('hidden') && btn) btn.click();
+    else if (input) input.focus();
+  }
+
+  var ctaEl = null;
+
+  function ctaPlace(layout) {
+    if (config.ctaTarget) {
+      var target = null;
+      try { target = document.querySelector(config.ctaTarget); } catch (_) { /* bad selector */ }
+      if (target) return function (el) { target.appendChild(el); };
+      log('data-cta-target matched nothing; using the default spot');
+    }
+    var box = document.getElementById(CONTAINER_ID);
+    if (layout === 'inline' && box) return function (el) { box.parentNode.insertBefore(el, box); };
+    var parent = script && script.parentNode;
+    if (!parent || parent === document.head || !document.body || !document.body.contains(script)) return null;
+    return function (el) { parent.insertBefore(el, (box && box.parentNode === parent ? box : script).nextSibling); };
+  }
+
+  function showCta() {
+    if (!config.source || !config.cta) return;
+    var layout = document.getElementById(CONTAINER_ID) ? 'inline' : 'bubble';
+    var place = function () {
+      if (ctaEl || document.getElementById(CTA_ID)) return true;
+      var panel = closebotPanel();
+      if (!panel) return false;
+      var put = ctaPlace(layout);
+      if (!put) { log('no spot for the call to action on the page'); return true; }
+      var accent = '';
+      try { accent = trim(getComputedStyle(panel).getPropertyValue('--cb-color')); } catch (_) { /* ignore */ }
+      ctaEl = buildCta(layout, { title: config.ctaTitle, text: config.ctaText, button: config.ctaButton }, config.look, greetingName, lookColor(accent));
+      ctaEl.id = CTA_ID;
+      ctaEl.querySelector('.gmmcw-cta-btn').addEventListener('click', function () { openChat(layout); });
+      put(ctaEl);
+      // CloseBot sets its color once its settings load, which can be later.
+      if (!config.look.color) {
+        new MutationObserver(function () {
+          var c = '';
+          try { c = lookColor(getComputedStyle(panel).getPropertyValue('--cb-color')); } catch (_) { /* ignore */ }
+          if (c) ctaEl.style.setProperty('--gmmcw-accent', c);
+        }).observe(panel, { attributes: true, attributeFilter: ['style'] });
+      }
+      log('added call to action');
+      return true;
+    };
+    if (place()) return;
+    var obs = new MutationObserver(function () { if (place()) obs.disconnect(); });
+    obs.observe(document.documentElement, { childList: true, subtree: true });
+    setTimeout(function () { obs.disconnect(); }, config.formTimeoutMs);
+  }
+
+  // The name can arrive after the card (backend lookup).
+  function updateCtaName() {
+    if (!ctaEl) return;
+    var title = config.ctaTitle === null ? CTA_DEFAULTS.title : config.ctaTitle;
+    ctaEl.querySelector('.gmmcw-cta-title').textContent = ctaTitleText(title, greetingName);
+  }
+
   // ---------- CloseBot: container and script ----------
 
   function closebotLoaded() {
@@ -837,6 +1114,7 @@
   var urlResult = takeUrlContact();
   placeContainer();
   applyLook();
+  addNoteToFirstMessage();
   // Wait for the page to finish parsing, so a CloseBot tag further down the
   // page is seen and CloseBot is not loaded twice.
   onReady(loadCloseBot);
@@ -854,6 +1132,14 @@
     // For the setup page preview: CSS for a set of data-* look options.
     lookCss: function (options) {
       return lookCss(parseLook(function (name) { return options ? options[name] : null; }));
+    },
+    // For the setup page preview: the call-to-action card for a set of data-*
+    // options (layout, look, cta-title, cta-text, cta-button) and a name.
+    ctaPreview: function (options, name) {
+      var o = options || {};
+      var get = function (k) { return o[k] === undefined ? null : o[k]; };
+      var layout = o.layout === 'bubble' ? 'bubble' : 'inline';
+      return buildCta(layout, { title: get('cta-title'), text: get('cta-text'), button: get('cta-button') }, parseLook(get), name || '', '#3b82f6');
     }
   };
   window.GMMChat = api;
@@ -861,16 +1147,19 @@
   onReady(hideFormEchoes);
   onReady(watchForEmptyChat);
   onReady(function () {
+    rememberName(null);
+    showCta();
     resolveContact(urlResult, function (contact, source) {
       api.source = source;
       rememberName(contact);
+      var extra = {};
+      [(contact && contact.extra) || {}, urlResult.extra].forEach(function (o) {
+        Object.keys(o).forEach(function (k) { extra[k] = o[k]; });
+      });
+      if (config.note) setNote(extra);
       if (!contact) { log('no contact found; visitor fills the form'); return; }
       api.contact = { hasEmail: !!contact.email, hasPhone: !!contact.phone };
       log('contact found via', source);
-      var extra = {};
-      [contact.extra || {}, urlResult.extra].forEach(function (o) {
-        Object.keys(o).forEach(function (k) { extra[k] = o[k]; });
-      });
       sendExtraFields(contact, extra);
       watchForLeadForm(contact);
     });
