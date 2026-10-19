@@ -229,6 +229,62 @@ test('quiet: with no details found, the form shows as normal', async (page) => {
   assert.ok(await visible(page, '.cb-form-text-item'));
 });
 
+const LIVE_WIDGET = () => { window.__mockWelcome = false; window.__mockNoAiReply = true; window.__mockRemember = true; };
+const greeting = (page) => page.evaluate(() => {
+  const g = document.querySelector('.cb-messages .gmmcw-greeting');
+  return g && g.getClientRects().length ? g.textContent : null;
+});
+
+test('greeting: an empty chat after the hidden form opens with "Hey <first name>"', async (page) => {
+  await page.addInitScript(LIVE_WIDGET);
+  await page.goto(A('embed-inline.html?email=ann%40example.com&first_name=Ann'));
+  await identity(page);
+  await page.waitForSelector('.gmmcw-greeting', { timeout: 5000 });
+  assert.strictEqual(await greeting(page), 'Hey Ann, what can I help you with today?');
+  const last = await page.evaluate(() => document.querySelector('.cb-messages').lastElementChild.className);
+  assert.ok(/gmmcw-greeting/.test(last), 'greeting should be the latest message');
+});
+
+test('greeting: a returning visitor with no conversation gets it again, name remembered', async (page) => {
+  await page.addInitScript(LIVE_WIDGET);
+  await page.goto(A('embed-inline.html?email=ret%40example.com&first_name=Rita'));
+  await identity(page);
+  await page.waitForSelector('.gmmcw-greeting', { timeout: 5000 });
+  await page.goto(A('embed-inline.html'));
+  await page.waitForSelector('.gmmcw-greeting', { timeout: 5000 });
+  assert.strictEqual(await greeting(page), 'Hey Rita, what can I help you with today?');
+  assert.strictEqual(await page.evaluate(() => !!document.querySelector('.cb-form-card')), false);
+});
+
+test('greeting: not added when CloseBot has its own Welcome Message', async (page) => {
+  await page.addInitScript(() => { window.__mockNoAiReply = true; });
+  await page.goto(A('embed-inline.html?email=wm%40example.com&first_name=Wes'));
+  await identity(page);
+  await page.waitForTimeout(2500);
+  assert.strictEqual(await page.evaluate(() => !!document.querySelector('.gmmcw-greeting')), false);
+});
+
+test('greeting: not added while the visitor still has the form to fill', async (page) => {
+  await page.addInitScript(LIVE_WIDGET);
+  await page.goto(A('embed-inline.html'));
+  await page.waitForSelector('.cb-form-card');
+  await page.waitForTimeout(2500);
+  assert.strictEqual(await page.evaluate(() => !!document.querySelector('.gmmcw-greeting')), false);
+});
+
+test('greeting: custom text, "there" when no name is known, and "off"', async (page) => {
+  await page.addInitScript(LIVE_WIDGET);
+  await page.goto(A('embed-greeting-custom.html?email=cu%40example.com'));
+  await identity(page);
+  await page.waitForSelector('.gmmcw-greeting', { timeout: 5000 });
+  assert.strictEqual(await greeting(page), 'Welcome back there! Ask me anything.');
+  await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  await page.goto(A('embed-greeting-off.html?email=off%40example.com'));
+  await identity(page);
+  await page.waitForTimeout(2500);
+  assert.strictEqual(await page.evaluate(() => !!document.querySelector('.gmmcw-greeting')), false);
+});
+
 function captureFieldPosts(page) {
   const posts = [];
   return page.route('http://api.test/api/fields', (route) => {

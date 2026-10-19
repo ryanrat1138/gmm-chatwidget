@@ -26,7 +26,7 @@ Without `data-source` the embed never adds a chat. It remembers what the visitor
 
 ## In CloseBot
 
-- Chat widget settings: turn on **Form** and include **Email** and **Phone**. The embed fills and sends that form out of sight: the visitor doesn't see the form, its intro message or CloseBot's "Thanks, got it!" note, just the conversation. If the embed has no details, or CloseBot rejects them, the visitor sees the form as usual.
+- Chat widget settings: turn on **Form** and include **Email** and **Phone**. The embed fills and sends that form out of sight: the visitor doesn't see the form, its intro message or CloseBot's "Thanks, got it!" note, just the conversation. If the embed has no details, or CloseBot rejects them, the visitor sees the form as usual. With no **Welcome Message** set in CloseBot, the chat then opens with the embed's greeting ("Hey Ann, what can I help you with today?"); set `data-greeting` to change it. The greeting is shown in the page only, so CloseBot's conversation history and the AI don't include it.
 - Target the widget to the thank-you page URL only, so CloseBot's own script doesn't show it on the form page, and put the site's domain on the source's allowed domains.
 - CloseBot's own script tag can stay on the site. The embed won't load CloseBot a second time. Put the embed above it so CloseBot never sees contact details in the address bar.
 
@@ -54,6 +54,7 @@ With `data-fields="business_info"`, a thank-you URL like `...?email=@Email&busin
 | `data-source` | none | CloseBot source ID. Without it the embed adds no chat: it saves form details, and still fills CloseBot's form on a page that loads CloseBot itself |
 | `data-layout` | `inline` | `inline` shows the chat where the tag is; `bubble` uses the corner button |
 | `data-height` | `600px` | Height of the inline chat |
+| `data-greeting` | `Hey {first_name}, what can I help you with today?` | First bot message when the visitor is identified and the chat would otherwise be empty. `{first_name}` becomes their first name, or "there". `off` for none. A CloseBot Welcome Message or past conversation takes its place |
 | `data-fields` | none | Extra details to save on the HighLevel contact for the AI, comma separated (e.g. `business_info`). Read from the thank-you page URL, or from same-named fields on a same-site form page (put it on the form page tag too). Needs `/api/fields` configured; see the main README |
 | `data-api` | the embed's own site | Where `/api/fields` lives |
 | `data-email`, `data-phone`, `data-first-name`, `data-last-name`, `data-name` | none | Contact details rendered into the page, usually HighLevel merge fields |

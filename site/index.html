@@ -74,6 +74,10 @@
       <input id="height" type="text" value="600px" spellcheck="false">
     </div>
 
+    <label for="greeting">Opening message</label>
+    <input id="greeting" type="text" value="Hey {first_name}, what can I help you with today?" autocomplete="off">
+    <p class="hint">Shown as the bot's first message when the chat would otherwise open empty, because the visitor's details were sent for them. <code>{first_name}</code> becomes their first name, or "there" if it isn't known. Leave it empty for none. If you set a Welcome Message in CloseBot, that shows instead.</p>
+
     <label class="check"><input id="hl" type="checkbox">
       <span>The thank-you page is a HighLevel funnel or website page<br><span class="hint">Adds HighLevel merge fields so the page passes the contact straight to the chat.</span></span></label>
 
@@ -121,6 +125,7 @@
   var PROD = 'https://gmm-chatwidget.vercel.app';
   var custom = /^https?:$/.test(location.protocol) && !/\.vercel\.app$/.test(location.hostname);
   var EMBED = (custom ? location.origin : PROD) + '/embed.js';
+  var DEFAULT_GREETING = 'Hey {first_name}, what can I help you with today?';
   var $ = function (id) { return document.getElementById(id); };
   var source = $('source'), height = $('height'), hl = $('hl'), out = $('out'), copy = $('copy'),
       heightWrap = $('heightWrap'), placeInline = $('placeInline');
@@ -152,9 +157,12 @@
       : 'Paste it anywhere on the page; the chat button shows in the corner. HighLevel: a Custom JS/HTML element or the page\'s tracking code. WordPress: a Custom HTML block.';
     var lines = ['<script src="' + EMBED + '"', '  data-source="' + (id || 'PASTE_SOURCE_ID') + '"'];
     if (!inline) lines.push('  data-layout="bubble"');
+    if (inline && height.value.trim() && height.value.trim() !== '600px') lines.push('  data-height="' + height.value.trim().replace(/"/g, '') + '"');
     var f = fieldList();
     if (f) lines.push('  data-fields="' + f + '"');
-    else if (height.value.trim() && height.value.trim() !== '600px') lines.push('  data-height="' + height.value.trim().replace(/"/g, '') + '"');
+    var g = $('greeting').value.trim();
+    if (!g) lines.push('  data-greeting="off"');
+    else if (g !== DEFAULT_GREETING) lines.push('  data-greeting="' + g.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;') + '"');
     if (hl.checked) {
       lines.push('  data-email="{{contact.email}}"', '  data-phone="{{contact.phone}}"',
         '  data-first-name="{{contact.first_name}}"', '  data-last-name="{{contact.last_name}}"');
@@ -185,7 +193,7 @@
   copy.addEventListener('click', onCopy);
   $('copyForm').addEventListener('click', onCopy);
 
-  [source, height, hl, $('fields')].concat([].slice.call(layouts)).forEach(function (el) {
+  [source, height, hl, $('fields'), $('greeting')].concat([].slice.call(layouts)).forEach(function (el) {
     el.addEventListener('input', render); el.addEventListener('change', render);
   });
   render();

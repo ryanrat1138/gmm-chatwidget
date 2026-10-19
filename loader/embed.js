@@ -1,5 +1,5 @@
 /*!
- * GMM Chat Embed v0.4.0
+ * GMM Chat Embed v0.5.0
  *
  * One tag that adds the CloseBot AI chat to a page and, on a thank-you page,
  * fills CloseBot's lead form with the name, email and phone the visitor just
@@ -24,6 +24,9 @@
  *     data-height="600px"                   (inline only)
  *     data-fields="business_info"           (extra details to save on the
  *                                            HighLevel contact for the AI)
+ *     data-greeting="Hey {first_name}, what can I help you with today?"
+ *                                           (first message once the visitor is
+ *                                            identified; "off" for none)
  *     data-email="{{contact.email}}"        (optional, HighLevel-hosted pages)
  *     data-phone="{{contact.phone}}"
  *     data-first-name="{{contact.first_name}}"
@@ -49,8 +52,10 @@
 
   if (window.GMMChat) return; // tag pasted twice
 
-  var VERSION = '0.4.0';
+  var VERSION = '0.5.0';
   var STORE_KEY = 'gmmcw_contact';
+  var NAME_KEY = 'gmmcw_first_name';
+  var DEFAULT_GREETING = 'Hey {first_name}, what can I help you with today?';
   var CODE_KEY = 'gmmcw_code';
   var MAX_AGE_MS = 30 * 60 * 1000;
   var CODE_PARAM = 'cb_ref';
@@ -84,6 +89,7 @@
     api: (attr('api') || scriptOrigin()).replace(/\/+$/, ''),
     layout: attr('layout') === 'bubble' ? 'bubble' : 'inline',
     height: attr('height') || '600px',
+    greeting: greetingSetting(attr('greeting')),
     closebotSrc: attr('closebot-src') || CLOSEBOT_SRC,
     backend: (attr('backend') || '').replace(/\/+$/, ''),
     autosubmit: attr('autosubmit') !== 'false',
@@ -93,6 +99,12 @@
   };
 
   function trim(s) { return (s || '').replace(/^\s+|\s+$/g, ''); }
+
+  function greetingSetting(v) {
+    if (v === null) return DEFAULT_GREETING;
+    v = trim(v);
+    return v.toLowerCase() === 'off' ? '' : v;
+  }
 
   function log() {
     if (!config.debug || !window.console) return;
@@ -453,6 +465,7 @@
       obs.disconnect();
       clearTimeout(timer);
       setQuiet(ok, false);
+      if (ok) formJustSent = true;
       log(ok ? 'CloseBot accepted the details' : 'CloseBot did not accept the details; showing the form');
     };
     var check = function () {
@@ -500,6 +513,83 @@
       observer.disconnect();
       if (!handled) setQuiet(false);
     }, config.formTimeoutMs);
+  }
+
+  // ---------- greeting ----------
+
+  // Once the visitor is identified, CloseBot skips its form and, with no
+  // Welcome Message set, opens to an empty chat. This adds a first message
+  // from the bot in that case only: it never shows next to CloseBot's own
+  // messages, and it is shown in the page only, not saved in CloseBot.
+  var greetingName = '';
+  var formJustSent = false; // our own submit went through: no need to wait
+
+  function rememberName(contact) {
+    var first = contact && (contact.firstName || trim((contact.name || '').split(' ')[0]));
+    var s = store();
+    if (first) {
+      greetingName = first;
+      if (s) { try { s.setItem(NAME_KEY, first); } catch (_) { /* ignore */ } }
+    } else if (!greetingName && s) {
+      try { greetingName = s.getItem(NAME_KEY) || ''; } catch (_) { /* ignore */ }
+    }
+  }
+
+  function greetingText() {
+    return config.greeting.replace(/\{\s*first_?name\s*\}/gi, greetingName || 'there');
+  }
+
+  function identifiedWithCloseBot() {
+    try {
+      for (var i = 0; i < window.localStorage.length; i++) {
+        if ((window.localStorage.key(i) || '').indexOf('cb_identity_') === 0) return true;
+      }
+    } catch (_) { /* storage blocked */ }
+    return false;
+  }
+
+  // 'talk' once anyone has said something, 'wait' while CloseBot's form is
+  // still open or the bot is typing, otherwise 'empty'.
+  function chatState(list) {
+    if (list.querySelector('.gmmcw-greeting')) return 'talk';
+    var items = list.querySelectorAll('.cb-msg-item');
+    for (var i = 0; i < items.length; i++) {
+      if (!items[i].classList.contains('cb-form-text-item')) return 'talk';
+    }
+    if (list.querySelector('.cb-typing-indicator, .cb-ai-typing')) return 'wait';
+    var card = list.querySelector('.cb-form-card');
+    if (card && !card.querySelector('.cb-form-submitted')) return 'wait';
+    return 'empty';
+  }
+
+  function addGreeting(list) {
+    var item = document.createElement('div');
+    item.className = 'cb-msg-item bot gmmcw-greeting';
+    var msg = document.createElement('div');
+    msg.className = 'cb-msg bot';
+    msg.textContent = greetingText();
+    item.appendChild(msg);
+    list.appendChild(item);
+    log('added greeting');
+  }
+
+  // CloseBot's config, past conversation and form all arrive on their own
+  // schedule, so unless the embed has just sent the form itself, the chat
+  // has to look empty on two checks in a row before the greeting goes in.
+  // A Welcome Message or past conversation wins.
+  function watchForEmptyChat() {
+    if (!config.source || !config.greeting) return;
+    var emptyChecks = 0;
+    var check = function () {
+      var list = document.querySelector('.cb-messages');
+      var state = list ? chatState(list) : 'wait';
+      if (state === 'talk') return stop();
+      emptyChecks = state === 'empty' && identifiedWithCloseBot() ? emptyChecks + 1 : 0;
+      if (emptyChecks >= (formJustSent ? 1 : 2)) { addGreeting(list); stop(); }
+    };
+    var poll = setInterval(check, 500);
+    var giveUp = setTimeout(stop, config.formTimeoutMs);
+    function stop() { clearInterval(poll); clearTimeout(giveUp); }
   }
 
   // ---------- CloseBot: container and script ----------
@@ -575,9 +665,11 @@
   };
   window.GMMChat = api;
 
+  onReady(watchForEmptyChat);
   onReady(function () {
     resolveContact(urlResult, function (contact, source) {
       api.source = source;
+      rememberName(contact);
       if (!contact) { log('no contact found; visitor fills the form'); return; }
       api.contact = { hasEmail: !!contact.email, hasPhone: !!contact.phone };
       log('contact found via', source);
