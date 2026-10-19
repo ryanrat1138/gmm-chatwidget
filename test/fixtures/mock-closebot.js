@@ -5,6 +5,9 @@
 // that reads .value, POSTs, and on success replaces the card's contents with
 // a "Thanks, got it!" .cb-form-submitted note, or on failure shows
 // .cb-form-error. Set window.__mockFail to make the submit fail.
+// Options: __mockWelcome = false for no Welcome Message, __mockNoAiReply for
+// no AI typing after the submit (what the live widget does), __mockRemember
+// to skip the form once cb_identity_ is in localStorage, as cb.js does.
 (function () {
   window.__identity = null;
   window.__cbLoads = (window.__cbLoads || 0) + 1;
@@ -25,8 +28,9 @@
     var panel = el('div', { class: 'cb-panel' });
     var messages = el('div', { class: 'cb-messages' });
     panel.appendChild(messages);
-    messages.appendChild(el('div', { class: 'cb-msg-item bot' }, 'Hi! How can I help?'));
+    if (window.__mockWelcome !== false) messages.appendChild(el('div', { class: 'cb-msg-item bot' }, 'Hi! How can I help?'));
     (document.getElementById('cb-widget-container') || document.body).appendChild(panel);
+    if (window.__mockRemember && localStorage.getItem('cb_identity_mock')) return;
     note(messages.appendChild(el('div', { class: 'cb-msg-item bot cb-form-text-item' }, 'Before we chat, can I get your details?')), 'intro');
     var typing = note(messages.appendChild(el('div', { class: 'cb-typing-indicator' }, '...')), 'form-typing');
 
@@ -54,9 +58,10 @@
             error.classList.remove('hidden');
             return;
           }
+          localStorage.setItem('cb_identity_mock', '1');
           card.innerHTML = '';
           note(card.appendChild(el('div', { class: 'cb-form-submitted' }, 'Thanks, got it!')), 'thanks');
-          note(messages.appendChild(el('div', { class: 'cb-typing-indicator cb-ai-typing' }, '...')), 'ai-typing');
+          if (!window.__mockNoAiReply) note(messages.appendChild(el('div', { class: 'cb-typing-indicator cb-ai-typing' }, '...')), 'ai-typing');
         }, 100);
       });
       [first, last, email, phone, error, submit].forEach(function (x) { card.appendChild(x); });
