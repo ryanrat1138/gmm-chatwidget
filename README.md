@@ -16,13 +16,13 @@ See [docs/PLAN.md](docs/PLAN.md) for the architecture, data flow, security notes
 | --- | --- |
 | `api/` | `fields.js`: `POST /api/fields` saves extra details from the thank-you page (e.g. `business_info`) to the HighLevel contact. `note.js`: `POST /api/note` adds the thank-you page's form answers to the visitor's CloseBot conversation as a note only the AI sees. `typeform.js`: `POST /api/typeform` reads a Typeform's questions for the setup page, with the visitor's own token (read only, not stored). Webhook intake and `/api/context` are not built yet |
 | `loader/` | `embed.js`: the one-tag embed. Loads CloseBot's chat and fills its contact form in the background. Details in [loader/README.md](loader/README.md). `chat.js`: a separate embed that draws our own chat window and talks to CloseBot's chat endpoints directly, same attributes. Details and its known risk in [loader/CHAT.md](loader/CHAT.md) |
-| `site/` | The step-by-step setup page served at the project's root URL, its guide, and `chat-demo.html` (a live try of `chat.js`) |
+| `site/` | The step-by-step setup page for `embed.js` served at the project's root URL, `chat-setup.html` (the same wizard for `chat.js`, served at `/chat-setup`), their guide, and `chat-demo.html` (a live try of `chat.js`) |
 | `test/` | Browser tests for `embed.js` against a mock CloseBot widget, and for `chat.js` against a mock of CloseBot's chat endpoints |
 | `docs/` | Plan and setup notes |
 
 ## Hosting
 
-Vercel builds from the GitHub repo on every push to `main`. The build copies `loader/embed.js`, `loader/chat.js`, `site/index.html`, `site/guide.html` and `site/chat-demo.html` into `public/`, so only the embeds (`/embed.js`, `/chat.js`), the setup page (`/`), its guide (`/guide.html`) and the chat demo (`/chat-demo.html`) are served. Settings are in `vercel.json`. Functions in `api/` deploy from the same project.
+Vercel builds from the GitHub repo on every push to `main`. The build copies `loader/embed.js`, `loader/chat.js`, `site/index.html`, `site/chat-setup.html`, `site/guide.html` and `site/chat-demo.html` into `public/`, so only the embeds (`/embed.js`, `/chat.js`), the setup pages (`/` and `/chat-setup`), their guide (`/guide.html`) and the chat demo (`/chat-demo.html`) are served. Settings are in `vercel.json`. Functions in `api/` deploy from the same project.
 
 ### Extra details for the AI (`/api/fields`)
 

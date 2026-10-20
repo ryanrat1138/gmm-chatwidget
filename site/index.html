@@ -177,13 +177,6 @@
   .color input[type=text] { min-width: 0; }
   textarea { min-height: 96px; font: 13px/1.5 var(--mono); resize: vertical; }
   .cta-body { padding: 4px 16px 18px; }
-  .badge { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); font-size: 12px; font-weight: 700; vertical-align: 1px; }
-  body.own .classic-only { display: none !important; }
-  #cb-agents h3, #cb-sources h3 { font-size: 15px; margin: 18px 0 4px; }
-  .agent-list { display: grid; gap: 8px; margin-top: 8px; }
-  .agent-list .check { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
-  .agent-list .tag { margin-left: auto; font-size: 12px; color: var(--muted); }
-  .agent-list .tag.on { color: var(--accent-ink); font-weight: 600; }
   ol.mini-steps { margin: 12px 0 4px; padding-left: 22px; font-size: 15px; }
   ol.mini-steps li { margin: 6px 0; }
   #cb-sources .check { display: flex; gap: 10px; align-items: center; margin: 8px 0 0; font-size: 15px; }
@@ -355,43 +348,13 @@
     <p class="field-msg" id="sourceMsg" aria-live="polite"></p>
     <p class="hint">In CloseBot, open your HighLevel source and go to Setup. Paste the whole script tag here; the ID is the part after <code>source=</code>. <a class="guide" href="guide.html#source-id" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: find your source ID</a></p>
 
-    <fieldset class="choices">
-      <legend>Which chat window?</legend>
-      <label class="choice"><input type="radio" name="widget" value="classic" checked>
-        <span><strong>CloseBot's chat widget</strong><span class="hint">CloseBot's own window, with your colors. The setup we've been using.</span></span></label>
-      <label class="choice"><input type="radio" name="widget" value="own">
-        <span><strong>Our own chat window <span class="badge">New</span></strong><span class="hint">Drawn by this embed and talking to CloseBot directly. Replies stream in, and there's no CloseBot form to fill.</span></span></label>
-    </fieldset>
-
-    <details class="look" id="cbAccount">
-      <summary>Connect your CloseBot account <span class="opt">(optional, uses your CloseBot API key)</span></summary>
-      <div class="cta-body">
-        <p class="hint">Lets this page pick the source and the agent that answers the chat, and gives the AI the visitor's form answers as a hidden note only it can see.</p>
-        <ol class="mini-steps">
-          <li>Sign in to CloseBot as the account owner and open <a href="https://app.closebot.com/settings?tab=keys" target="_blank" rel="noopener">Settings &rsaquo; API Keys</a>.</li>
-          <li>Click <strong>+</strong> at the top of the table, name the key (for example <code>Chat embed</code>) and create it.</li>
-          <li>Copy the key straight away. CloseBot shows it only once.</li>
-          <li>Paste it below, enter your website's address and click <strong>Connect CloseBot</strong>.</li>
-        </ol>
-        <label for="cb-key">CloseBot API key</label>
-        <input id="cb-key" type="password" autocomplete="off" spellcheck="false">
-        <label for="cb-sites">Your website</label>
-        <input id="cb-sites" type="text" placeholder="https://your-site.com" autocomplete="off" spellcheck="false">
-        <p class="hint">The address of the site the thank-you page is on, starting with https://. Separate several sites with commas. The key only works from these sites.</p>
-        <div class="action"><button id="cb-connect" class="btn btn-primary" type="button">Connect CloseBot</button><span class="status" id="cb-status" aria-live="polite"></span></div>
-        <p class="hint">CloseBot checks the key, then it's locked to your sites and added to the code in scrambled form. It isn't stored anywhere, and it can't be read back out of your page. <a class="guide" href="guide.html#closebot-key" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: connect CloseBot</a></p>
-        <div id="cb-sources"></div>
-        <div id="cb-agents"></div>
-      </div>
-    </details>
-
     <h3 class="part">In CloseBot</h3>
     <ol class="tasks">
-      <li class="classic-only"><strong>Turn on the widget's form</strong>In the chat widget settings, open <strong>Form</strong>, turn it on, include <strong>Email</strong> and <strong>Phone</strong>, and set it to show immediately.</li>
+      <li><strong>Turn on the widget's form</strong>In the chat widget settings, open <strong>Form</strong>, turn it on, include <strong>Email</strong> and <strong>Phone</strong>, and set it to show immediately.</li>
       <li><strong>Target the thank-you page</strong>Target the widget to the thank-you page URL only, so CloseBot doesn't show it on the form page either.</li>
       <li><strong>Allow your domain</strong>Put the site's domain on the source's allowed domains. CloseBot ignores pages on domains that aren't listed.</li>
     </ol>
-    <p class="note classic-only">The embed fills and sends that form for the visitor. If it can't find their details, they fill it in themselves as usual.</p>
+    <p class="note">The embed fills and sends that form for the visitor. If it can't find their details, they fill it in themselves as usual.</p>
   </section>
 
   <!-- ===== Step 2: Your form ===== -->
@@ -433,9 +396,28 @@
 
     <label for="fields">Form answers for the AI (optional)</label>
     <input id="fields" type="text" placeholder="business_info, team_size" autocomplete="off" spellcheck="false">
-    <p class="hint">Names of form answers passed in the thank-you page address or asked on your own form, separated by commas. The AI gets them as a note only it can see when you connect your CloseBot account in step 1, or otherwise along with the visitor's first chat message. The visitor doesn't see them. <a class="guide" href="guide.html#answers" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: what to put here</a></p>
+    <p class="hint">Names of form answers passed in the thank-you page address or asked on your own form, separated by commas. The AI gets them as a note only it can see when you connect CloseBot below, or otherwise along with the visitor's first chat message. The visitor doesn't see them. <a class="guide" href="guide.html#answers" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: what to put here</a></p>
 
-    <p class="note" id="aiNoteInfo"></p>
+    <details class="look" id="aiNote">
+      <summary>Give the AI these answers as a hidden note <span class="opt">(optional, uses your CloseBot API key)</span></summary>
+      <div class="cta-body">
+        <p class="hint">Connect your CloseBot account and the answers are added to the visitor's conversation as an internal note that only the AI can see, as soon as the thank-you page opens. The visitor's first message then goes exactly as they typed it. Without this, the answers ride along with their first message instead.</p>
+        <ol class="mini-steps">
+          <li>Sign in to CloseBot as the account owner and open <a href="https://app.closebot.com/settings?tab=keys" target="_blank" rel="noopener">Settings &rsaquo; API Keys</a>.</li>
+          <li>Click <strong>+</strong> at the top of the table, name the key (for example <code>Chat embed</code>) and create it.</li>
+          <li>Copy the key straight away. CloseBot shows it only once.</li>
+          <li>Paste it below, enter your website's address and click <strong>Connect CloseBot</strong>.</li>
+        </ol>
+        <label for="cb-key">CloseBot API key</label>
+        <input id="cb-key" type="password" autocomplete="off" spellcheck="false">
+        <label for="cb-sites">Your website</label>
+        <input id="cb-sites" type="text" placeholder="https://your-site.com" autocomplete="off" spellcheck="false">
+        <p class="hint">The address of the site the thank-you page is on, starting with https://. Separate several sites with commas. The key only works from these sites.</p>
+        <div class="action"><button id="cb-connect" class="btn btn-primary" type="button">Connect CloseBot</button><span class="status" id="cb-status" aria-live="polite"></span></div>
+        <div id="cb-sources"></div>
+        <p class="hint">CloseBot checks the key, then it's locked to your sites and added to the code in scrambled form. It isn't stored anywhere, and it can't be read back out of your page. <a class="guide" href="guide.html#closebot-key" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: connect CloseBot</a></p>
+      </div>
+    </details>
 
     <div class="check-card">
       <label class="check"><input id="hl" type="checkbox">
@@ -553,9 +535,9 @@
           </div>
 
           <h3>Anything else</h3>
-          <div class="classic-only"><label for="lk-css">Custom CSS</label>
+          <label for="lk-css">Custom CSS</label>
           <textarea id="lk-css" spellcheck="false" placeholder="[data-cb] .cb-header-title { letter-spacing: .02em; }"></textarea>
-          <p class="hint">Added after the tag as a style block. Not shown in the preview.</p></div>
+          <p class="hint">Added after the tag as a style block. Not shown in the preview.</p>
         </div>
         <div class="preview-wrap">
           <label>Preview</label>
@@ -674,9 +656,7 @@
   // points at production unless this page is served from a custom domain.
   var PROD = 'https://gmm-chatwidget.vercel.app';
   var custom = /^https?:$/.test(location.protocol) && !/\.vercel\.app$/.test(location.hostname);
-  var BASE = custom ? location.origin : PROD;
-  var EMBED = BASE + '/embed.js';
-  function widget() { var w = document.querySelector('input[name=widget]:checked'); return w ? w.value : 'classic'; }
+  var EMBED = (custom ? location.origin : PROD) + '/embed.js';
   var DEFAULT_GREETING = 'Hey {first_name}, what can I help you with today?';
   var CTA = {
     title: 'You’re all set, {first_name}!',
@@ -712,9 +692,7 @@
     placeInline.textContent = inline
       ? 'Paste it where the chat should appear. HighLevel: a Custom JS/HTML element. WordPress: a Custom HTML block.'
       : 'Paste it anywhere on the page; the chat button shows in the corner. HighLevel: a Custom JS/HTML element or the page\'s tracking code. WordPress: a Custom HTML block.';
-    var own = widget() === 'own';
-    document.body.classList.toggle('own', own);
-    var lines = ['<script src="' + (own ? BASE + '/chat.js' : EMBED) + '"', '  data-source="' + (id || 'PASTE_SOURCE_ID') + '"'];
+    var lines = ['<script src="' + EMBED + '"', '  data-source="' + (id || 'PASTE_SOURCE_ID') + '"'];
     if (!inline) lines.push('  data-layout="bubble"');
     if (inline && height.value.trim() && height.value.trim() !== '600px') lines.push('  data-height="' + height.value.trim().replace(/"/g, '') + '"');
     var f = fieldList();
@@ -732,15 +710,12 @@
     var look = lookOptions(inline);
     Object.keys(look).forEach(function (k) { lines.push('  data-' + k + '="' + attrValue(look[k]) + '"'); });
     lines[lines.length - 1] += '></' + 'script>';
-    var css = own ? '' : $('lk-css').value.trim().replace(/<\/style/gi, '<\\/style');
+    var css = $('lk-css').value.trim().replace(/<\/style/gi, '<\\/style');
     if (css) lines.push('<style>\n' + css + '\n</style>');
     out.textContent = lines.join('\n');
     renderPreview(inline, look);
     renderCtaPreview(inline, look);
     copy.disabled = !id;
-    $('aiNoteInfo').innerHTML = noteKey
-      ? '<strong>Hidden note is on.</strong> The AI gets these answers as a note only it can see, from your CloseBot account connected in step 1.'
-      : 'Optional: connect your CloseBot account in <a href="#closebot">step 1</a> and the AI gets these answers as a note only it can see, as soon as the thank-you page opens.';
     copy.nextElementSibling.textContent = '';
     refreshWizard();
   }
@@ -1018,8 +993,7 @@
     return $('cb-sites').value.split(',').map(function (v) { return v.trim(); }).filter(Boolean);
   }
   function checkedSources() {
-    var r = document.querySelector('#cb-sources input:checked');
-    return r && r.value ? [r.value] : [];
+    return [].map.call(document.querySelectorAll('#cb-sources input:checked'), function (b) { return b.value; });
   }
   function cbPost(body) {
     return fetch('api/closebot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -1027,8 +1001,8 @@
         return res.json().then(function (b) { return { ok: res.ok, body: b }; }, function () { return { ok: false, body: {} }; });
       });
   }
-  function cbFail(r, el) {
-    var status = el || $('cb-status');
+  function cbFail(r) {
+    var status = $('cb-status');
     status.className = 'status err';
     status.textContent = CB_ERRORS[r.body && r.body.error] || 'Couldn’t connect to CloseBot. Try again in a moment.';
   }
@@ -1040,137 +1014,33 @@
       if (!r.ok) { noteKey = ''; render(); return cbFail(r); }
       noteKey = r.body.sealed;
       status.className = 'status';
-      status.textContent = 'Connected. Your locked key is in the code in the Install step.';
+      status.textContent = 'Connected. The code in the Install step now includes your locked key' +
+        (fieldList() ? '.' : ' once you add form answers above.');
       render();
     });
   }
-  function el(tag, cls, text) {
-    var e = document.createElement(tag);
-    if (cls) e.className = cls;
-    if (text) e.textContent = text;
-    return e;
-  }
-  function radio(name, value, label, checked, onChange) {
-    var l = el('label', 'check');
-    var r = document.createElement('input');
-    r.type = 'radio'; r.name = name; r.value = value; r.checked = !!checked;
-    r.addEventListener('change', onChange);
-    l.appendChild(r);
-    l.appendChild(el('span', '', label));
-    return l;
-  }
-
-  // Which source the chat is on: the note only searches it, and its agents
-  // can be picked below.
   function renderSources() {
     var box = $('cb-sources');
     box.innerHTML = '';
-    $('cb-agents').innerHTML = '';
-    if (!cbSources.length) return;
-    box.appendChild(el('h3', '', 'Which CloseBot source is this chat on?'));
-    var only = cbSources.length === 1;
-    if (!only) box.appendChild(radio('cbSource', '', 'Not sure: search all my sources', true, onSource));
+    if (cbSources.length < 2) return;
+    var p = document.createElement('p');
+    p.className = 'hint';
+    p.textContent = 'Only look for the visitor in these CloseBot sources (optional; with none ticked, all are searched):';
+    box.appendChild(p);
     cbSources.forEach(function (src) {
-      box.appendChild(radio('cbSource', src.id, src.name + (src.category ? ' (' + src.category + ')' : ''), only, onSource));
-    });
-    if (only) loadAgents(cbSources[0].id);
-  }
-  function onSource() {
-    var id = checkedSources()[0];
-    sealKey()['catch'](function () { cbFail({}); });
-    if (id) loadAgents(id); else $('cb-agents').innerHTML = '';
-  }
-
-  // The agents on that source, and which one answers the chat channel.
-  function chatChannelGuess(channels) {
-    var key = sourceId(source.value);
-    var exact = channels.filter(function (c) { return key && c.id === key; })[0];
-    return exact || channels.filter(function (c) { return /chat|widget|web/i.test(c.name); })[0] || channels[0];
-  }
-  function loadAgents(sourceIdValue) {
-    var box = $('cb-agents');
-    box.innerHTML = '';
-    var status = el('p', 'status', 'Loading agents…');
-    box.appendChild(status);
-    cbPost({ apiKey: $('cb-key').value.trim(), action: 'agents', sourceId: sourceIdValue }).then(function (r) {
-      if (!r.ok) return cbFail(r, status);
-      renderAgents(sourceIdValue, r.body.channels || [], r.body.agents || []);
-    })['catch'](function () { cbFail({}, status); });
-  }
-  function renderAgents(sourceIdValue, channels, agents) {
-    var box = $('cb-agents');
-    box.innerHTML = '';
-    if (!channels.length) { box.appendChild(el('p', 'hint', 'This source has no channels yet. Add a chat widget to it in CloseBot first.')); return; }
-    box.appendChild(el('h3', '', 'Which agent answers the chat?'));
-    var lab = el('label', '', 'Chat channel');
-    lab.setAttribute('for', 'cb-channel');
-    box.appendChild(lab);
-    var sel = document.createElement('select');
-    sel.id = 'cb-channel';
-    var guess = chatChannelGuess(channels);
-    channels.forEach(function (c) {
-      var o = el('option', '', c.name || c.id);
-      o.value = c.id;
-      if (guess && c.id === guess.id) o.selected = true;
-      sel.appendChild(o);
-    });
-    box.appendChild(sel);
-    box.appendChild(el('p', 'hint', 'The channel your chat widget uses on this source. It’s usually named after the widget.'));
-    var list = el('div', 'agent-list');
-    box.appendChild(list);
-    var drawList = function () {
-      list.innerHTML = '';
-      if (!agents.length) { list.appendChild(el('p', 'hint', 'No agents in this CloseBot account yet.')); return; }
-      agents.forEach(function (a) {
-        var answers = a.onSource && a.enabled && a.channels.indexOf(sel.value) !== -1;
-        var row = radio('cbAgent', a.id, a.name, false, syncAssign);
-        row.appendChild(el('span', 'tag' + (answers ? ' on' : ''), answers ? 'Answers this chat now' : a.published ? '' : 'Not published'));
-        list.appendChild(row);
-      });
-    };
-    sel.addEventListener('change', drawList);
-    drawList();
-    var confirm = el('label', 'check');
-    var tick = document.createElement('input');
-    tick.type = 'checkbox';
-    tick.id = 'cb-assign-ok';
-    tick.addEventListener('change', syncAssign);
-    confirm.appendChild(tick);
-    confirm.appendChild(el('span', '', 'I understand this changes the agent’s settings in CloseBot: it will also answer this channel. Its other channels and filters stay as they are.'));
-    box.appendChild(confirm);
-    var act = el('div', 'action');
-    var btn = el('button', 'btn btn-primary', 'Let this agent answer the chat');
-    btn.type = 'button';
-    btn.id = 'cb-assign';
-    var st = el('span', 'status');
-    st.setAttribute('aria-live', 'polite');
-    act.appendChild(btn);
-    act.appendChild(st);
-    box.appendChild(act);
-    function syncAssign() {
-      btn.disabled = !(tick.checked && document.querySelector('input[name=cbAgent]:checked'));
-    }
-    syncAssign();
-    btn.addEventListener('click', function () {
-      var pick = document.querySelector('input[name=cbAgent]:checked');
-      if (!pick) return;
-      btn.disabled = true;
-      st.className = 'status';
-      st.textContent = 'Saving in CloseBot…';
-      cbPost({ apiKey: $('cb-key').value.trim(), action: 'assign', sourceId: sourceIdValue, botId: pick.value, channel: sel.value }).then(function (r) {
-        if (!r.ok) { syncAssign(); return cbFail(r, st); }
-        agents.forEach(function (a) { if (a.id === pick.value) { a.onSource = true; a.enabled = true; a.channels = r.body.channels; } });
-        drawList();
-        tick.checked = false;
-        syncAssign();
-        st.className = r.body.othersOnChannel && r.body.othersOnChannel.length ? 'status err' : 'status';
-        st.textContent = 'Saved. ' + (r.body.othersOnChannel && r.body.othersOnChannel.length
-          ? 'Also answering this channel: ' + r.body.othersOnChannel.join(', ') + '. Turn it off for them in CloseBot so only one agent replies.'
-          : 'This agent now answers the chat.');
-      })['catch'](function () { syncAssign(); cbFail({}, st); });
+      var label = document.createElement('label');
+      label.className = 'check';
+      var box2 = document.createElement('input');
+      box2.type = 'checkbox';
+      box2.value = src.id;
+      box2.addEventListener('change', function () { sealKey()['catch'](function () { cbFail({}); }); });
+      var span = document.createElement('span');
+      span.textContent = src.name + (src.category ? ' (' + src.category + ')' : '');
+      label.appendChild(box2);
+      label.appendChild(span);
+      box.appendChild(label);
     });
   }
-
   $('cb-connect').addEventListener('click', function () {
     var status = $('cb-status');
     if (!$('cb-key').value.trim()) { status.className = 'status err'; status.textContent = 'Paste your CloseBot API key first.'; return; }
@@ -1190,8 +1060,8 @@
       return sealKey();
     })['catch'](function () { cbFail({}); }).then(function () { $('cb-connect').disabled = false; });
   });
-  [$('cb-key'), $('cb-sites')].forEach(function (input) {
-    input.addEventListener('input', function () {
+  [$('cb-key'), $('cb-sites')].forEach(function (el) {
+    el.addEventListener('input', function () {
       if (!noteKey && !cbSources.length) return;
       noteKey = '';
       cbSources = [];
@@ -1353,7 +1223,7 @@
 
     var missing = [];
     if (!id) missing.push({ text: 'Your CloseBot source ID. Until it’s in, the code says PASTE_SOURCE_ID and Copy stays off.', step: 'closebot' });
-    if ($('cb-key').value.trim() && !noteKey) missing.push({ text: 'You pasted a CloseBot API key but haven’t clicked Connect CloseBot, so the hidden note isn’t in the code.', step: 'closebot' });
+    if ($('cb-key').value.trim() && !noteKey) missing.push({ text: 'You pasted a CloseBot API key but haven’t clicked Connect CloseBot, so the hidden note isn’t in the code.', step: 'form' });
     if (kind === 'typeform' && !$('ty-url').value.trim()) missing.push({ text: 'Your thank-you page address, for the Typeform redirect link.', step: 'form' });
     var list = $('missingList');
     list.innerHTML = '';
@@ -1407,7 +1277,6 @@
   });
   addEventListener('hashchange', function () { show(stepFromHash(), true); });
   [].forEach.call(document.querySelectorAll('input[name=formKind]'), function (r) { r.addEventListener('change', refreshWizard); });
-  [].forEach.call(document.querySelectorAll('input[name=widget]'), function (r) { r.addEventListener('change', render); });
 
   [source, height, hl, $('fields'), $('ty-url'), $('greeting'), $('cta-on'), $('cta-title'), $('cta-text'), $('cta-button'), $('lk-font'), $('lk-font-name'), $('lk-window-height'), $('lk-css')]
     .concat(LOOK_FIELDS.map(function (k) { return $('lk-' + k); })).concat([].slice.call(layouts)).forEach(function (el) {

@@ -10,7 +10,7 @@ Try it live at https://gmm-chatwidget.vercel.app/chat-demo.html once deployed (b
 <script src="https://gmm-chatwidget.vercel.app/chat.js" data-source="CLOSEBOT_SOURCE_ID"></script>
 ```
 
-It takes the same attributes as `embed.js`, so a tag written by the setup page works by swapping `embed.js` for `chat.js`. `data-source` can be the source ID or CloseBot's whole script tag (the part after `source=` is used). Without `data-source` it shows no chat and only remembers what the visitor submits on a form page, like the bare `embed.js` tag. The two read and write the same browser storage (`gmmcw_contact` and friends), so the form page can keep using `embed.js`.
+The setup page for it is at https://gmm-chatwidget.vercel.app/chat-setup (the original setup page at `/` stays on `embed.js`). It takes the same attributes as `embed.js`, so a tag written by either setup page works by swapping `embed.js` for `chat.js`. `data-source` can be the source ID or CloseBot's whole script tag (the part after `source=` is used). Without `data-source` it shows no chat and only remembers what the visitor submits on a form page, like the bare `embed.js` tag. The two read and write the same browser storage (`gmmcw_contact` and friends), so the form page can keep using `embed.js`.
 
 ## How it differs from `embed.js`
 

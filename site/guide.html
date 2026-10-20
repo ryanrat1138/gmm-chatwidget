@@ -137,14 +137,37 @@
   </section>
 
   <section id="closebot-key">
-    <h2>Connect your CloseBot account</h2>
+    <h2>Connect CloseBot for the hidden note</h2>
+    <p class="sub">Optional. With your CloseBot API key, the form answers go on the visitor's CloseBot conversation as an internal note that only the AI can see, as soon as the thank-you page opens. Without it, they ride along with the visitor's first chat message.</p>
+    <ol class="steps">
+      <li>Sign in to CloseBot as the account owner. A key made by a team member may not be allowed to add notes.</li>
+      <li>Open <a href="https://app.closebot.com/settings?tab=keys" target="_blank" rel="noopener">Settings &rsaquo; API Keys</a>.</li>
+      <li>Click <strong>+</strong> at the top of the table, give the key a name such as <code>Chat embed</code>, and create it.</li>
+      <li>Copy the key straight away. CloseBot shows it only once; if you lose it, create a new one.</li>
+      <li>On the setup page, in the <strong>Your form</strong> step, fill in <strong>Form answers for the AI</strong>, then open <strong>Give the AI these answers as a hidden note</strong>.</li>
+      <li>Paste the key, enter your website's address (for example <code>https://your-site.com</code>; add more sites separated by commas) and click <strong>Connect CloseBot</strong>.</li>
+      <li>If your CloseBot account has more than one source, you can tick the ones this chat uses so the visitor is only looked for there. With none ticked, all are searched.</li>
+      <li>Copy the thank-you page code from the <strong>Install</strong> step. It now has a <code>data-note-key</code> line: that's your key, locked to your sites and scrambled.</li>
+    </ol>
+    <p class="note">The key is checked with CloseBot and then only kept inside that scrambled line. It isn't stored anywhere, it can't be read back out of your page, and it only works from the sites you entered. To stop it working, delete the key in CloseBot.<br>
+      If you change the key or your sites later, click <strong>Connect CloseBot</strong> again and copy the new code. To check it worked, send a test form and look at the conversation in CloseBot: you should see an internal note starting "Form answers from the thank-you page".</p>
+    <h3>If Connect shows an error</h3>
+    <ul>
+      <li><strong>CloseBot didn't accept that key:</strong> copy the whole key again, or create a new one.</li>
+      <li><strong>Enter your website's address:</strong> the address must start with <code>https://</code>.</li>
+      <li><strong>This setup page can't lock keys yet:</strong> the service hosting the setup page needs its <code>SEAL_SECRET</code> setting; ask whoever runs it.</li>
+    </ul>
+  </section>
+
+  <section id="closebot-account">
+    <h2>Connect your CloseBot account (new chat window)</h2>
     <p class="sub">Optional. With your CloseBot API key, the setup page can pick the source and the agent that answers the chat, and the form answers go on the visitor's CloseBot conversation as an internal note that only the AI can see, as soon as the thank-you page opens. Without it, the answers ride along with the visitor's first chat message.</p>
     <ol class="steps">
       <li>Sign in to CloseBot as the account owner. A key made by a team member may not be allowed to add notes.</li>
       <li>Open <a href="https://app.closebot.com/settings?tab=keys" target="_blank" rel="noopener">Settings &rsaquo; API Keys</a>.</li>
       <li>Click <strong>+</strong> at the top of the table, give the key a name such as <code>Chat embed</code>, and create it.</li>
       <li>Copy the key straight away. CloseBot shows it only once; if you lose it, create a new one.</li>
-      <li>On the setup page, in the <strong>CloseBot</strong> step, open <strong>Connect your CloseBot account</strong>.</li>
+      <li>On the <a href="chat-setup">chat window setup page</a>, in the <strong>CloseBot</strong> step, open <strong>Connect your CloseBot account</strong>.</li>
       <li>Paste the key, enter your website's address (for example <code>https://your-site.com</code>; add more sites separated by commas) and click <strong>Connect CloseBot</strong>.</li>
       <li>Choose the source this chat is on. If you're not sure, leave <strong>search all my sources</strong> picked.</li>
       <li>Optional: under <strong>Which agent answers the chat?</strong>, check the <strong>Chat channel</strong> is your chat widget's channel. The list shows which agents already answer it. To change it, pick an agent, tick the box confirming it changes the agent in CloseBot, and click <strong>Let this agent answer the chat</strong>. The agent keeps its other channels and filters. If another agent also answers that channel, the page tells you so you can turn it off for them in CloseBot.</li>
