@@ -6,7 +6,7 @@ A smart chat for form thank-you pages. After someone submits a HighLevel form, H
 - **CRM of record:** HighLevel
 - **AI:** CloseBot (API + chat widget)
 
-**Setup:** open https://gmm-chatwidget.vercel.app, paste the CloseBot source ID, and copy the tag onto the thank-you page. A second, chat-free tag goes on the form page when the form is on your own site.
+**Setup:** open https://gmm-chatwidget.vercel.app and follow its five steps: CloseBot (paste the source ID), Your form, Chat style, Install (copy the tag onto the thank-you page) and Test. A second, chat-free tag goes on the form page when the form is on your own site, and Typeform users get the redirect link to set up.
 
 See [docs/PLAN.md](docs/PLAN.md) for the architecture, data flow, security notes and phased build. The live version of the plan is at https://claude.ai/code/artifact/5025efa5-0f98-4b86-888c-340c0c85a75f
 
@@ -14,9 +14,9 @@ See [docs/PLAN.md](docs/PLAN.md) for the architecture, data flow, security notes
 
 | Path | What goes there |
 | --- | --- |
-| `api/` | `fields.js`: `POST /api/fields` saves extra details from the thank-you page (e.g. `business_info`) to the HighLevel contact. `typeform.js`: `POST /api/typeform` reads a Typeform's questions for the setup page, with the visitor's own token (read only, not stored). Webhook intake and `/api/context` are not built yet |
+| `api/` | `fields.js`: `POST /api/fields` saves extra details from the thank-you page (e.g. `business_info`) to the HighLevel contact. `note.js`: `POST /api/note` adds the thank-you page's form answers to the visitor's CloseBot conversation as a note only the AI sees. `typeform.js`: `POST /api/typeform` reads a Typeform's questions for the setup page, with the visitor's own token (read only, not stored). Webhook intake and `/api/context` are not built yet |
 | `loader/` | `embed.js`: the one-tag embed. Loads CloseBot's chat and fills its contact form in the background. Details in [loader/README.md](loader/README.md) |
-| `site/` | The setup page served at the project's root URL |
+| `site/` | The step-by-step setup page served at the project's root URL, and its guide |
 | `test/` | Browser tests for the embed against a mock CloseBot widget |
 | `docs/` | Plan and setup notes |
 
@@ -34,6 +34,21 @@ Optional: by default the embed passes `data-fields` answers to the AI with the v
 - `ALLOWED_ORIGINS`: the sites allowed to call it (e.g. `https://greatmountainmarketing.com`)
 
 Each key must already exist as a contact custom field in HighLevel. The service works with one HighLevel sub-account.
+
+### Form answers as an AI-only note (`/api/note`)
+
+With a CloseBot API key, the embed's `data-fields` answers go on the visitor's CloseBot conversation as an internal note that only the AI sees (CloseBot's `POST /lead/{leadId}/note` with `aiVisible`), instead of riding along with their first message. The service finds the conversation by searching CloseBot's leads for the visitor's email or phone, retrying for a few seconds while CloseBot creates it, and only uses a lead that matches the visitor and has been active in the last hour. When there's no key or no match, the embed falls back to the first-message note. Each customer can use their own CloseBot account: in the setup page's **Your form** step they paste their CloseBot API key and click **Connect CloseBot**. `POST /api/closebot` checks the key with CloseBot, lists their sources, and seals the key with the sites (and optionally sources) it may be used from (AES-256-GCM, `lib/seal.js`). The sealed text goes in their embed tag as `data-note-key`; `/api/note` opens it and only accepts it from those sites. Nothing is stored. For this the host sets, once:
+
+- `SEAL_SECRET`: 32 or more random characters (for example the output of `openssl rand -base64 32`). Changing it breaks every customer's sealed key, so they'd have to connect again.
+
+For pages without a sealed key, the service's own key is used if set:
+
+- `CLOSEBOT_API_KEY`: a key from CloseBot's Settings > API Keys (app.closebot.com/settings?tab=keys)
+- `ALLOWED_ORIGINS`: the sites allowed to call it (shared with `/api/fields`)
+- `CLOSEBOT_SOURCE_IDS` (optional): CloseBot source ids to search in, comma separated
+- `HIGHLEVEL_PRIVATE_TOKEN` and `HIGHLEVEL_LOCATION_ID` (optional): also match the lead by its HighLevel contact id
+
+Like `/api/fields`, anyone who knows a visitor's email can call it from an allowed origin, so the note is labelled as answers given by the visitor, values are capped at 500 characters, and quiet conversations are left alone.
 
 ## Secrets
 
