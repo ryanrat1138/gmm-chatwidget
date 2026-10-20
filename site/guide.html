@@ -48,9 +48,22 @@
   th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
   th { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
   .back { display: inline-block; margin-bottom: 20px; font-size: 14px; }
+  /* Inside the setup page's lightbox: just the section the link pointed to. */
+  html.embedded main { padding: 16px 16px 24px; }
+  html.embedded .back, html.embedded h1, html.embedded p.lead, html.embedded nav { display: none; }
+  html.embedded.has-target section:not(:target) { display: none; }
+  html.embedded section { margin: 0; }
 </style>
 </head>
 <body>
+<script>
+  if (/[?&]embed=1/.test(location.search)) {
+    document.documentElement.classList.add('embedded');
+    var mark = function () { document.documentElement.classList.toggle('has-target', !!(location.hash && document.querySelector(location.hash))); };
+    addEventListener('hashchange', mark);
+    addEventListener('DOMContentLoaded', mark);
+  }
+</script>
 <main>
   <a class="back" href="./">&larr; Back to setup</a>
   <h1>Chat embed: step-by-step guide</h1>
@@ -59,6 +72,7 @@
     <a href="#source-id">CloseBot source ID</a>
     <a href="#typeform">Typeform redirect</a>
     <a href="#answers">Form answers for the AI</a>
+    <a href="#typeform-token">Read your Typeform</a>
     <a href="#test">Test it</a>
   </nav>
 
@@ -119,6 +133,28 @@
       <li>Copy the thank-you page code again from the setup page, since the names are now part of it, and replace the old code on the page.</li>
     </ol>
     <p class="note">The answers ride along with the visitor's first chat message, as a note like <code>[Form answers, for reference: Business info: HVAC; Team size: 6-20]</code>. The AI reads it; the visitor never sees it. It does show in the HighLevel conversation, as part of their message. Names are turned into labels for the AI, so <code>business_info</code> reads "Business info".</p>
+  </section>
+
+  <section id="typeform-token">
+    <h2>Fill it in from your Typeform</h2>
+    <p class="sub">Optional. The setup page can read your form's questions, pick out the email, phone and name questions, and build the answer names and redirect link for you. Reading changes nothing on the form; it can then also write the redirect into the form if you ask it to.</p>
+    <ol class="steps">
+      <li>In Typeform, click your profile picture in the top right and go to <strong>Account &rsaquo; Your settings &rsaquo; Personal tokens</strong>.</li>
+      <li>Click <strong>Generate a new token</strong> and give it a name, such as <code>Chat embed</code>.</li>
+      <li>Under <strong>Scopes</strong>, choose <strong>Custom scopes</strong> and tick <strong>Forms: Read</strong>. Also tick <strong>Forms: Write</strong> if you want the setup page to write the redirect into the form for you.</li>
+      <li>Click <strong>Generate token</strong> and copy it. Typeform shows it only once.</li>
+      <li>On the setup page, open <strong>Fill this in from your Typeform</strong> in section 4. Paste your form's share link (for example <code>https://form.typeform.com/to/AbC123</code>) and the token, then click <strong>Read my form</strong>.</li>
+      <li>Check the <strong>Use as</strong> column: email, phone and name questions are set for you. Choose <strong>For the AI</strong> on each other answer the AI should know, and adjust its short name if you like.</li>
+      <li>Fill in the <strong>Thank-you page address</strong>, then copy the thank-you page code from section 1.</li>
+      <li>Either build the redirect shown in section 4 in Typeform yourself, picking each question named after an <code>@</code>, or let the setup page write it:
+        <ul>
+          <li>The form needs exactly one <strong>Redirect to URL</strong> ending. If it has none, add one in Typeform with any address and publish.</li>
+          <li>Tick the confirmation and click <strong>Write the redirect into my form</strong>. The page saves the form, reads it back and tells you if anything other than the redirect changed.</li>
+          <li>Open the ending in Typeform: the address should show each answer as a question tag, like the ones the <code>@</code> picker adds.</li>
+        </ul></li>
+    </ol>
+    <p class="note"><strong>Try the write on a duplicate first.</strong> In your Typeform workspace, open the form's <strong>&hellip;</strong> menu and choose <strong>Duplicate</strong>, then use the duplicate's link. Typeform's API saves the whole form at once, and it works from the <em>published</em> version, so publish any edits before writing or they can be lost.<br>
+      The token is sent to Typeform for each step and isn't saved anywhere. You can delete it in Typeform afterwards.</p>
   </section>
 
   <section id="test">
