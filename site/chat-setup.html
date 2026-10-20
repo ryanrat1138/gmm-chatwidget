@@ -112,6 +112,13 @@
   .check-card:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
   .check-card .check { margin: 0; }
 
+  .widget-pick { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+  .widget-pick-label { font-weight: 600; margin: 22px 0 0; }
+  .widget-pick a.choice { color: inherit; text-decoration: none; }
+  .widget-pick .dot { flex: none; width: 18px; height: 18px; margin-top: 3px; border: 2px solid #9aa9a0; border-radius: 50%; background: var(--panel); }
+  .widget-pick a[aria-current] { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent); cursor: default; }
+  .widget-pick a[aria-current] .dot { border-color: var(--accent); background: radial-gradient(circle, var(--accent) 0 4px, var(--panel) 5px); }
+  .widget-pick a:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--accent-ring); }
   fieldset.choices { border: 0; padding: 0; margin: 22px 0 0; display: flex; gap: 12px; flex-wrap: wrap; min-width: 0; }
   fieldset.choices legend { font-weight: 600; padding: 0; margin-bottom: 8px; }
   .choice { flex: 1 1 220px; display: flex; gap: 12px; align-items: flex-start; font-weight: 400; margin: 0; padding: 14px 16px;
@@ -320,16 +327,22 @@
 <header class="topbar">
   <div class="wrap">
     <div class="brand"><span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/></svg></span>
-      <span>Chat window setup</span></div>
+      <span>Chat embed setup</span></div>
     <a class="full-guide" href="guide.html" target="_blank" rel="noopener">Full guide</a>
   </div>
 </header>
 
 <main class="wrap">
   <div class="intro">
-    <h1>Add our own AI chat window to your thank-you page <span class="badge">New</span></h1>
-    <p class="lead">Adds a chat window of our own that talks to your CloseBot AI, with one tag. On the thank-you page it hands CloseBot the visitor's name, email and phone from the form they just sent, so the chat starts on their existing HighLevel contact. Replies stream in, and there's no CloseBot form to fill.</p>
-    <p class="hint">Using CloseBot's own chat widget instead? <a href="/">Use the original setup</a>.</p>
+    <h1>Add the AI chat to your thank-you page</h1>
+    <p class="lead">Adds the CloseBot AI chat to a page with one tag. On the thank-you page it hands CloseBot the visitor's name, email and phone from the form they just sent, so the chat starts on their existing HighLevel contact.</p>
+    <p class="widget-pick-label" id="widget-pick-label">Which chat window?</p>
+    <nav class="widget-pick" aria-labelledby="widget-pick-label">
+      <a class="choice" href="/"><span class="dot" aria-hidden="true"></span>
+        <span><strong>Use CloseBot's widget</strong><span class="hint">CloseBot's own chat window, with your colors. The setup we've been using.</span></span></a>
+      <a class="choice" href="/chat-setup" aria-current="page"><span class="dot" aria-hidden="true"></span>
+        <span><strong>Use our widget <span class="badge">New</span></strong><span class="hint">Our own chat window that talks to CloseBot directly. Replies stream in, and there's no CloseBot form to fill.</span></span></a>
+    </nav>
   </div>
 
   <nav class="stepper" id="stepper" aria-label="Setup steps">

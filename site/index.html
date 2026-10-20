@@ -112,6 +112,14 @@
   .check-card:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
   .check-card .check { margin: 0; }
 
+  .badge { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); font-size: 12px; font-weight: 700; vertical-align: 1px; }
+  .widget-pick { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+  .widget-pick-label { font-weight: 600; margin: 22px 0 0; }
+  .widget-pick a.choice { color: inherit; text-decoration: none; }
+  .widget-pick .dot { flex: none; width: 18px; height: 18px; margin-top: 3px; border: 2px solid #9aa9a0; border-radius: 50%; background: var(--panel); }
+  .widget-pick a[aria-current] { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent); cursor: default; }
+  .widget-pick a[aria-current] .dot { border-color: var(--accent); background: radial-gradient(circle, var(--accent) 0 4px, var(--panel) 5px); }
+  .widget-pick a:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--accent-ring); }
   fieldset.choices { border: 0; padding: 0; margin: 22px 0 0; display: flex; gap: 12px; flex-wrap: wrap; min-width: 0; }
   fieldset.choices legend { font-weight: 600; padding: 0; margin-bottom: 8px; }
   .choice { flex: 1 1 220px; display: flex; gap: 12px; align-items: flex-start; font-weight: 400; margin: 0; padding: 14px 16px;
@@ -322,6 +330,13 @@
   <div class="intro">
     <h1>Add the AI chat to your thank-you page</h1>
     <p class="lead">Adds the CloseBot AI chat to a page with one tag. On the thank-you page it fills in the visitor's name, email and phone from the form they just sent, so the chat starts on their existing HighLevel contact.</p>
+    <p class="widget-pick-label" id="widget-pick-label">Which chat window?</p>
+    <nav class="widget-pick" aria-labelledby="widget-pick-label">
+      <a class="choice" href="/" aria-current="page"><span class="dot" aria-hidden="true"></span>
+        <span><strong>Use CloseBot's widget</strong><span class="hint">CloseBot's own chat window, with your colors. The setup we've been using.</span></span></a>
+      <a class="choice" href="/chat-setup"><span class="dot" aria-hidden="true"></span>
+        <span><strong>Use our widget <span class="badge">New</span></strong><span class="hint">Our own chat window that talks to CloseBot directly. Replies stream in, and there's no CloseBot form to fill.</span></span></a>
+    </nav>
   </div>
 
   <nav class="stepper" id="stepper" aria-label="Setup steps">
