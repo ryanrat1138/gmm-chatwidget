@@ -496,6 +496,31 @@ test('call to action: goes away when the chat can\u2019t load', async (page) => 
   await page.waitForSelector('#gmmc-cta', { state: 'detached', timeout: 4000 });
 });
 
+test('widget: the source key finds the page’s chat; with none targeting the page, nothing shows', async (page) => {
+  await page.goto(P('inline') + '#top');
+  await untilState(page, 's.started');
+  const looked = mock.requestsFor('widget-for-page');
+  assert.strictEqual(looked.length, 1);
+  assert.strictEqual(looked[0].key, KEY);
+  assert.ok(/\/p\/inline$/.test(looked[0].pageUrl), 'asks about this page, without the hash or contact details');
+  pages['no-widget'] = doc('No widget', `<div id="slot"><script src="/loader/chat.js" data-source="src_none" data-closebot-api="${API}"></script></div>`);
+  mock.state.requests = [];
+  await page.goto(P('no-widget'));
+  await untilState(page, 's.error === "no-widget"');
+  await page.waitForSelector('gmmc-chat', { state: 'detached' });
+  assert.strictEqual(await page.$('#gmmc-cta'), null);
+  assert.strictEqual(mock.requestsFor('config').length, 0);
+});
+
+test('widget: data-widget-key connects straight to that chat', async (page) => {
+  pages['widget-key'] = doc('Widget key', `<div id="slot">${tag('data-widget-key="pk_direct"')}</div>`);
+  await page.goto(P('widget-key') + '?email=w%40example.com');
+  await untilState(page, 's.identified');
+  assert.strictEqual(mock.requestsFor('widget-for-page').length, 0);
+  assert.ok(mock.requestsFor('config').every((r) => r.key === 'pk_direct'));
+  assert.ok(mock.requestsFor('session').every((r) => r.key === 'pk_direct'));
+});
+
 test('unavailable: the inline chat says so, and Try again recovers', async (page) => {
   mock.state.failConfig = true;
   await page.goto(P('inline') + '?email=u%40example.com');

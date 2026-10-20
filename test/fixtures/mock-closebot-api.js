@@ -1,6 +1,7 @@
 // A small stand-in for CloseBot's chat widget endpoints, the ones its own
 // widget script (cb.js) calls and loader/chat.js talks to:
 //
+//   GET  /chat-widget/source/{sourceKey}/widget-for-page?pageUrl=  -> {publicKey} or 204
 //   GET  /chat-widget/{key}/config
 //   POST /chat-widget/{key}/session                 {visitorId, sessionId?}
 //   GET  /chat-widget/{key}/session/{id}/stream     server-sent events, ?backfill=true for history
@@ -75,6 +76,14 @@ function createMock() {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
     const url = new URL(req.url, 'http://mock');
+    const w = url.pathname.match(/^\/chat-widget\/source\/([^/]+)\/widget-for-page$/);
+    if (w) {
+      const src = decodeURIComponent(w[1]);
+      state.requests.push({ method: req.method, path: url.pathname, query: url.search, key: src, action: 'widget-for-page', pageUrl: url.searchParams.get('pageUrl'), at: Date.now() });
+      if (state.noWidget || src === 'src_none') { res.writeHead(204); return res.end(); }
+      // The chat's own key is the source key here, so tests can keep using it.
+      return json(res, 200, { publicKey: src });
+    }
     const m = url.pathname.match(/^\/chat-widget\/([^/]+)\/(config|session)(?:\/([^/]+)\/([a-z-]+))?$/);
     if (!m) return json(res, 404, { error: 'not found' });
     const key = decodeURIComponent(m[1]);

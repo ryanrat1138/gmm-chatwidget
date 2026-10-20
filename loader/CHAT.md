@@ -53,6 +53,7 @@ All `embed.js` attributes are accepted. These apply:
 | `data-cta`, `data-cta-title`, `data-cta-text`, `data-cta-button`, `data-cta-wait`, `data-cta-target` | | Call to action, as in `embed.js` |
 | `data-email`, `data-phone`, `data-first-name`, `data-last-name`, `data-name` | | HighLevel merge fields |
 | `data-backend`, `data-hl-origins`, `data-debug` | | As in `embed.js` |
+| `data-widget-key` | | The chat widget's own public key, to skip looking it up for the page (see below) |
 | `data-closebot-api` | `https://api.closebot.com` | Where CloseBot's chat endpoints are (for tests) |
 
 Ignored, because they only make sense for CloseBot's own widget: `data-autosubmit`, `data-form-timeout`, `data-closebot-src`, and the setup page's custom CSS (it targets CloseBot's class names).
@@ -63,10 +64,13 @@ Contact details come from the same places as `embed.js`, first match wins: the f
 
 ## CloseBot endpoints used
 
-The same public endpoints CloseBot's widget script calls, with the source's public key and no API key. All of them are in the "transport" section of `chat.js`.
+The same public endpoints CloseBot's widget script calls, with no API key. All of them are in the "transport" section of `chat.js`.
+
+The source key in `data-source` is not the chat's key. Like cb.js, `chat.js` first asks CloseBot which chat widget targets the current page, and uses that widget's public key for everything else. So the page has to be targeted by one of the source's chat widgets in CloseBot (or the tag needs `data-widget-key`). If no widget targets the page, nothing shows, as with cb.js.
 
 | Call | What for |
 | --- | --- |
+| `GET /chat-widget/source/{sourceKey}/widget-for-page?pageUrl=` | The chat widget's public key for this page: `{publicKey}`, or 204 for none |
 | `GET /chat-widget/{key}/config` | Widget settings |
 | `POST /chat-widget/{key}/session` `{visitorId, sessionId?}` | Start or resume a conversation: `{sessionId, resumedSession}` |
 | `GET /chat-widget/{key}/session/{id}/stream[?backfill=true]` | Server-sent events: `connected`, `backfill-done`, `message-sent`, `ai_typing`, `human_typing` (others ignored) |
@@ -77,13 +81,13 @@ The same public endpoints CloseBot's widget script calls, with the source's publ
 
 ## Known risk
 
-These are CloseBot's widget endpoints, not part of CloseBot's published API docs. They were read from cb.js on 2026-10-20 and built against a mock (`test/fixtures/mock-closebot-api.js`), because the build environment couldn't reach `api.closebot.com`. CloseBot can change them without notice; if it does, this chat stops working until the transport section is updated, while `embed.js` (which uses CloseBot's own script) keeps working. Before relying on it, try the demo page against the live source and check:
+These are CloseBot's widget endpoints, not part of CloseBot's published API docs. They were read from cb.js on 2026-10-20 and built against a mock (`test/fixtures/mock-closebot-api.js`). The page lookup, settings, starting a conversation and the stream's first event were checked live from greatmountainmarketing.com; the rest wasn't. CloseBot can change them without notice; if it does, this chat stops working until the transport section is updated, while `embed.js` (which uses CloseBot's own script) keeps working. Before relying on it, try the demo page against the live source and check:
 
 - the source's allowed domains include the site (and `gmm-chatwidget.vercel.app` for the demo), since CloseBot checks the page's origin;
 - `/identity` puts the conversation on the right HighLevel contact;
 - the message and stream shapes match (a bot reply appears once, history comes back on reload).
 
-Details read loosely because they couldn't be checked live: the settings may arrive wrapped in an object; lead-form `fields` may be names or objects; avatar, subtitle and auto-open settings use guessed names; the message `POST` may or may not return a `messageId` (the visitor's message is matched to CloseBot's echo by its text either way).
+Details read loosely because they couldn't be checked live: the settings may arrive wrapped in an object; lead-form `fields` may be names or objects; avatar and subtitle settings use guessed names; auto-open follows CloseBot's `autoOpenTriggers.timeOnPage` but only opens for the `open` action (a `preview` is ignored); the message `POST` may or may not return a `messageId` (the visitor's message is matched to CloseBot's echo by its text either way).
 
 ## Tests
 

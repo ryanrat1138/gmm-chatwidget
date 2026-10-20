@@ -102,6 +102,7 @@
   var config = {
     source: sourceId(attr('source')),
     closebotApi: (attr('closebot-api') || CLOSEBOT_API).replace(/\/+$/, ''),
+    widgetKey: trim(attr('widget-key')),
     fields: (attr('fields') || '').split(',').map(trim).filter(function (k) { return /^[A-Za-z0-9_]+$/.test(k); }),
     api: (attr('api') || scriptOrigin()).replace(/\/+$/, ''),
     // A tag in the page head can't hold an inline chat: it uses the bubble.
@@ -658,6 +659,23 @@
   // CloseBot's own widget script calls with the source's public key; no API
   // key is involved. They are not part of CloseBot's published API, so if a
   // CloseBot release changes them, this is the one place to update.
+  // The source key in CloseBot's script tag isn't the chat's own key: CloseBot
+  // looks up which of the source's chat widgets targets this page, as its
+  // script does. Null when none does (204 or an empty answer).
+  function widgetFor(base, sourceKey, pageUrl) {
+    var url = base + '/chat-widget/source/' + encodeURIComponent(sourceKey) +
+      '/widget-for-page?pageUrl=' + encodeURIComponent(pageUrl);
+    return window.fetch(url, { credentials: 'omit' }).then(function (res) {
+      if (res.status === 204 || res.status === 404) return null;
+      if (!res.ok) { var err = new Error('CloseBot widget-for-page: ' + res.status); err.status = res.status; throw err; }
+      return res.text().then(function (text) {
+        var w = null;
+        try { w = text ? JSON.parse(text) : null; } catch (_) { /* not JSON */ }
+        return w && w.publicKey ? String(w.publicKey) : null;
+      });
+    });
+  }
+
   function closebot(base, publicKey) {
     var root = base + '/chat-widget/' + encodeURIComponent(publicKey);
     var sessionPath = function (id) { return '/session/' + encodeURIComponent(id); };
@@ -1697,7 +1715,8 @@
     retry.type = 'button';
     retry.addEventListener('click', function () {
       ui.notice.innerHTML = '<span class="gmmc-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="gmmc-sr">Connecting to the chat</span>';
-      if (!state.configLoaded) loadSettings(1);
+      if (!cb) resolveWidget(1);
+      else if (!state.configLoaded) loadSettings(1);
       else ensureSession()['catch'](noop);
     });
     ui.notice.appendChild(retry);
@@ -1948,6 +1967,11 @@
     if (state.layout !== 'bubble' || getItem(store(), AUTO_OPEN_KEY)) return;
     if (window.innerWidth <= 480) return;
     var t = settings.autoOpenTriggers;
+    // CloseBot sends {timeOnPage: {seconds, isEnabled, action}, exitIntent, scrollPercentage}.
+    if (t && typeof t === 'object' && t.timeOnPage && typeof t.timeOnPage === 'object') {
+      var top = t.timeOnPage;
+      t = (top.action && top.action !== 'open') ? [] : [{ type: 'timeOnPage', seconds: top.seconds, isEnabled: top.isEnabled }];
+    }
     var list = Array.isArray(t) ? t : (t && typeof t === 'object' ? (Array.isArray(t.triggers) ? t.triggers : [t]) : []);
     for (var i = 0; i < list.length; i++) {
       var o = list[i];
@@ -2161,6 +2185,37 @@
     });
   }
 
+  // Which of the source's chat widgets is for this page. The address is read
+  // after the visitor's details were taken out of it.
+  function resolveWidget(attempt) {
+    var lookup = config.widgetKey ? Promise.resolve(config.widgetKey)
+      : widgetFor(config.closebotApi, config.source, location.href.split('#')[0]);
+    lookup.then(function (key) {
+      if (!key) {
+        log('no CloseBot chat widget targets this page; check the widget\u2019s page targeting in CloseBot');
+        state.error = 'no-widget';
+        noWidget();
+        return;
+      }
+      cb = closebot(config.closebotApi, key);
+      loadSettings(0);
+    }, function () {
+      if (attempt < 1) { setTimeout(function () { resolveWidget(attempt + 1); }, 1500); return; }
+      log('could not reach CloseBot');
+      state.error = 'config';
+      onReady(function () { mountUi(); hideConnecting(); showProblem(); });
+    });
+  }
+
+  // No chat for this page: nothing shows, and the inline box takes no space.
+  function noWidget() {
+    onReady(function () {
+      if (host && host.parentNode) host.parentNode.removeChild(host);
+      if (ctaEl && ctaEl.parentNode) ctaEl.parentNode.removeChild(ctaEl);
+      ctaEl = null;
+    });
+  }
+
   // Both the settings and the visitor are known: show the chat.
   function maybeStart() {
     if (!state.configLoaded || !state.resolved || !ui || state.started) return;
@@ -2215,10 +2270,9 @@
     return;
   }
 
-  cb = closebot(config.closebotApi, config.source);
   // The inline chat goes in right away, so the page keeps its place for it.
   if (config.layout === 'inline') mountUi();
-  loadSettings(0);
+  resolveWidget(0);
   watchStream();
 
   onReady(function () {
