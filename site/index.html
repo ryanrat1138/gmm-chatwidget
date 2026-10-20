@@ -4,98 +4,186 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#40916C">
+<meta name="color-scheme" content="light">
 <title>Chat Embed Setup</title>
 <style>
   :root {
-    --bg: #f7f7f5; --panel: #ffffff; --text: #1d1d1b; --muted: #5f5f5a; --line: #e2e1dc;
-    --accent: #2f6f4f; --accent-text: #ffffff; --code-bg: #f0efea; --ok: #2f6f4f;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #161615; --panel: #1f1f1d; --text: #ecebe6; --muted: #a3a29b; --line: #34332f;
-      --accent: #6fbf94; --accent-text: #10241a; --code-bg: #262623; --ok: #6fbf94; }
+    color-scheme: light;
+    --bg: #f2f6f3; --panel: #ffffff; --soft: #f7faf8; --text: #16201a; --muted: #57635c; --line: #e0e7e2; --line-strong: #c9d4cd;
+    --accent: #40916C; --accent-ink: #2D6A4F; --accent-deep: #1B4332; --accent-soft: #e6f2ec; --accent-ring: rgba(64, 145, 108, .32);
+    --code-bg: #10231a; --code-text: #e3f1e9; --code-mark: #95d5b2;
+    --warn-bg: #fff8e8; --warn-line: #f0d595; --warn-ink: #7a4f00;
+    --err: #b42318; --ok: #2D6A4F;
+    --radius: 16px;
+    --shadow: 0 1px 2px rgba(16, 40, 28, .05), 0 10px 30px -8px rgba(16, 40, 28, .12);
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text);
-    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  main { max-width: 760px; margin: 0 auto; padding: 40px 16px 64px; }
-  h1 { font-size: 28px; line-height: 1.2; margin: 0 0 8px; }
-  h2 { font-size: 18px; margin: 0 0 12px; }
-  p.lead { color: var(--muted); margin: 0 0 28px; }
-  section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
-  .step { display: inline-block; min-width: 24px; height: 24px; border-radius: 12px; background: var(--accent);
-    color: var(--accent-text); font-size: 13px; font-weight: 600; text-align: center; line-height: 24px; margin-right: 8px; }
-  label { display: block; font-weight: 600; margin: 14px 0 6px; }
-  .hint { color: var(--muted); font-size: 14px; margin: 4px 0 0; }
-  input[type=text], input[type=password], select { width: 100%; padding: 10px 12px; font: inherit; color: var(--text);
-    background: var(--bg); border: 1px solid var(--line); border-radius: 8px; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; background: var(--bg); }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--font); overflow-x: hidden; }
+  a { color: var(--accent-ink); text-underline-offset: 2px; }
+  a:hover { color: var(--accent-deep); }
+  a:focus-visible { outline: 3px solid var(--accent-ring); outline-offset: 2px; border-radius: 4px; }
+  code { font: .875em var(--mono); background: var(--accent-soft); color: var(--accent-deep); padding: 1px 6px; border-radius: 5px; overflow-wrap: anywhere; }
+
+  /* ---------- page frame ---------- */
+  .topbar { background: var(--panel); border-bottom: 1px solid var(--line); }
+  .wrap { max-width: 920px; margin: 0 auto; padding-left: 16px; padding-right: 16px; }
+  .topbar .wrap { display: flex; align-items: center; gap: 12px; min-height: 60px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; letter-spacing: -.01em; flex: 1; min-width: 0; }
+  .logo { flex: none; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: #fff;
+    background: linear-gradient(135deg, #52b788, var(--accent) 55%, var(--accent-ink)); box-shadow: 0 2px 6px rgba(45, 106, 79, .3); }
+  .logo svg { width: 19px; height: 19px; }
+  .topbar a.full-guide { font-size: 14px; font-weight: 600; text-decoration: none; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--soft); white-space: nowrap; }
+  .topbar a.full-guide:hover { border-color: var(--accent); }
+  main { padding-top: 36px; padding-bottom: 72px; }
+  .intro { max-width: 680px; margin-bottom: 28px; }
+  h1 { font-size: clamp(26px, 4.2vw, 34px); line-height: 1.18; letter-spacing: -.02em; margin: 0 0 10px; }
+  p.lead { color: var(--muted); font-size: 17px; margin: 0; }
+
+  /* ---------- progress indicator ---------- */
+  .stepper { margin: 0 0 20px; scroll-margin-top: 16px; }
+  .stepper ol { list-style: none; margin: 0; padding: 0; display: flex; }
+  .stepper li { flex: 1 1 0; position: relative; min-width: 0; }
+  .stepper li + li::before { content: ""; position: absolute; top: 19px; left: calc(-50% + 26px); right: calc(50% + 26px); height: 2px;
+    border-radius: 2px; background: var(--line-strong); transition: background-color .25s; }
+  .stepper li.reached::before { background: var(--accent); }
+  .step-btn { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0 4px 4px; text-decoration: none;
+    color: var(--muted); font-size: 14px; font-weight: 600; text-align: center; line-height: 1.3; border-radius: 12px; }
+  .step-btn:hover { color: var(--text); }
+  .step-btn:focus-visible { outline: 3px solid var(--accent-ring); outline-offset: 2px; }
+  .step-btn .num { position: relative; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--panel); border: 2px solid var(--line-strong); color: var(--muted); font-size: 15px; font-weight: 700;
+    transition: background-color .2s, border-color .2s, box-shadow .2s, color .2s; }
+  .step-btn:hover .num { border-color: var(--accent); }
+  .step-btn .num svg { width: 18px; height: 18px; display: none; }
+  li.done .num { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); }
+  li.done .num .n { display: none; }
+  li.done .num .ic-check { display: block; }
+  li.warn .num { background: var(--warn-bg); border-color: #d9a23a; color: var(--warn-ink); }
+  li.warn .num .n { display: none; }
+  li.warn .num .ic-warn { display: block; }
+  li.current .num { background: var(--accent-ink); border-color: var(--accent-ink); color: #fff; box-shadow: 0 0 0 5px var(--accent-soft); }
+  li.current .num .n { display: block; }
+  li.current .num svg { display: none; }
+  li.current .step-btn { color: var(--text); }
+  .step-count { display: none; margin: 12px 0 0; text-align: center; font-size: 14px; color: var(--muted); }
+  .step-count strong { color: var(--text); }
+
+  /* ---------- the step card ---------- */
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+  section.step { padding: 32px 36px 36px; }
+  section.step.enter { animation: step-in .32s cubic-bezier(.2, .7, .3, 1) both; }
+  @keyframes step-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .eyebrow { margin: 0 0 6px; font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-ink); }
+  h2 { font-size: 24px; line-height: 1.25; letter-spacing: -.015em; margin: 0 0 8px; }
+  h2:focus { outline: none; }
+  p.sub { color: var(--muted); margin: 0 0 8px; max-width: 640px; }
+  h3.part { display: flex; align-items: center; gap: 10px; font-size: 17px; margin: 30px 0 4px; }
+  h3.part .tag { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted);
+    background: var(--soft); border: 1px solid var(--line); border-radius: 999px; padding: 1px 9px; }
+  .divider { border: 0; border-top: 1px solid var(--line); margin: 30px 0 0; }
+
+  /* ---------- fields ---------- */
+  label { display: block; font-weight: 600; margin: 18px 0 6px; }
+  .hint { color: var(--muted); font-size: 14px; margin: 6px 0 0; line-height: 1.55; }
+  input[type=text], input[type=password], select, textarea { width: 100%; padding: 11px 13px; font: inherit; color: var(--text);
+    background: var(--panel); border: 1px solid var(--line-strong); border-radius: 10px; transition: border-color .15s, box-shadow .15s; }
+  input[type=text]::placeholder, input[type=password]::placeholder, textarea::placeholder { color: #8a958f; }
+  input[type=text]:hover, input[type=password]:hover, select:hover, textarea:hover { border-color: #aebdb4; }
+  input[type=text]:focus, input[type=password]:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-ring); }
+  input[type=checkbox], input[type=radio] { accent-color: var(--accent-ink); width: 18px; height: 18px; flex: none; margin: 3px 0 0; }
+  input[type=checkbox]:focus-visible, input[type=radio]:focus-visible { outline: 3px solid var(--accent-ring); outline-offset: 2px; }
+  #source { font-family: var(--mono); font-size: 15px; }
+  .field-msg { min-height: 0; margin: 8px 0 0; font-size: 14px; font-weight: 600; display: flex; gap: 6px; align-items: center; }
+  .field-msg:empty { display: none; }
+  .field-msg.ok { color: var(--ok); }
+  .field-msg.ok::before { content: ""; width: 16px; height: 16px; flex: none; border-radius: 50%; background: var(--accent)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.2l2.3 2.3 4.7-4.9' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/16px no-repeat; }
+  .field-msg.err { color: var(--err); }
   .row { display: flex; gap: 12px; flex-wrap: wrap; }
   .row > div { flex: 1 1 200px; }
-  .check { display: flex; gap: 10px; align-items: flex-start; font-weight: 400; }
-  .check input { margin-top: 5px; }
-  pre { background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 14px;
-    overflow-x: auto; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre; margin: 0; }
-  button { font: inherit; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 0;
-    background: var(--accent); color: var(--accent-text); cursor: pointer; margin-top: 12px; }
-  button:disabled { opacity: .5; cursor: default; }
-  .status { margin-left: 10px; color: var(--ok); font-size: 14px; }
-  ul { margin: 8px 0 0; padding-left: 20px; }
+  .check { display: flex; gap: 12px; align-items: flex-start; font-weight: 400; cursor: pointer; }
+  .check > span > strong { font-weight: 600; }
+  .check-card { margin-top: 22px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--soft); }
+  .check-card:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+  .check-card .check { margin: 0; }
+
+  fieldset.choices { border: 0; padding: 0; margin: 22px 0 0; display: flex; gap: 12px; flex-wrap: wrap; min-width: 0; }
+  fieldset.choices legend { font-weight: 600; padding: 0; margin-bottom: 8px; }
+  .choice { flex: 1 1 220px; display: flex; gap: 12px; align-items: flex-start; font-weight: 400; margin: 0; padding: 14px 16px;
+    border: 1.5px solid var(--line); border-radius: 12px; cursor: pointer; background: var(--panel);
+    transition: border-color .15s, background-color .15s, box-shadow .15s; }
+  .choice:hover { border-color: #aebdb4; }
+  .choice:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent); }
+  .choice:has(input:focus-visible) { box-shadow: 0 0 0 4px var(--accent-ring); }
+  .choice strong { font-weight: 600; }
+  .choice .hint { display: block; margin-top: 2px; }
+  .choices.three .choice { flex-basis: 230px; }
+
+  /* ---------- buttons ---------- */
+  .btn { font: inherit; font-size: 15px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 11px 20px; border-radius: 10px; border: 1px solid transparent; cursor: pointer; text-decoration: none; line-height: 1.3;
+    transition: background-color .15s, border-color .15s, box-shadow .15s, transform .15s, color .15s; }
+  .btn:focus-visible { outline: none; box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--accent); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-primary { background: var(--accent-ink); color: #fff; box-shadow: 0 1px 2px rgba(27, 67, 50, .25); }
+  .btn-primary:hover:not(:disabled) { background: var(--accent-deep); color: #fff; transform: translateY(-1px); }
+  .btn-secondary { background: var(--panel); color: var(--text); border-color: var(--line-strong); }
+  .btn-secondary:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-deep); }
+  .btn-small { font-size: 14px; padding: 8px 14px; }
+  .btn svg { width: 16px; height: 16px; flex: none; }
+  .action { margin-top: 16px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
+  .status { color: var(--ok); font-size: 14px; font-weight: 500; }
+  .status.err { color: var(--err); }
+
+  /* ---------- checklist ---------- */
+  ol.tasks { list-style: none; counter-reset: task; margin: 14px 0 0; padding: 0; display: grid; gap: 10px; }
+  ol.tasks > li { counter-increment: task; position: relative; padding: 14px 16px 14px 56px; border: 1px solid var(--line); border-radius: 12px; background: var(--soft); }
+  ol.tasks > li::before { content: counter(task); position: absolute; left: 16px; top: 14px; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--panel); border: 1.5px solid var(--accent); color: var(--accent-ink); font-size: 13px; font-weight: 700; display: grid; place-items: center; }
+  ol.tasks > li strong:first-child { display: block; }
+  .note { margin: 16px 0 0; padding: 12px 16px; border-radius: 12px; background: var(--accent-soft); color: #20372b; font-size: 15px; }
+  ul { margin: 10px 0 0; padding-left: 20px; }
   li { margin: 6px 0; }
-  code { font: 14px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
-  fieldset.choices { border: 0; padding: 0; margin: 14px 0 0; display: flex; gap: 12px; flex-wrap: wrap; }
-  fieldset.choices legend { font-weight: 600; padding: 0; margin-bottom: 6px; }
-  .choice { flex: 1 1 220px; display: flex; gap: 10px; align-items: flex-start; font-weight: 400; margin: 0;
-    padding: 12px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; background: var(--bg); }
-  .choice:has(input:checked) { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-  .choice input { margin-top: 5px; }
-  .choice .hint { display: block; }
-  .warn { color: var(--muted); font-size: 14px; }
-  a.guide { color: var(--accent); font-weight: 600; white-space: nowrap; }
-  #tfConnect { margin: 4px 0 6px; }
-  .tf-table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 14px; }
-  .tf-table th, .tf-table td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  .tf-table th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
-  .tf-table td:first-child { width: 55%; }
-  .tf-table .tf-group { display: block; color: var(--muted); font-size: 12px; }
-  .tf-table select, .tf-table input[type=text] { padding: 6px 8px; font-size: 14px; background: var(--panel); }
-  .tf-table input[type=text] { margin-top: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-  @media (max-width: 560px) { .tf-table td:first-child { width: auto; } .tf-table tr { display: grid; } .tf-table thead { display: none; } }
-  .status.err { color: #b42318; }
-  dialog.guide-box { width: min(760px, calc(100vw - 32px)); height: min(85vh, 900px); max-width: none; max-height: none;
-    padding: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--text);
-    box-shadow: 0 24px 64px rgba(0,0,0,.3); overflow: hidden; }
-  dialog.guide-box[open] { display: flex; flex-direction: column; }
-  dialog.guide-box::backdrop { background: rgba(20,20,18,.5); }
-  .guide-box header { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 18px; border-bottom: 1px solid var(--line); background: var(--panel); }
-  .guide-box header strong { flex: 1; font-size: 15px; }
-  .guide-box header a { font-size: 14px; color: var(--accent); }
-  .guide-box header button { margin: 0; padding: 6px 10px; background: transparent; color: var(--text); font-size: 18px; line-height: 1; }
-  .guide-box header button:hover { background: var(--code-bg); }
-  .guide-box iframe { flex: 1; width: 100%; border: 0; background: var(--bg); }
-  @media (max-width: 560px) { dialog.guide-box { width: 100vw; height: 100dvh; border-radius: 0; border: 0; } }
-  details.look { margin-top: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
-  details.look > summary { cursor: pointer; padding: 12px 14px; font-weight: 600; }
-  details.look[open] > summary { border-bottom: 1px solid var(--line); }
-  .look-body { padding: 4px 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 340px); gap: 20px; }
-  @media (max-width: 720px) { .look-body { grid-template-columns: minmax(0, 1fr); } }
+  ul.ticks { list-style: none; padding: 0; }
+  ul.ticks li { position: relative; padding-left: 28px; }
+  ul.ticks li::before { content: ""; position: absolute; left: 0; top: 4px; width: 18px; height: 18px; border-radius: 50%; background: var(--accent-soft)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.2l2.3 2.3 4.7-4.9' fill='none' stroke='%232D6A4F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/18px no-repeat; }
+
+  /* ---------- collapsible panels ---------- */
+  details.look { margin-top: 22px; border: 1px solid var(--line); border-radius: 12px; background: var(--soft); }
+  details.look > summary { cursor: pointer; padding: 14px 16px; font-weight: 600; list-style: none; display: flex; align-items: center; gap: 10px; border-radius: 12px; }
+  details.look > summary::-webkit-details-marker { display: none; }
+  details.look > summary::after { content: ""; margin-left: auto; width: 10px; height: 10px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted);
+    transform: rotate(45deg) translate(-2px, -2px); transition: transform .2s; }
+  details.look[open] > summary::after { transform: rotate(-135deg) translate(-2px, -2px); }
+  details.look > summary:hover { background: var(--accent-soft); }
+  details.look > summary:focus-visible { outline: 3px solid var(--accent-ring); outline-offset: 2px; }
+  details.look[open] > summary { border-bottom: 1px solid var(--line); border-radius: 12px 12px 0 0; }
+  details.look > summary .opt { font-weight: 500; color: var(--muted); font-size: 14px; }
+  .look-body { padding: 4px 16px 18px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 340px); gap: 24px; }
+  @media (max-width: 760px) { .look-body { grid-template-columns: minmax(0, 1fr); } }
   .look-body label { margin-top: 12px; font-size: 14px; }
-  .look-body h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 18px 0 0; }
+  .look-body h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 22px 0 0; }
   .look-body h3:first-child { margin-top: 10px; }
-  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
   .color { display: flex; gap: 6px; align-items: center; }
-  .color input[type=color] { flex: 0 0 40px; width: 40px; height: 40px; padding: 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); cursor: pointer; }
+  .color input[type=color] { flex: 0 0 42px; width: 42px; height: 42px; padding: 3px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--panel); cursor: pointer; }
+  .color input[type=color]:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--accent-ring); border-color: var(--accent); }
   .color input[type=text] { min-width: 0; }
-  textarea { width: 100%; min-height: 90px; padding: 10px 12px; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; resize: vertical; }
-  .look-body input[type=text], .look-body select { background: var(--panel); }
-  .cta-body { padding: 4px 14px 16px; }
+  textarea { min-height: 96px; font: 13px/1.5 var(--mono); resize: vertical; }
+  .cta-body { padding: 4px 16px 18px; }
   .cta-body label { font-size: 14px; }
-  .cta-body .check { font-size: 16px; }
-  .cta-body input[type=text], .cta-body input[type=password] { background: var(--panel); }
-  #ctaPreview { margin-top: 6px; padding: 18px; border-radius: 10px; background: #fff; color: #111827; border: 1px dashed var(--line); }
+  .cta-body .check { font-size: 16px; margin-top: 14px; }
+  #ctaPreview { margin-top: 6px; padding: 18px; border-radius: 12px; background: #fff; color: #111827; border: 1px dashed var(--line-strong); overflow: hidden; }
   #ctaPreview .gmmcw-cta { margin: 0; animation: none; }
-  .preview-wrap { position: sticky; top: 16px; align-self: start; }
-  #preview { position: relative; height: 520px; margin-top: 12px; padding: 16px; border-radius: 10px; overflow: hidden;
-    background: repeating-linear-gradient(45deg, #ecebe6, #ecebe6 10px, #e4e3dd 10px, #e4e3dd 20px);
+  .preview-wrap { position: sticky; top: 16px; align-self: start; min-width: 0; }
+  #preview { position: relative; height: 520px; margin-top: 12px; padding: 16px; border-radius: 12px; overflow: hidden;
+    background: repeating-linear-gradient(45deg, #ecefed, #ecefed 10px, #e4e8e5 10px, #e4e8e5 20px);
     display: flex; justify-content: center; align-items: flex-start; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
   /* Approximation of CloseBot's widget, for the preview only. */
   #preview .cb-panel { --cb-bg: #fff; --cb-border: #e5e7eb; --cb-text: #111827; --cb-soft-bg: #f3f4f6; --cb-input-bg: #fff;
@@ -120,18 +208,204 @@
     box-shadow: 0 4px 12px rgba(0,0,0,.2); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 22px; }
   #preview.inline .cb-btn { display: none; }
   #preview.bubble .cb-panel { margin-bottom: 72px; }
+
+  /* ---------- Typeform reader ---------- */
+  #tfConnect { background: var(--panel); }
+  .tf-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+  .tf-table th, .tf-table td { text-align: left; padding: 9px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .tf-table th { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; }
+  .tf-table td:first-child { width: 55%; }
+  .tf-table .tf-group { display: block; color: var(--muted); font-size: 12px; }
+  .tf-table select, .tf-table input[type=text] { padding: 7px 9px; font-size: 14px; border-radius: 8px; }
+  .tf-table input[type=text] { margin-top: 6px; font-family: var(--mono); }
+  @media (max-width: 560px) { .tf-table td:first-child { width: auto; } .tf-table tr { display: grid; } .tf-table thead { display: none; } }
+  .sub-block { margin-top: 26px; padding: 20px; border: 1px solid var(--line); border-radius: 14px; }
+  .sub-block > h3 { margin: 0 0 2px; font-size: 17px; display: flex; align-items: center; gap: 10px; }
+  .sub-block > h3 + .hint { margin-top: 0; }
+
+  /* ---------- install ---------- */
+  .alert { display: flex; gap: 12px; align-items: flex-start; margin-top: 22px; padding: 14px 16px; border-radius: 12px; border: 1px solid; font-size: 15px; }
+  .alert svg { width: 20px; height: 20px; flex: none; margin-top: 2px; }
+  .alert.warn { background: var(--warn-bg); border-color: var(--warn-line); color: #4d3500; }
+  .alert.warn svg { color: #b7791f; }
+  .alert.ok { background: var(--accent-soft); border-color: #b7dbc8; color: #1d3a2c; }
+  .alert.ok svg { color: var(--accent); }
+  .alert ul { margin: 6px 0 0; padding-left: 18px; }
+  .alert li { margin: 4px 0; }
+  .alert a { font-weight: 600; white-space: nowrap; color: inherit; }
+  .install { counter-reset: part; }
+  .install .part-card { counter-increment: part; margin-top: 22px; border: 1px solid var(--line); border-radius: 14px; padding: 20px; background: var(--panel); }
+  .part-card > h3 { display: flex; align-items: center; gap: 12px; margin: 0 0 4px; font-size: 18px; }
+  .part-card > h3::before { content: counter(part, upper-alpha); flex: none; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
+    background: var(--accent-soft); color: var(--accent-ink); font-size: 14px; font-weight: 800; }
+  .part-card > h3 + p { margin-top: 0; }
+  .code-block { margin-top: 14px; border-radius: 12px; background: var(--code-bg); overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,.04); }
+  .code-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 10px 10px 10px 16px; border-bottom: 1px solid rgba(255,255,255,.08); }
+  .code-title { flex: 1 1 0; min-width: 0; color: #a9c7b7; font-size: 13px; font-weight: 600; letter-spacing: .02em; }
+  .code-head .status { order: 1; color: var(--code-mark); }
+  .code-head .status:empty { display: none; }
+  .code-head .status.err { color: #ffb4a8; }
+  .code-head .btn { order: 2; }
+  .btn-copy { background: #2b4a3b; color: #fff; padding: 7px 14px; font-size: 14px; border-radius: 8px; }
+  .btn-copy:hover:not(:disabled) { background: var(--accent); }
+  .btn-copy:focus-visible { box-shadow: 0 0 0 2px var(--code-bg), 0 0 0 4px var(--code-mark); }
+  pre { margin: 0; padding: 16px; overflow-x: auto; color: var(--code-text); background: transparent; font: 13px/1.6 var(--mono); white-space: pre; tab-size: 2; }
+  pre#tfUrl { white-space: pre-wrap; overflow-wrap: anywhere; }
+  pre em { font-style: normal; color: var(--code-mark); background: rgba(149, 213, 178, .12); border-radius: 4px; padding: 0 3px; font-weight: 600; }
+  .write-box { margin-top: 18px; padding: 16px; border-radius: 12px; border: 1px solid var(--warn-line); background: var(--warn-bg); }
+  .write-box p { margin: 0; font-size: 15px; color: #4d3500; }
+  .write-box .check { margin-top: 14px; }
+
+  /* ---------- wizard footer ---------- */
+  .wizard-nav { position: sticky; bottom: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 16px 36px;
+    border-top: 1px solid var(--line); background: rgba(255, 255, 255, .96); border-radius: 0 0 var(--radius) var(--radius); }
+  @supports (backdrop-filter: blur(6px)) { .wizard-nav { background: rgba(255, 255, 255, .86); backdrop-filter: blur(6px); } }
+  .wizard-nav .spacer { flex: 1; }
+  .nav-hint { flex: 1 1 100%; order: -1; margin: 0; display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; border-radius: 10px;
+    background: var(--warn-bg); border: 1px solid var(--warn-line); color: #4d3500; font-size: 14px; }
+  .nav-hint svg { width: 18px; height: 18px; flex: none; margin-top: 1px; color: #b7791f; }
+
+  /* ---------- guide lightbox ---------- */
+  dialog.guide-box { width: min(760px, calc(100vw - 32px)); height: min(85vh, 900px); max-width: none; max-height: none;
+    padding: 0; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); color: var(--text);
+    box-shadow: 0 24px 64px rgba(0,0,0,.3); overflow: hidden; }
+  dialog.guide-box[open] { display: flex; flex-direction: column; }
+  dialog.guide-box::backdrop { background: rgba(16, 32, 24, .5); }
+  .guide-box header { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 18px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  .guide-box header strong { flex: 1; font-size: 15px; }
+  .guide-box header a { font-size: 14px; }
+  .guide-box header button { font: inherit; margin: 0; padding: 6px 10px; border: 0; border-radius: 8px; background: transparent; color: var(--text); font-size: 18px; line-height: 1; cursor: pointer; }
+  .guide-box header button:hover { background: var(--accent-soft); }
+  .guide-box header button:focus-visible { outline: 3px solid var(--accent-ring); }
+  .guide-box iframe { flex: 1; width: 100%; border: 0; background: var(--bg); }
+  @media (max-width: 560px) { dialog.guide-box { width: 100vw; height: 100dvh; border-radius: 0; border: 0; } }
+  a.guide { font-weight: 600; white-space: nowrap; }
+  a.guide::after { content: " \2192"; }
+
+  /* ---------- phones ---------- */
+  @media (max-width: 640px) {
+    main { padding-top: 24px; }
+    .intro { margin-bottom: 22px; }
+    p.lead { font-size: 16px; }
+    .stepper .name { display: none; }
+    .step-btn .num { width: 34px; height: 34px; font-size: 14px; }
+    .stepper li + li::before { top: 16px; left: calc(-50% + 22px); right: calc(50% + 22px); }
+    .step-count { display: block; }
+    section.step { padding: 24px 16px 28px; }
+    h2 { font-size: 21px; }
+    .wizard-nav { padding: 12px 16px; }
+    .wizard-nav .btn { padding: 11px 16px; }
+    .sub-block, .install .part-card { padding: 14px; }
+    .cta-body, .look-body { padding-left: 12px; padding-right: 12px; }
+    .topbar a.full-guide { padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .next-name { display: none; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  }
 </style>
 </head>
 <body>
-<main>
-  <h1>Chat embed setup</h1>
-  <p class="lead">Adds the CloseBot AI chat to a page with one tag. On the thank-you page it fills in the visitor's name, email and phone from the form they just sent, so the chat starts on their existing HighLevel contact.</p>
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand"><span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/></svg></span>
+      <span>Chat embed setup</span></div>
+    <a class="full-guide" href="guide.html" target="_blank" rel="noopener">Full guide</a>
+  </div>
+</header>
 
-  <section>
-    <h2><span class="step">1</span>Thank-you page: the chat</h2>
+<main class="wrap">
+  <div class="intro">
+    <h1>Add the AI chat to your thank-you page</h1>
+    <p class="lead">Adds the CloseBot AI chat to a page with one tag. On the thank-you page it fills in the visitor's name, email and phone from the form they just sent, so the chat starts on their existing HighLevel contact.</p>
+  </div>
+
+  <nav class="stepper" id="stepper" aria-label="Setup steps">
+    <ol>
+      <li><a class="step-btn" href="#closebot" data-step="closebot"><span class="num"><span class="n">1</span><svg class="ic-check" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.3l3 3 6-6.3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="ic-warn" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.5v5.5M8 12.2v.3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span><span class="name">CloseBot</span></a></li>
+      <li><a class="step-btn" href="#form" data-step="form"><span class="num"><span class="n">2</span><svg class="ic-check" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.3l3 3 6-6.3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="name">Your form</span></a></li>
+      <li><a class="step-btn" href="#style" data-step="style"><span class="num"><span class="n">3</span><svg class="ic-check" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.3l3 3 6-6.3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="name">Chat style</span></a></li>
+      <li><a class="step-btn" href="#install" data-step="install"><span class="num"><span class="n">4</span><svg class="ic-check" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.3l3 3 6-6.3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="name">Install</span></a></li>
+      <li><a class="step-btn" href="#test" data-step="test"><span class="num"><span class="n">5</span><svg class="ic-check" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.3l3 3 6-6.3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="name">Test</span></a></li>
+    </ol>
+    <p class="step-count" id="stepCount" aria-hidden="true"></p>
+  </nav>
+
+  <div class="card">
+
+  <!-- ===== Step 1: CloseBot ===== -->
+  <section class="step" id="step-closebot" data-step="closebot" aria-labelledby="h-closebot">
+    <p class="eyebrow">Step 1 of 5</p>
+    <h2 id="h-closebot" tabindex="-1">Connect your CloseBot source</h2>
+    <p class="sub">The chat runs on CloseBot. Paste your source's script tag here, then check three settings in CloseBot.</p>
+
     <label for="source">CloseBot source ID</label>
     <input id="source" type="text" placeholder="Paste the CloseBot script tag or just the source ID" autocomplete="off" spellcheck="false">
+    <p class="field-msg" id="sourceMsg" aria-live="polite"></p>
     <p class="hint">In CloseBot, open your HighLevel source and go to Setup. Paste the whole script tag here; the ID is the part after <code>source=</code>. <a class="guide" href="guide.html#source-id" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: find your source ID</a></p>
+
+    <h3 class="part">In CloseBot</h3>
+    <ol class="tasks">
+      <li><strong>Turn on the widget's form</strong>In the chat widget settings, open <strong>Form</strong>, turn it on, include <strong>Email</strong> and <strong>Phone</strong>, and set it to show immediately.</li>
+      <li><strong>Target the thank-you page</strong>Target the widget to the thank-you page URL only, so CloseBot doesn't show it on the form page either.</li>
+      <li><strong>Allow your domain</strong>Put the site's domain on the source's allowed domains. CloseBot ignores pages on domains that aren't listed.</li>
+    </ol>
+    <p class="note">The embed fills and sends that form for the visitor. If it can't find their details, they fill it in themselves as usual.</p>
+  </section>
+
+  <!-- ===== Step 2: Your form ===== -->
+  <section class="step" id="step-form" data-step="form" aria-labelledby="h-form" hidden>
+    <p class="eyebrow">Step 2 of 5</p>
+    <h2 id="h-form" tabindex="-1">Tell us about your form</h2>
+    <p class="sub">So the chat knows who the visitor is and what they told you on the form.</p>
+
+    <fieldset class="choices three">
+      <legend>Which form sends people to the thank-you page?</legend>
+      <label class="choice"><input type="radio" name="formKind" value="typeform">
+        <span><strong>Typeform</strong><span class="hint">Typeform sends the answers to the thank-you page in its address.</span></span></label>
+      <label class="choice"><input type="radio" name="formKind" value="funnel">
+        <span><strong>HighLevel funnel form</strong><span class="hint">A HighLevel form or survey on a HighLevel funnel or website page.</span></span></label>
+      <label class="choice"><input type="radio" name="formKind" value="site">
+        <span><strong>A form on your website</strong><span class="hint">Your own site's form, including a HighLevel form embedded there.</span></span></label>
+    </fieldset>
+
+    <div class="sub-block" id="tfBlock">
+      <h3>Typeform</h3>
+      <p class="hint">Typeform passes the answers to the thank-you page. The Install step builds the redirect link for you.</p>
+      <details class="look" id="tfConnect">
+        <summary>Fill this in from your Typeform <span class="opt">(optional)</span></summary>
+        <div class="cta-body">
+          <p class="hint">Reads your form's questions so this page can name the answers and build the redirect link, and can then write that link into the form for you.</p>
+          <label for="tf-form">Typeform link</label>
+          <input id="tf-form" type="text" placeholder="https://form.typeform.com/to/AbC123" autocomplete="off" spellcheck="false">
+          <label for="tf-token">Typeform personal access token</label>
+          <input id="tf-token" type="password" autocomplete="off" spellcheck="false">
+          <p class="hint">Sent to Typeform for each step; it isn't saved. Needs <strong>Forms: Read</strong>, plus <strong>Forms: Write</strong> to write the redirect. <a class="guide" href="guide.html#typeform-token" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: get a token</a></p>
+          <div class="action"><button id="tf-read" class="btn btn-primary" type="button">Read my form</button><span class="status" id="tf-status" aria-live="polite"></span></div>
+          <div id="tf-questions"></div>
+        </div>
+      </details>
+      <label for="ty-url">Thank-you page address</label>
+      <input id="ty-url" type="text" placeholder="https://your-site.com/thank-you" autocomplete="off" spellcheck="false">
+      <p class="hint">Where Typeform sends people when they finish. It goes at the start of the redirect link.</p>
+    </div>
+
+    <label for="fields">Form answers for the AI (optional)</label>
+    <input id="fields" type="text" placeholder="business_info, team_size" autocomplete="off" spellcheck="false">
+    <p class="hint">Names of form answers passed in the thank-you page address or asked on your own form, separated by commas. The AI gets them as a note only it can see (when a CloseBot API key is set up on the service), or otherwise along with the visitor's first chat message. The visitor doesn't see them. <a class="guide" href="guide.html#answers" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: what to put here</a></p>
+
+    <div class="check-card">
+      <label class="check"><input id="hl" type="checkbox">
+        <span><strong>The thank-you page is a HighLevel funnel or website page</strong><br><span class="hint">Adds HighLevel merge fields so the page passes the contact straight to the chat.</span></span></label>
+    </div>
+  </section>
+
+  <!-- ===== Step 3: Chat style ===== -->
+  <section class="step" id="step-style" data-step="style" aria-labelledby="h-style" hidden>
+    <p class="eyebrow">Step 3 of 5</p>
+    <h2 id="h-style" tabindex="-1">Choose how the chat looks</h2>
+    <p class="sub">Pick where the chat shows and what it says first. Everything here is optional; the defaults work well.</p>
 
     <fieldset class="choices">
       <legend>How the chat shows</legend>
@@ -148,13 +422,6 @@
     <label for="greeting">Opening message</label>
     <input id="greeting" type="text" value="Hey {first_name}, what can I help you with today?" autocomplete="off">
     <p class="hint">Shown as the bot's first message when the chat would otherwise open empty, because the visitor's details were sent for them. <code>{first_name}</code> becomes their first name, or "there" if it isn't known. Leave it empty for none. If you set a Welcome Message in CloseBot, that shows instead.</p>
-
-    <label class="check"><input id="hl" type="checkbox">
-      <span>The thank-you page is a HighLevel funnel or website page<br><span class="hint">Adds HighLevel merge fields so the page passes the contact straight to the chat.</span></span></label>
-
-    <label for="fields">Form answers for the AI (optional)</label>
-    <input id="fields" type="text" placeholder="business_info, team_size" autocomplete="off" spellcheck="false">
-    <p class="hint">Names of form answers passed in the thank-you page address or asked on your own form, separated by commas. They go to the AI along with the visitor's first chat message, so it has them right away, even before HighLevel has the contact's fields. The visitor doesn't see them; they do show in the HighLevel conversation. <a class="guide" href="guide.html#answers" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: what to put here</a></p>
 
     <details class="look" id="cta" open>
       <summary>Call to action on the page</summary>
@@ -176,7 +443,7 @@
     </details>
 
     <details class="look" id="look">
-      <summary>Style the chat (optional)</summary>
+      <summary>Style the chat <span class="opt">(optional)</span></summary>
       <div class="look-body">
         <div>
           <p class="hint">Leave any setting empty to keep what's set in CloseBot.</p>
@@ -266,60 +533,92 @@
         </div>
       </div>
     </details>
-
-    <label>Thank-you page code</label>
-    <pre id="out"></pre>
-    <button id="copy" data-target="out" disabled>Copy code</button><span class="status" aria-live="polite"></span>
-    <ul>
-      <li id="placeInline">Paste it where the chat should appear. HighLevel: a Custom JS/HTML element. WordPress: a Custom HTML block.</li>
-      <li>Keep it above any analytics or tracking code if the builder allows, so they never see the visitor's details in the address bar.</li>
-      <li>If CloseBot's own script tag is already on the site, you can leave it; the chat won't load twice.</li>
-    </ul>
   </section>
 
-  <section>
-    <h2><span class="step">2</span>Form page: no chat, just remembers the details</h2>
-    <p>Only needed when the form is on your own website, including a HighLevel form embedded there. Skip it for Typeform and for HighLevel funnel forms. No chat shows on the form page.</p>
-    <pre id="formOut"></pre>
-    <button id="copyForm" data-target="formOut">Copy code</button><span class="status" aria-live="polite"></span>
-  </section>
+  <!-- ===== Step 4: Install ===== -->
+  <section class="step install" id="step-install" data-step="install" aria-labelledby="h-install" hidden>
+    <p class="eyebrow">Step 4 of 5</p>
+    <h2 id="h-install" tabindex="-1">Copy the code onto your pages</h2>
+    <p class="sub">The code below is built from your answers in the earlier steps and updates whenever you change them.</p>
 
-  <section>
-    <h2><span class="step">3</span>In CloseBot</h2>
-    <ul>
-      <li>In the chat widget settings, open <strong>Form</strong>, turn it on, include <strong>Email</strong> and <strong>Phone</strong>, and set it to show immediately.</li>
-      <li>Target the widget to the thank-you page URL only, so CloseBot doesn't show it on the form page either, and put the site's domain on the source's allowed domains.</li>
-    </ul>
-    <p class="warn">The embed fills and sends that form for the visitor. If it can't find their details, they fill it in themselves as usual.</p>
-  </section>
-
-  <section>
-    <h2><span class="step">4</span>Typeform only: send the answers to the thank-you page</h2>
-    <details class="look" id="tfConnect">
-      <summary>Fill this in from your Typeform (optional)</summary>
-      <div class="cta-body">
-        <p class="hint">Reads your form's questions so this page can name the answers and build the redirect link, and can then write that link into the form for you.</p>
-        <label for="tf-form">Typeform link</label>
-        <input id="tf-form" type="text" placeholder="https://form.typeform.com/to/AbC123" autocomplete="off" spellcheck="false">
-        <label for="tf-token">Typeform personal access token</label>
-        <input id="tf-token" type="password" autocomplete="off" spellcheck="false">
-        <p class="hint">Sent to Typeform for each step; it isn't saved. Needs <strong>Forms: Read</strong>, plus <strong>Forms: Write</strong> to write the redirect. <a class="guide" href="guide.html#typeform-token" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: get a token</a></p>
-        <button id="tf-read" type="button">Read my form</button><span class="status" id="tf-status" aria-live="polite"></span>
-        <div id="tf-questions"></div>
-      </div>
-    </details>
-    <label for="ty-url">Thank-you page address</label>
-    <input id="ty-url" type="text" placeholder="https://your-site.com/thank-you" autocomplete="off" spellcheck="false">
-    <div id="tf-write" hidden>
-      <p class="warn"><strong>Write it into the form:</strong> saves your form back to Typeform with this redirect in its <strong>Redirect to URL</strong> ending. Typeform's API saves the whole form at once, so <strong>try it on a duplicate first</strong> and check it in Typeform, publish any unsaved edits before you start, and make sure the form has exactly one Redirect to URL ending.</p>
-      <label class="check"><input id="tf-confirm" type="checkbox">
-        <span>I've published my edits and I'm OK with Typeform saving the whole form</span></label>
-      <button id="tf-write-btn" type="button" disabled>Write the redirect into my form</button><span class="status" id="tf-write-status" aria-live="polite"></span>
+    <div class="alert warn" id="missing" role="status" hidden>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5l8 14H2l8-14z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 8v3.6M10 14.2v.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <div><strong>Still missing</strong><ul id="missingList"></ul></div>
     </div>
-    <p>In Typeform, click <strong>+</strong> next to <strong>Endings</strong>, choose <strong>Redirect to URL</strong>, and enter this (needs a Typeform Plus plan or higher):</p>
-    <pre id="tfUrl"></pre>
-    <p class="hint">Type the part before each @ yourself, then type <code>@</code> and pick the matching question from the list. The embed removes these details from the address bar as soon as the page opens. <a class="guide" href="guide.html#typeform" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: set up the Typeform redirect</a></p>
+    <div class="alert ok" id="ready" role="status" hidden>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6.5 10.2l2.4 2.4 4.6-4.8" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div><strong>Ready to copy.</strong> Everything the code needs is filled in.</div>
+    </div>
+
+    <div class="part-card" id="tyCard">
+      <h3>Thank-you page: the chat</h3>
+      <div class="code-block">
+        <div class="code-head"><span class="code-title">Thank-you page code</span><button id="copy" class="btn btn-copy" data-target="out" disabled>Copy code</button><span class="status" aria-live="polite"></span></div>
+        <pre id="out"></pre>
+      </div>
+      <ul class="ticks">
+        <li id="placeInline">Paste it where the chat should appear. HighLevel: a Custom JS/HTML element. WordPress: a Custom HTML block.</li>
+        <li>Keep it above any analytics or tracking code if the builder allows, so they never see the visitor's details in the address bar.</li>
+        <li>If CloseBot's own script tag is already on the site, you can leave it; the chat won't load twice.</li>
+      </ul>
+    </div>
+
+    <div class="part-card" id="formCard">
+      <h3>Form page: no chat, just remembers the details</h3>
+      <p class="hint">Only needed when the form is on your own website, including a HighLevel form embedded there. Skip it for Typeform and for HighLevel funnel forms. No chat shows on the form page.</p>
+      <div class="code-block">
+        <div class="code-head"><span class="code-title">Form page code</span><button id="copyForm" class="btn btn-copy" data-target="formOut">Copy code</button><span class="status" aria-live="polite"></span></div>
+        <pre id="formOut"></pre>
+      </div>
+    </div>
+
+    <div class="part-card" id="tfCard">
+      <h3>Typeform only: send the answers to the thank-you page</h3>
+      <p class="hint">In Typeform, click <strong>+</strong> next to <strong>Endings</strong>, choose <strong>Redirect to URL</strong>, and enter this (needs a Typeform Plus plan or higher):</p>
+      <div class="code-block">
+        <div class="code-head"><span class="code-title">Redirect link</span></div>
+        <pre id="tfUrl"></pre>
+      </div>
+      <p class="hint">Type the part before each @ yourself, then type <code>@</code> and pick the matching question from the list. The embed removes these details from the address bar as soon as the page opens. <a class="guide" href="guide.html#typeform" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: set up the Typeform redirect</a></p>
+      <div id="tf-write" class="write-box" hidden>
+        <p><strong>Write it into the form:</strong> saves your form back to Typeform with this redirect in its <strong>Redirect to URL</strong> ending. Typeform's API saves the whole form at once, so <strong>try it on a duplicate first</strong> and check it in Typeform, publish any unsaved edits before you start, and make sure the form has exactly one Redirect to URL ending.</p>
+        <label class="check"><input id="tf-confirm" type="checkbox">
+          <span>I've published my edits and I'm OK with Typeform saving the whole form</span></label>
+        <div class="action"><button id="tf-write-btn" class="btn btn-primary" type="button" disabled>Write the redirect into my form</button><span class="status" id="tf-write-status" aria-live="polite"></span></div>
+        <p class="hint" id="tfWriteNeedsUrl" hidden>Add a thank-you page address starting with <code>https://</code> in <a href="#form">step 2</a> to write the redirect.</p>
+      </div>
+    </div>
+
+    <div class="part-card">
+      <h3>In CloseBot</h3>
+      <ul class="ticks">
+        <li>Put the site's domain on the source's <strong>allowed domains</strong><span id="domainHint"></span>. CloseBot ignores pages on domains that aren't listed.</li>
+        <li>In the chat widget settings, the <strong>Form</strong> is on with <strong>Email</strong> and <strong>Phone</strong> and shows immediately, and the widget targets the thank-you page URL only.</li>
+      </ul>
+    </div>
   </section>
+
+  <!-- ===== Step 5: Test ===== -->
+  <section class="step" id="step-test" data-step="test" aria-labelledby="h-test" hidden>
+    <p class="eyebrow">Step 5 of 5</p>
+    <h2 id="h-test" tabindex="-1">Test it end to end</h2>
+    <p class="sub">Once the code is live, run through it once as a visitor would.</p>
+    <ol class="tasks">
+      <li><strong>Submit the form</strong>Open your form in a private (incognito) window, so CloseBot doesn't already know you, and submit it with a real-looking email.</li>
+      <li><strong>Check the thank-you page</strong>The address bar should drop the answers within a moment, and the card should say "You're all set," with your first name.</li>
+      <li><strong>Send a message</strong>The AI's reply should already know your answers.</li>
+      <li><strong>Check HighLevel</strong>The conversation should be on the contact the form created, with no duplicate contact.</li>
+    </ol>
+    <p class="note">If the card says "You're all set!" with no name, the redirect link is missing <code>first_name</code> or its <code>@</code> question. If the chat asks for name and email, the link is missing <code>email</code> and <code>phone</code>. <a class="guide" href="guide.html#test" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: test it</a></p>
+  </section>
+
+  <footer class="wizard-nav" id="wizardNav">
+    <p class="nav-hint" id="navHint" role="status" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10 6v5M10 13.8v.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span></span></p>
+    <button type="button" class="btn btn-secondary" id="backBtn"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5L5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Back</button>
+    <span class="spacer"></span>
+    <button type="button" class="btn btn-primary" id="nextBtn"><span id="nextLabel">Next</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5L10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </footer>
+  </div>
 </main>
 <dialog class="guide-box" id="guideBox" aria-label="Step-by-step guide">
   <header><strong>Step-by-step guide</strong><a id="guideFull" href="guide.html" target="_blank" rel="noopener">Whole guide</a>
@@ -336,7 +635,7 @@
   var EMBED = (custom ? location.origin : PROD) + '/embed.js';
   var DEFAULT_GREETING = 'Hey {first_name}, what can I help you with today?';
   var CTA = {
-    title: 'You\u2019re all set, {first_name}!',
+    title: 'You’re all set, {first_name}!',
     inline: { text: 'Have a question while you wait? Our virtual assistant is right below and ready to chat.', button: 'Start chatting' },
     bubble: { text: 'Have a question while you wait? Our virtual assistant is ready to chat.', button: 'Chat with us' }
   };
@@ -393,6 +692,7 @@
     renderCtaPreview(inline, look);
     copy.disabled = !id;
     copy.nextElementSibling.textContent = '';
+    refreshWizard();
   }
 
   var LOOK_FIELDS = ['color', 'background', 'text-color', 'bot-bubble', 'bot-text', 'visitor-bubble', 'visitor-text',
@@ -580,7 +880,7 @@
     box.appendChild(table);
     var hint = document.createElement('p');
     hint.className = 'hint';
-    hint.textContent = 'Set the contact questions, and pick "For the AI" on each answer the AI should know. The answer names, the thank-you page code and the redirect link below update as you go.';
+    hint.textContent = 'Set the contact questions, and pick "For the AI" on each answer the AI should know. The answer names, the thank-you page code and the redirect link in the Install step update as you go.';
     box.appendChild(hint);
   }
 
@@ -596,20 +896,22 @@
   }
 
   function syncWriteButton() {
+    var httpsUrl = /^https:\/\//.test($('ty-url').value.trim());
     $('tf-write').hidden = !tfRows;
-    $('tf-write-btn').disabled = !tfRows || !$('tf-confirm').checked || !/^https:\/\//.test($('ty-url').value.trim());
+    $('tf-write-btn').disabled = !tfRows || !$('tf-confirm').checked || !httpsUrl;
+    $('tfWriteNeedsUrl').hidden = httpsUrl;
   }
   $('tf-confirm').addEventListener('change', syncWriteButton);
   $('ty-url').addEventListener('input', syncWriteButton);
 
   var TF_WRITE_ERRORS = {
     no_redirect_ending: 'The form has no Redirect to URL ending. In Typeform, click + next to Endings, choose Redirect to URL, enter any address, publish, then try again.',
-    several_redirect_endings: 'The form has more than one Redirect to URL ending, so it\u2019s not clear which to change. Set this one by hand with the link above.',
-    typeform_write_rejected: 'Typeform didn\u2019t allow the change. The token needs Forms: Write.',
+    several_redirect_endings: 'The form has more than one Redirect to URL ending, so it’s not clear which to change. Set this one by hand with the link above.',
+    typeform_write_rejected: 'Typeform didn’t allow the change. The token needs Forms: Write.',
     redirect_not_https: 'The thank-you page address must start with https://.',
     bad_redirect_url: 'Check the thank-you page address.',
     unknown_question: 'The form changed since it was read. Click Read my form again.',
-    typeform_write_failed: 'Typeform didn\u2019t save the change.'
+    typeform_write_failed: 'Typeform didn’t save the change.'
   };
 
   $('tf-write-btn').addEventListener('click', function () {
@@ -617,7 +919,7 @@
     var params = redirectParams();
     if (!params.length) { status.className = 'status err'; status.textContent = 'Set at least the email or phone question first.'; return; }
     status.className = 'status';
-    status.textContent = 'Writing\u2026';
+    status.textContent = 'Writing…';
     $('tf-write-btn').disabled = true;
     fetch('api/typeform', {
       method: 'POST',
@@ -630,7 +932,7 @@
       syncWriteButton();
       if (!r.ok) {
         status.className = 'status err';
-        status.textContent = (TF_WRITE_ERRORS[r.body.error] || TF_ERRORS[r.body.error] || 'Couldn\u2019t write the redirect.') +
+        status.textContent = (TF_WRITE_ERRORS[r.body.error] || TF_ERRORS[r.body.error] || 'Couldn’t write the redirect.') +
           (r.body.detail ? ' (' + r.body.detail + ')' : '');
         return;
       }
@@ -639,7 +941,7 @@
         status.textContent = 'Saved, but Typeform now reports different ' + r.body.changed.join(', ') + '. Check the form in Typeform.';
       } else if (!r.body.verified) {
         status.className = 'status err';
-        status.textContent = 'Saved, but the redirect couldn\u2019t be confirmed. Check the ending in Typeform.';
+        status.textContent = 'Saved, but the redirect couldn’t be confirmed. Check the ending in Typeform.';
       } else {
         status.className = 'status';
         status.textContent = 'Done. The redirect is saved and nothing else on the form changed. Open the ending in Typeform to see it.';
@@ -647,22 +949,22 @@
     })['catch'](function () {
       syncWriteButton();
       status.className = 'status err';
-      status.textContent = 'Couldn\u2019t reach the server. Check the form in Typeform before trying again.';
+      status.textContent = 'Couldn’t reach the server. Check the form in Typeform before trying again.';
     });
   });
 
   var TF_ERRORS = {
-    bad_token: 'That doesn\u2019t look like a Typeform token.',
-    bad_form: 'That doesn\u2019t look like a Typeform link.',
-    typeform_token_rejected: 'Typeform didn\u2019t accept the token. Check it can read forms.',
-    form_not_found: 'Typeform couldn\u2019t find that form for this token\u2019s account.',
+    bad_token: 'That doesn’t look like a Typeform token.',
+    bad_form: 'That doesn’t look like a Typeform link.',
+    typeform_token_rejected: 'Typeform didn’t accept the token. Check it can read forms.',
+    form_not_found: 'Typeform couldn’t find that form for this token’s account.',
     rate_limited: 'Too many tries. Wait a minute and try again.'
   };
 
   $('tf-read').addEventListener('click', function () {
     var status = $('tf-status');
     status.className = 'status';
-    status.textContent = 'Reading\u2026';
+    status.textContent = 'Reading…';
     $('tf-read').disabled = true;
     fetch('api/typeform', {
       method: 'POST',
@@ -674,7 +976,7 @@
       $('tf-read').disabled = false;
       if (!r.ok) {
         status.className = 'status err';
-        status.textContent = TF_ERRORS[r.body.error] || 'Couldn\u2019t read the form. Try again.';
+        status.textContent = TF_ERRORS[r.body.error] || 'Couldn’t read the form. Try again.';
         return;
       }
       var taken = {};
@@ -683,7 +985,7 @@
         if (role) taken[role] = true;
         return { ref: q.ref, title: q.title, group: q.group, role: role, key: '' };
       });
-      status.textContent = 'Read \u201c' + r.body.title + '\u201d: ' + tfRows.length + ' questions';
+      status.textContent = 'Read “' + r.body.title + '”: ' + tfRows.length + ' questions';
       var redirect = (r.body.endings || []).map(function (e) { return e.redirect; }).filter(Boolean)[0] || r.body.redirectAfterSubmit;
       if (redirect && !$('ty-url').value.trim()) $('ty-url').value = redirect.replace(/[?#].*$/, '');
       renderQuestions();
@@ -692,7 +994,7 @@
     })['catch'](function () {
       $('tf-read').disabled = false;
       status.className = 'status err';
-      status.textContent = 'Couldn\u2019t reach the server. Try again.';
+      status.textContent = 'Couldn’t reach the server. Try again.';
     });
   });
 
@@ -726,11 +1028,143 @@
   copy.addEventListener('click', onCopy);
   $('copyForm').addEventListener('click', onCopy);
 
+  // ---------- one step at a time ----------
+  // Every step stays in the page, so answers carry over; only one shows. The
+  // current step lives in the address (#form, #install, ...), so reloading or
+  // the browser's Back button keeps the place.
+
+  var sections = [].slice.call(document.querySelectorAll('section.step'));
+  var STEPS = sections.map(function (s) { return s.getAttribute('data-step'); });
+  var stepLinks = [].slice.call(document.querySelectorAll('.step-btn'));
+  var NAMES = {};
+  stepLinks.forEach(function (a) { NAMES[a.getAttribute('data-step')] = a.querySelector('.name').textContent; });
+  var current = null, visited = {}, nudged = false;
+  var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function stepFromHash() {
+    var h = location.hash.replace(/^#/, '');
+    return STEPS.indexOf(h) !== -1 ? h : STEPS[0];
+  }
+
+  function formKind() {
+    var r = document.querySelector('input[name=formKind]:checked');
+    return r ? r.value : '';
+  }
+
+  function setNudge(text) {
+    var hint = $('navHint');
+    hint.hidden = !text;
+    hint.querySelector('span').textContent = text || '';
+  }
+
+  function show(name, moveFocus) {
+    var idx = STEPS.indexOf(name);
+    current = name;
+    visited[name] = true;
+    nudged = false;
+    setNudge('');
+    sections.forEach(function (s) {
+      var on = s.getAttribute('data-step') === name;
+      s.hidden = !on;
+      s.classList.remove('enter');
+      if (on && moveFocus) { void s.offsetWidth; s.classList.add('enter'); }
+    });
+    $('backBtn').hidden = idx === 0;
+    $('nextBtn').hidden = idx === STEPS.length - 1;
+    if (idx < STEPS.length - 1) $('nextLabel').innerHTML = 'Next<span class="next-name">: ' + esc(NAMES[STEPS[idx + 1]]) + '</span>';
+    $('stepCount').innerHTML = 'Step ' + (idx + 1) + ' of ' + STEPS.length + ': <strong>' + esc(NAMES[name]) + '</strong>';
+    refreshWizard();
+    if (moveFocus) {
+      var top = $('stepper').getBoundingClientRect().top;
+      if (top < 0) window.scrollTo({ top: window.pageYOffset + top - 12, behavior: reduceMotion ? 'auto' : 'smooth' });
+      var h = $('h-' + name);
+      try { h.focus({ preventScroll: true }); } catch (_) { h.focus(); }
+    }
+  }
+
+  function go(name) {
+    if (location.hash === '#' + name) show(name, true);
+    else location.hash = name;
+  }
+
+  function refreshWizard() {
+    if (!current) return;
+    var raw = source.value.trim(), id = sourceId(raw);
+    var msg = $('sourceMsg');
+    if (!raw) { msg.className = 'field-msg'; msg.textContent = ''; }
+    else if (id) { msg.className = 'field-msg ok'; msg.textContent = 'Source ID found: ' + id; }
+    else { msg.className = 'field-msg err'; msg.textContent = 'That doesn’t look like a CloseBot script tag or source ID. Paste the whole script from CloseBot’s Setup page.'; }
+    if (id && nudged) { nudged = false; setNudge(''); show(current, false); return; }
+
+    // Which install parts apply depends on the form; with none picked, all show.
+    var kind = formKind();
+    $('tfBlock').hidden = !!kind && kind !== 'typeform';
+    $('tfCard').hidden = !!kind && kind !== 'typeform';
+    $('formCard').hidden = kind === 'typeform' || kind === 'funnel';
+
+    var missing = [];
+    if (!id) missing.push({ text: 'Your CloseBot source ID. Until it’s in, the code says PASTE_SOURCE_ID and Copy stays off.', step: 'closebot' });
+    if (kind === 'typeform' && !$('ty-url').value.trim()) missing.push({ text: 'Your thank-you page address, for the Typeform redirect link.', step: 'form' });
+    var list = $('missingList');
+    list.innerHTML = '';
+    missing.forEach(function (m) {
+      var li = document.createElement('li');
+      li.appendChild(document.createTextNode(m.text + ' '));
+      var a = document.createElement('a');
+      a.href = '#' + m.step;
+      a.textContent = 'Add it in step ' + (STEPS.indexOf(m.step) + 1);
+      li.appendChild(a);
+      list.appendChild(li);
+    });
+    $('missing').hidden = !missing.length;
+    $('ready').hidden = !!missing.length;
+
+    var host = '';
+    try { host = new URL($('ty-url').value.trim()).hostname; } catch (_) { /* no address yet */ }
+    $('domainHint').innerHTML = host ? ', for example <code>' + esc(host) + '</code>' : '';
+
+    var idx = STEPS.indexOf(current);
+    stepLinks.forEach(function (a, i) {
+      var name = a.getAttribute('data-step'), li = a.parentNode;
+      var isCurrent = name === current;
+      li.className = '';
+      if (i <= idx) li.classList.add('reached');
+      if (isCurrent) { li.classList.add('current'); a.setAttribute('aria-current', 'step'); }
+      else a.removeAttribute('aria-current');
+      if (!isCurrent && name === 'closebot' && !id && (visited[name] || idx > 0)) li.classList.add('warn');
+      else if (!isCurrent && visited[name]) li.classList.add('done');
+      a.setAttribute('aria-label', 'Step ' + (i + 1) + ': ' + NAMES[name] +
+        (li.classList.contains('warn') ? ' (needs your source ID)' : li.classList.contains('done') ? ' (visited)' : ''));
+    });
+  }
+
+  $('backBtn').addEventListener('click', function () {
+    var idx = STEPS.indexOf(current);
+    if (idx > 0) go(STEPS[idx - 1]);
+  });
+  $('nextBtn').addEventListener('click', function () {
+    var idx = STEPS.indexOf(current);
+    // A gentle stop, not a block: the first Next without a source ID says why
+    // it matters; a second Next carries on.
+    if (current === 'closebot' && !sourceId(source.value) && !nudged) {
+      nudged = true;
+      setNudge('The code needs your CloseBot source ID. You can add it later; until then the code shows PASTE_SOURCE_ID.');
+      $('nextLabel').textContent = 'Skip for now';
+      source.focus();
+      return;
+    }
+    if (idx < STEPS.length - 1) go(STEPS[idx + 1]);
+  });
+  addEventListener('hashchange', function () { show(stepFromHash(), true); });
+  [].forEach.call(document.querySelectorAll('input[name=formKind]'), function (r) { r.addEventListener('change', refreshWizard); });
+
   [source, height, hl, $('fields'), $('ty-url'), $('greeting'), $('cta-on'), $('cta-title'), $('cta-text'), $('cta-button'), $('lk-font'), $('lk-font-name'), $('lk-window-height'), $('lk-css')]
     .concat(LOOK_FIELDS.map(function (k) { return $('lk-' + k); })).concat([].slice.call(layouts)).forEach(function (el) {
     el.addEventListener('input', render); el.addEventListener('change', render);
   });
+  show(stepFromHash(), false);
   render();
+  syncWriteButton();
 })();
 </script>
 </body>

@@ -6,7 +6,7 @@ A smart chat for form thank-you pages. After someone submits a HighLevel form, H
 - **CRM of record:** HighLevel
 - **AI:** CloseBot (API + chat widget)
 
-**Setup:** open https://gmm-chatwidget.vercel.app, paste the CloseBot source ID, and copy the tag onto the thank-you page. A second, chat-free tag goes on the form page when the form is on your own site.
+**Setup:** open https://gmm-chatwidget.vercel.app and follow its five steps: CloseBot (paste the source ID), Your form, Chat style, Install (copy the tag onto the thank-you page) and Test. A second, chat-free tag goes on the form page when the form is on your own site, and Typeform users get the redirect link to set up.
 
 See [docs/PLAN.md](docs/PLAN.md) for the architecture, data flow, security notes and phased build. The live version of the plan is at https://claude.ai/code/artifact/5025efa5-0f98-4b86-888c-340c0c85a75f
 
@@ -16,7 +16,7 @@ See [docs/PLAN.md](docs/PLAN.md) for the architecture, data flow, security notes
 | --- | --- |
 | `api/` | `fields.js`: `POST /api/fields` saves extra details from the thank-you page (e.g. `business_info`) to the HighLevel contact. `typeform.js`: `POST /api/typeform` reads a Typeform's questions for the setup page, with the visitor's own token (read only, not stored). Webhook intake and `/api/context` are not built yet |
 | `loader/` | `embed.js`: the one-tag embed. Loads CloseBot's chat and fills its contact form in the background. Details in [loader/README.md](loader/README.md) |
-| `site/` | The setup page served at the project's root URL |
+| `site/` | The step-by-step setup page served at the project's root URL, and its guide |
 | `test/` | Browser tests for the embed against a mock CloseBot widget |
 | `docs/` | Plan and setup notes |
 
