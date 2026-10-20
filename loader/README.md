@@ -108,6 +108,7 @@ As soon as the page is ready, the embed adds a card to the page that greets the 
 npm i -g playwright   # once
 NODE_PATH=$(npm root -g) node test/embed.test.js
 node test/api.test.js
+node test/typeform.test.js
 ```
 
 The tests run the embed against a mock of CloseBot's widget (`test/fixtures/mock-closebot.js`). They don't prove the live widget accepts the background submit; that needs a live test.

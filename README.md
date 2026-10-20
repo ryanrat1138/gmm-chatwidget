@@ -14,7 +14,7 @@ See [docs/PLAN.md](docs/PLAN.md) for the architecture, data flow, security notes
 
 | Path | What goes there |
 | --- | --- |
-| `api/` | `fields.js`: `POST /api/fields` saves extra details from the thank-you page (e.g. `business_info`) to the HighLevel contact. Webhook intake and `/api/context` are not built yet |
+| `api/` | `fields.js`: `POST /api/fields` saves extra details from the thank-you page (e.g. `business_info`) to the HighLevel contact. `typeform.js`: `POST /api/typeform` reads a Typeform's questions for the setup page, with the visitor's own token (read only, not stored). Webhook intake and `/api/context` are not built yet |
 | `loader/` | `embed.js`: the one-tag embed. Loads CloseBot's chat and fills its contact form in the background. Details in [loader/README.md](loader/README.md) |
 | `site/` | The setup page served at the project's root URL |
 | `test/` | Browser tests for the embed against a mock CloseBot widget |
@@ -22,7 +22,7 @@ See [docs/PLAN.md](docs/PLAN.md) for the architecture, data flow, security notes
 
 ## Hosting
 
-Vercel builds from the GitHub repo on every push to `main`. The build copies `loader/embed.js` and `site/index.html` into `public/`, so only the embed (`/embed.js`) and the setup page (`/`) are served. Settings are in `vercel.json`. Functions in `api/` deploy from the same project.
+Vercel builds from the GitHub repo on every push to `main`. The build copies `loader/embed.js`, `site/index.html` and `site/guide.html` into `public/`, so only the embed (`/embed.js`), the setup page (`/`) and its guide (`/guide.html`) are served. Settings are in `vercel.json`. Functions in `api/` deploy from the same project.
 
 ### Extra details for the AI (`/api/fields`)
 

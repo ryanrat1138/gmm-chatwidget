@@ -26,7 +26,7 @@
     color: var(--accent-text); font-size: 13px; font-weight: 600; text-align: center; line-height: 24px; margin-right: 8px; }
   label { display: block; font-weight: 600; margin: 14px 0 6px; }
   .hint { color: var(--muted); font-size: 14px; margin: 4px 0 0; }
-  input[type=text], select { width: 100%; padding: 10px 12px; font: inherit; color: var(--text);
+  input[type=text], input[type=password], select { width: 100%; padding: 10px 12px; font: inherit; color: var(--text);
     background: var(--bg); border: 1px solid var(--line); border-radius: 8px; }
   .row { display: flex; gap: 12px; flex-wrap: wrap; }
   .row > div { flex: 1 1 200px; }
@@ -50,7 +50,28 @@
   .choice .hint { display: block; }
   .warn { color: var(--muted); font-size: 14px; }
   a.guide { color: var(--accent); font-weight: 600; white-space: nowrap; }
-  a.guide::after { content: " \2197"; }
+  #tfConnect { margin: 4px 0 6px; }
+  .tf-table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 14px; }
+  .tf-table th, .tf-table td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .tf-table th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
+  .tf-table td:first-child { width: 55%; }
+  .tf-table .tf-group { display: block; color: var(--muted); font-size: 12px; }
+  .tf-table select, .tf-table input[type=text] { padding: 6px 8px; font-size: 14px; background: var(--panel); }
+  .tf-table input[type=text] { margin-top: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  @media (max-width: 560px) { .tf-table td:first-child { width: auto; } .tf-table tr { display: grid; } .tf-table thead { display: none; } }
+  .status.err { color: #b42318; }
+  dialog.guide-box { width: min(760px, calc(100vw - 32px)); height: min(85vh, 900px); max-width: none; max-height: none;
+    padding: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--text);
+    box-shadow: 0 24px 64px rgba(0,0,0,.3); overflow: hidden; }
+  dialog.guide-box[open] { display: flex; flex-direction: column; }
+  dialog.guide-box::backdrop { background: rgba(20,20,18,.5); }
+  .guide-box header { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 18px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  .guide-box header strong { flex: 1; font-size: 15px; }
+  .guide-box header a { font-size: 14px; color: var(--accent); }
+  .guide-box header button { margin: 0; padding: 6px 10px; background: transparent; color: var(--text); font-size: 18px; line-height: 1; }
+  .guide-box header button:hover { background: var(--code-bg); }
+  .guide-box iframe { flex: 1; width: 100%; border: 0; background: var(--bg); }
+  @media (max-width: 560px) { dialog.guide-box { width: 100vw; height: 100dvh; border-radius: 0; border: 0; } }
   details.look { margin-top: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
   details.look > summary { cursor: pointer; padding: 12px 14px; font-weight: 600; }
   details.look[open] > summary { border-bottom: 1px solid var(--line); }
@@ -69,7 +90,7 @@
   .cta-body { padding: 4px 14px 16px; }
   .cta-body label { font-size: 14px; }
   .cta-body .check { font-size: 16px; }
-  .cta-body input[type=text] { background: var(--panel); }
+  .cta-body input[type=text], .cta-body input[type=password] { background: var(--panel); }
   #ctaPreview { margin-top: 6px; padding: 18px; border-radius: 10px; background: #fff; color: #111827; border: 1px dashed var(--line); }
   #ctaPreview .gmmcw-cta { margin: 0; animation: none; }
   .preview-wrap { position: sticky; top: 16px; align-self: start; }
@@ -110,7 +131,7 @@
     <h2><span class="step">1</span>Thank-you page: the chat</h2>
     <label for="source">CloseBot source ID</label>
     <input id="source" type="text" placeholder="Paste the CloseBot script tag or just the source ID" autocomplete="off" spellcheck="false">
-    <p class="hint">In CloseBot, open your HighLevel source and go to Setup. Paste the whole script tag here; the ID is the part after <code>source=</code>. <a class="guide" href="guide.html#source-id" target="_blank" rel="noopener">Step-by-step: find your source ID</a></p>
+    <p class="hint">In CloseBot, open your HighLevel source and go to Setup. Paste the whole script tag here; the ID is the part after <code>source=</code>. <a class="guide" href="guide.html#source-id" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: find your source ID</a></p>
 
     <fieldset class="choices">
       <legend>How the chat shows</legend>
@@ -133,7 +154,7 @@
 
     <label for="fields">Form answers for the AI (optional)</label>
     <input id="fields" type="text" placeholder="business_info, team_size" autocomplete="off" spellcheck="false">
-    <p class="hint">Names of form answers passed in the thank-you page address or asked on your own form, separated by commas. They go to the AI along with the visitor's first chat message, so it has them right away, even before HighLevel has the contact's fields. The visitor doesn't see them; they do show in the HighLevel conversation. <a class="guide" href="guide.html#answers" target="_blank" rel="noopener">Step-by-step: what to put here</a></p>
+    <p class="hint">Names of form answers passed in the thank-you page address or asked on your own form, separated by commas. They go to the AI along with the visitor's first chat message, so it has them right away, even before HighLevel has the contact's fields. The visitor doesn't see them; they do show in the HighLevel conversation. <a class="guide" href="guide.html#answers" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: what to put here</a></p>
 
     <details class="look" id="cta" open>
       <summary>Call to action on the page</summary>
@@ -274,11 +295,37 @@
 
   <section>
     <h2><span class="step">4</span>Typeform only: send the answers to the thank-you page</h2>
-    <p>In Typeform, click <strong>+</strong> next to <strong>Endings</strong>, choose <strong>Redirect to URL</strong>, and enter the thank-you page address followed by the answers (needs a Typeform Plus plan or higher):</p>
+    <details class="look" id="tfConnect">
+      <summary>Fill this in from your Typeform (optional)</summary>
+      <div class="cta-body">
+        <p class="hint">Reads your form's questions so this page can name the answers and build the redirect link, and can then write that link into the form for you.</p>
+        <label for="tf-form">Typeform link</label>
+        <input id="tf-form" type="text" placeholder="https://form.typeform.com/to/AbC123" autocomplete="off" spellcheck="false">
+        <label for="tf-token">Typeform personal access token</label>
+        <input id="tf-token" type="password" autocomplete="off" spellcheck="false">
+        <p class="hint">Sent to Typeform for each step; it isn't saved. Needs <strong>Forms: Read</strong>, plus <strong>Forms: Write</strong> to write the redirect. <a class="guide" href="guide.html#typeform-token" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: get a token</a></p>
+        <button id="tf-read" type="button">Read my form</button><span class="status" id="tf-status" aria-live="polite"></span>
+        <div id="tf-questions"></div>
+      </div>
+    </details>
+    <label for="ty-url">Thank-you page address</label>
+    <input id="ty-url" type="text" placeholder="https://your-site.com/thank-you" autocomplete="off" spellcheck="false">
+    <div id="tf-write" hidden>
+      <p class="warn"><strong>Write it into the form:</strong> saves your form back to Typeform with this redirect in its <strong>Redirect to URL</strong> ending. Typeform's API saves the whole form at once, so <strong>try it on a duplicate first</strong> and check it in Typeform, publish any unsaved edits before you start, and make sure the form has exactly one Redirect to URL ending.</p>
+      <label class="check"><input id="tf-confirm" type="checkbox">
+        <span>I've published my edits and I'm OK with Typeform saving the whole form</span></label>
+      <button id="tf-write-btn" type="button" disabled>Write the redirect into my form</button><span class="status" id="tf-write-status" aria-live="polite"></span>
+    </div>
+    <p>In Typeform, click <strong>+</strong> next to <strong>Endings</strong>, choose <strong>Redirect to URL</strong>, and enter this (needs a Typeform Plus plan or higher):</p>
     <pre id="tfUrl"></pre>
-    <p class="hint">Type the part before each @ yourself, then type <code>@</code> and pick the matching question from the list. The embed removes these details from the address bar as soon as the page opens. <a class="guide" href="guide.html#typeform" target="_blank" rel="noopener">Step-by-step: set up the Typeform redirect</a></p>
+    <p class="hint">Type the part before each @ yourself, then type <code>@</code> and pick the matching question from the list. The embed removes these details from the address bar as soon as the page opens. <a class="guide" href="guide.html#typeform" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: set up the Typeform redirect</a></p>
   </section>
 </main>
+<dialog class="guide-box" id="guideBox" aria-label="Step-by-step guide">
+  <header><strong>Step-by-step guide</strong><a id="guideFull" href="guide.html" target="_blank" rel="noopener">Whole guide</a>
+    <button type="button" id="guideClose" aria-label="Close">&#x2715;</button></header>
+  <iframe id="guideFrame" title="Step-by-step guide"></iframe>
+</dialog>
 <script src="embed.js"></script>
 <script>
 (function () {
@@ -428,12 +475,226 @@
     text.addEventListener('input', function () { if (/^#[0-9a-f]{6}$/i.test(text.value.trim())) picker.value = text.value.trim(); });
   });
 
+  function esc(v) { return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  // The redirect link: with the form read, each answer names the question to
+  // pick with @; otherwise placeholders.
   function renderFormTag() {
     var f = fieldList();
     $('formOut').textContent = '<script src="' + EMBED + '"' + (f ? ' data-fields="' + f + '"' : '') + '></' + 'script>';
-    var extra = f ? f.split(',').map(function (k) { return '&amp;' + k + '=<em>@' + k + '</em>'; }).join('') : '';
-    $('tfUrl').innerHTML = 'https://your-site.com/thank-you?email=<em>@Email</em>&amp;phone=<em>@Phone</em>&amp;first_name=<em>@First name</em>' + extra;
+    var base = $('ty-url').value.trim() || 'https://your-site.com/thank-you';
+    base = esc(base.replace(/[?#].*$/, ''));
+    var parts = [];
+    if (tfRows) {
+      CONTACT_ROLES.forEach(function (role) {
+        tfRows.forEach(function (r) { if (r.role === role) parts.push(role + '=<em>@' + esc(r.title) + '</em>'); });
+      });
+      var picked = {};
+      tfRows.forEach(function (r) {
+        if (r.role === 'ai' && r.key) { picked[r.key] = true; parts.push(r.key + '=<em>@' + esc(r.title) + '</em>'); }
+      });
+      if (f) f.split(',').forEach(function (k) { if (!picked[k]) parts.push(k + '=<em>@' + k + '</em>'); });
+    } else {
+      parts = ['email=<em>@Email</em>', 'phone=<em>@Phone</em>', 'first_name=<em>@First name</em>'];
+      if (f) f.split(',').forEach(function (k) { parts.push(k + '=<em>@' + k + '</em>'); });
+    }
+    $('tfUrl').innerHTML = base + '?' + parts.join('&amp;');
   }
+
+  // ---------- read the questions from Typeform ----------
+
+  var CONTACT_ROLES = ['email', 'phone', 'first_name', 'last_name', 'name'];
+  var ROLE_LABELS = { '': 'Not used', email: 'Email', phone: 'Phone', first_name: 'First name', last_name: 'Last name', name: 'Full name', ai: 'For the AI' };
+  var tfRows = null;
+
+  function guessRole(q, taken) {
+    var t = q.title.toLowerCase();
+    var role = '';
+    if (q.type === 'email' || /e-?mail/.test(t)) role = 'email';
+    else if (q.type === 'phone_number' || /phone|mobile|cell/.test(t)) role = 'phone';
+    else if (/first\s*name/.test(t)) role = 'first_name';
+    else if (/last\s*name|surname/.test(t)) role = 'last_name';
+    else if (/^(what('s| is) )?(your )?(full )?name\??$/.test(t.trim())) role = 'name';
+    return role && !taken[role] ? role : '';
+  }
+
+  function slug(title, used) {
+    var k = title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 30).replace(/_+$/, '');
+    if (!/^[a-z]/.test(k)) k = 'answer_' + k;
+    if (CONTACT_ROLES.indexOf(k) !== -1) k += '_answer';
+    var base = k, n = 2;
+    while (used[k]) k = base + '_' + n++;
+    used[k] = true;
+    return k;
+  }
+
+  function syncFieldsFromRows() {
+    var keys = tfRows.filter(function (r) { return r.role === 'ai' && r.key; }).map(function (r) { return r.key; });
+    $('fields').value = keys.join(', ');
+    render();
+  }
+
+  function renderQuestions() {
+    var box = $('tf-questions');
+    box.innerHTML = '';
+    if (!tfRows) return;
+    var table = document.createElement('table');
+    table.className = 'tf-table';
+    table.innerHTML = '<thead><tr><th>Question</th><th>Use as</th></tr></thead><tbody></tbody>';
+    var used = {};
+    tfRows.forEach(function (r) { if (r.key) used[r.key] = true; });
+    tfRows.forEach(function (r) {
+      var tr = document.createElement('tr');
+      var q = document.createElement('td');
+      q.textContent = r.title || '(untitled question)';
+      if (r.group) { var g = document.createElement('span'); g.className = 'tf-group'; g.textContent = r.group; q.appendChild(g); }
+      var c = document.createElement('td');
+      var sel = document.createElement('select');
+      Object.keys(ROLE_LABELS).forEach(function (k) {
+        var o = document.createElement('option'); o.value = k; o.textContent = ROLE_LABELS[k];
+        if (k === r.role) o.selected = true;
+        sel.appendChild(o);
+      });
+      var key = document.createElement('input');
+      key.type = 'text'; key.value = r.key || ''; key.setAttribute('aria-label', 'Answer name for the AI');
+      key.style.display = r.role === 'ai' ? '' : 'none';
+      sel.addEventListener('change', function () {
+        if (sel.value !== 'ai' && CONTACT_ROLES.indexOf(sel.value) !== -1) {
+          // One question per contact detail.
+          tfRows.forEach(function (o) { if (o !== r && o.role === sel.value) o.role = ''; });
+        }
+        r.role = sel.value;
+        if (r.role === 'ai' && !r.key) r.key = slug(r.title, used);
+        renderQuestions();
+        syncFieldsFromRows();
+      });
+      key.addEventListener('input', function () {
+        r.key = key.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+        syncFieldsFromRows();
+      });
+      key.addEventListener('blur', function () { key.value = r.key; });
+      c.appendChild(sel); c.appendChild(key);
+      tr.appendChild(q); tr.appendChild(c);
+      table.querySelector('tbody').appendChild(tr);
+    });
+    box.appendChild(table);
+    var hint = document.createElement('p');
+    hint.className = 'hint';
+    hint.textContent = 'Set the contact questions, and pick "For the AI" on each answer the AI should know. The answer names, the thank-you page code and the redirect link below update as you go.';
+    box.appendChild(hint);
+  }
+
+  // ---------- write the redirect into the form ----------
+
+  function redirectParams() {
+    var out = [];
+    CONTACT_ROLES.forEach(function (role) {
+      tfRows.forEach(function (r) { if (r.role === role) out.push({ name: role, ref: r.ref }); });
+    });
+    tfRows.forEach(function (r) { if (r.role === 'ai' && r.key) out.push({ name: r.key, ref: r.ref }); });
+    return out;
+  }
+
+  function syncWriteButton() {
+    $('tf-write').hidden = !tfRows;
+    $('tf-write-btn').disabled = !tfRows || !$('tf-confirm').checked || !/^https:\/\//.test($('ty-url').value.trim());
+  }
+  $('tf-confirm').addEventListener('change', syncWriteButton);
+  $('ty-url').addEventListener('input', syncWriteButton);
+
+  var TF_WRITE_ERRORS = {
+    no_redirect_ending: 'The form has no Redirect to URL ending. In Typeform, click + next to Endings, choose Redirect to URL, enter any address, publish, then try again.',
+    several_redirect_endings: 'The form has more than one Redirect to URL ending, so it\u2019s not clear which to change. Set this one by hand with the link above.',
+    typeform_write_rejected: 'Typeform didn\u2019t allow the change. The token needs Forms: Write.',
+    redirect_not_https: 'The thank-you page address must start with https://.',
+    bad_redirect_url: 'Check the thank-you page address.',
+    unknown_question: 'The form changed since it was read. Click Read my form again.',
+    typeform_write_failed: 'Typeform didn\u2019t save the change.'
+  };
+
+  $('tf-write-btn').addEventListener('click', function () {
+    var status = $('tf-write-status');
+    var params = redirectParams();
+    if (!params.length) { status.className = 'status err'; status.textContent = 'Set at least the email or phone question first.'; return; }
+    status.className = 'status';
+    status.textContent = 'Writing\u2026';
+    $('tf-write-btn').disabled = true;
+    fetch('api/typeform', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: $('tf-token').value, form: $('tf-form').value, action: 'write',
+        redirect: { base: $('ty-url').value.trim(), params: params } })
+    }).then(function (res) {
+      return res.json().then(function (body) { return { ok: res.ok, body: body }; }, function () { return { ok: false, body: {} }; });
+    }).then(function (r) {
+      syncWriteButton();
+      if (!r.ok) {
+        status.className = 'status err';
+        status.textContent = (TF_WRITE_ERRORS[r.body.error] || TF_ERRORS[r.body.error] || 'Couldn\u2019t write the redirect.') +
+          (r.body.detail ? ' (' + r.body.detail + ')' : '');
+        return;
+      }
+      if (r.body.changed && r.body.changed.length) {
+        status.className = 'status err';
+        status.textContent = 'Saved, but Typeform now reports different ' + r.body.changed.join(', ') + '. Check the form in Typeform.';
+      } else if (!r.body.verified) {
+        status.className = 'status err';
+        status.textContent = 'Saved, but the redirect couldn\u2019t be confirmed. Check the ending in Typeform.';
+      } else {
+        status.className = 'status';
+        status.textContent = 'Done. The redirect is saved and nothing else on the form changed. Open the ending in Typeform to see it.';
+      }
+    })['catch'](function () {
+      syncWriteButton();
+      status.className = 'status err';
+      status.textContent = 'Couldn\u2019t reach the server. Check the form in Typeform before trying again.';
+    });
+  });
+
+  var TF_ERRORS = {
+    bad_token: 'That doesn\u2019t look like a Typeform token.',
+    bad_form: 'That doesn\u2019t look like a Typeform link.',
+    typeform_token_rejected: 'Typeform didn\u2019t accept the token. Check it can read forms.',
+    form_not_found: 'Typeform couldn\u2019t find that form for this token\u2019s account.',
+    rate_limited: 'Too many tries. Wait a minute and try again.'
+  };
+
+  $('tf-read').addEventListener('click', function () {
+    var status = $('tf-status');
+    status.className = 'status';
+    status.textContent = 'Reading\u2026';
+    $('tf-read').disabled = true;
+    fetch('api/typeform', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: $('tf-token').value, form: $('tf-form').value })
+    }).then(function (res) {
+      return res.json().then(function (body) { return { ok: res.ok, body: body }; }, function () { return { ok: false, body: {} }; });
+    }).then(function (r) {
+      $('tf-read').disabled = false;
+      if (!r.ok) {
+        status.className = 'status err';
+        status.textContent = TF_ERRORS[r.body.error] || 'Couldn\u2019t read the form. Try again.';
+        return;
+      }
+      var taken = {};
+      tfRows = (r.body.fields || []).map(function (q) {
+        var role = guessRole(q, taken);
+        if (role) taken[role] = true;
+        return { ref: q.ref, title: q.title, group: q.group, role: role, key: '' };
+      });
+      status.textContent = 'Read \u201c' + r.body.title + '\u201d: ' + tfRows.length + ' questions';
+      var redirect = (r.body.endings || []).map(function (e) { return e.redirect; }).filter(Boolean)[0] || r.body.redirectAfterSubmit;
+      if (redirect && !$('ty-url').value.trim()) $('ty-url').value = redirect.replace(/[?#].*$/, '');
+      renderQuestions();
+      syncFieldsFromRows();
+      syncWriteButton();
+    })['catch'](function () {
+      $('tf-read').disabled = false;
+      status.className = 'status err';
+      status.textContent = 'Couldn\u2019t reach the server. Try again.';
+    });
+  });
 
   function onCopy(e) {
     var btn = e.currentTarget, pre = $(btn.getAttribute('data-target')), status = btn.nextElementSibling;
@@ -445,10 +706,27 @@
     if (navigator.clipboard) navigator.clipboard.writeText(pre.textContent).then(function () { status.textContent = 'Copied'; }, fallback);
     else fallback();
   }
+  // Guide links open the matching guide section in a lightbox on this page.
+  var guideBox = $('guideBox');
+  if (guideBox.showModal) {
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest && e.target.closest('a.guide');
+      if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
+      e.preventDefault();
+      var hash = a.getAttribute('href').replace(/^[^#]*/, '');
+      $('guideFrame').src = 'guide.html?embed=1' + hash;
+      $('guideFull').href = 'guide.html' + hash;
+      guideBox.showModal();
+    });
+    $('guideClose').addEventListener('click', function () { guideBox.close(); });
+    // A click on the dimmed backdrop closes it too.
+    guideBox.addEventListener('click', function (e) { if (e.target === guideBox) guideBox.close(); });
+  }
+
   copy.addEventListener('click', onCopy);
   $('copyForm').addEventListener('click', onCopy);
 
-  [source, height, hl, $('fields'), $('greeting'), $('cta-on'), $('cta-title'), $('cta-text'), $('cta-button'), $('lk-font'), $('lk-font-name'), $('lk-window-height'), $('lk-css')]
+  [source, height, hl, $('fields'), $('ty-url'), $('greeting'), $('cta-on'), $('cta-title'), $('cta-text'), $('cta-button'), $('lk-font'), $('lk-font-name'), $('lk-window-height'), $('lk-css')]
     .concat(LOOK_FIELDS.map(function (k) { return $('lk-' + k); })).concat([].slice.call(layouts)).forEach(function (el) {
     el.addEventListener('input', render); el.addEventListener('change', render);
   });
