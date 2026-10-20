@@ -99,7 +99,7 @@
     <p class="sub">When someone finishes the Typeform, it sends them to your thank-you page with their answers in the address. The embed reads them, removes them from the address bar, and hands them to the chat.</p>
     <p class="note">Redirecting to a URL needs a Typeform <strong>Plus</strong> plan or higher.</p>
     <ol class="steps">
-      <li>On the setup page, fill in <strong>Form answers for the AI</strong> first if you want any (see <a href="#answers">below</a>). The setup page's <strong>Install</strong> step then shows the full redirect link to build.</li>
+      <li>On the setup page, fill in <strong>Form answers for the AI</strong> first if you want any (see <a href="#answers">below</a>). The setup page's <strong>Your form</strong> step then shows the full redirect link to build, under <strong>Typeform redirect</strong>.</li>
       <li>In Typeform, open your form. In the <strong>Content</strong> panel, click <strong>+</strong> next to <strong>Endings</strong> and choose <strong>Redirect to URL</strong>. Pick <strong>URL</strong> as the destination.</li>
       <li>Type your thank-you page address followed by <code>?</code>, then add each detail as <code>name=answer</code>, joined with <code>&amp;</code>. For each answer, type the name and <code>=</code> yourself, then type <code>@</code> and pick the matching question from the list:
         <pre>https://greatmountainmarketing.com/thank-you/?email=<em>@Email</em>&amp;phone=<em>@Phone</em>&amp;first_name=<em>@First name</em>&amp;business_info=<em>@What does your business do?</em></pre>
@@ -196,7 +196,7 @@
       <li>On the setup page, pick <strong>Typeform</strong> in the <strong>Your form</strong> step and open <strong>Fill this in from your Typeform</strong>. Paste your form's share link (for example <code>https://form.typeform.com/to/AbC123</code>) and the token, then click <strong>Read my form</strong>.</li>
       <li>Check the <strong>Use as</strong> column: email, phone and name questions are set for you. Choose <strong>For the AI</strong> on each other answer the AI should know, and adjust its short name if you like.</li>
       <li>Fill in the <strong>Thank-you page address</strong> just below it, then copy the thank-you page code from the <strong>Install</strong> step.</li>
-      <li>Either build the redirect shown in the <strong>Install</strong> step in Typeform yourself, picking each question named after an <code>@</code>, or let the setup page write it:
+      <li>Either build the redirect shown under <strong>Typeform redirect</strong> in the <strong>Your form</strong> step in Typeform yourself, picking each question named after an <code>@</code>, or let the setup page write it:
         <ul>
           <li>The form needs exactly one <strong>Redirect to URL</strong> ending. If it has none, add one in Typeform with any address and publish.</li>
           <li>Tick the confirmation and click <strong>Write the redirect into my form</strong>. The page saves the form, reads it back and tells you if anything other than the redirect changed.</li>
