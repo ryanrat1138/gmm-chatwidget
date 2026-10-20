@@ -7,8 +7,19 @@ const { unseal } = require('../lib/seal');
 
 let calls = [];
 let sourcesStatus = 200;
+const BOTS = [
+  { id: 'b1', name: 'Sales agent', versions: [{ published: true }], sources: [
+    { id: 'src1', enabled: true, channelList: ['sms'], tags: [{ name: 'lead', approveDeny: true }], personaNameOverride: 'Sam' }] },
+  { id: 'b2', name: 'Support agent', versions: [{ published: false }], sources: [{ id: 'src1', channelList: ['chat_w1'] }] },
+  { id: 'b3', name: 'Other', versions: [], sources: [] },
+];
+let attachStatus = 200;
 global.fetch = async (url, init = {}) => {
   calls.push({ url, init });
+  const json = (status, body) => ({ ok: status < 300, status, json: async () => body });
+  if (url.endsWith('/agency/source/src1/channels')) return json(200, [{ id: 'sms', name: 'SMS' }, { id: 'chat_w1', name: 'Chat widget' }]);
+  if (url.endsWith('/bot')) return json(200, BOTS);
+  if (/\/bot\/[^/]+\/source\//.test(url)) return json(attachStatus, {});
   return {
     ok: sourcesStatus < 300, status: sourcesStatus,
     json: async () => ({ total: 2, results: [
@@ -67,10 +78,39 @@ test('refusals: other sites, bad key, rejected key, bad sites, no secret', async
   process.env.SEAL_SECRET = secret;
 });
 
+test('lists the agents and which channels each answers on the source', async () => {
+  const r = await call({ body: { apiKey: KEY, action: 'agents', sourceId: 'src1' } });
+  assert.strictEqual(r.status, 200);
+  assert.deepStrictEqual(r.body.channels, [{ id: 'sms', name: 'SMS' }, { id: 'chat_w1', name: 'Chat widget' }]);
+  assert.deepStrictEqual(r.body.agents, [
+    { id: 'b1', name: 'Sales agent', published: true, onSource: true, enabled: true, channels: ['sms'] },
+    { id: 'b2', name: 'Support agent', published: false, onSource: true, enabled: true, channels: ['chat_w1'] },
+    { id: 'b3', name: 'Other', published: false, onSource: false, enabled: false, channels: [] },
+  ]);
+  assert.strictEqual((await call({ body: { apiKey: KEY, action: 'agents', sourceId: 'nope' } })).body.error, 'unknown_source');
+});
+
+test('assigning adds the channel and keeps the agent\'s other settings on the source', async () => {
+  const r = await call({ body: { apiKey: KEY, action: 'assign', sourceId: 'src1', botId: 'b1', channel: 'chat_w1' } });
+  assert.deepStrictEqual(r.body, { assigned: true, channels: ['sms', 'chat_w1'], othersOnChannel: ['Support agent'] });
+  const post = calls.find((c) => c.url.endsWith('/bot/b1/source/src1'));
+  assert.strictEqual(post.init.method, 'POST');
+  assert.deepStrictEqual(JSON.parse(post.init.body), {
+    channels: ['sms', 'chat_w1'], enabled: true, tags: [{ name: 'lead', approveDeny: true }], personaNameOverride: 'Sam',
+  });
+  calls = [];
+  const fresh = await call({ body: { apiKey: KEY, action: 'assign', sourceId: 'src1', botId: 'b3', channel: 'chat_w1' } });
+  assert.deepStrictEqual(fresh.body.channels, ['chat_w1']);
+  assert.strictEqual((await call({ body: { apiKey: KEY, action: 'assign', sourceId: 'src1', botId: 'b3', channel: 'whatsapp' } })).body.error, 'unknown_channel');
+  assert.strictEqual((await call({ body: { apiKey: KEY, action: 'assign', sourceId: 'src1', botId: 'zz', channel: 'sms' } })).body.error, 'unknown_agent');
+  attachStatus = 500;
+  assert.strictEqual((await call({ body: { apiKey: KEY, action: 'assign', sourceId: 'src1', botId: 'b1', channel: 'sms' } })).status, 502);
+});
+
 (async () => {
   let failed = 0;
   for (const t of tests) {
-    calls = []; sourcesStatus = 200; handler._reset();
+    calls = []; sourcesStatus = 200; attachStatus = 200; handler._reset();
     try { await t.fn(); console.log('ok   - ' + t.name); } catch (e) { failed++; console.log('FAIL - ' + t.name + '\n' + e.stack); }
   }
   console.log('\n' + (tests.length - failed) + '/' + tests.length + ' passed');

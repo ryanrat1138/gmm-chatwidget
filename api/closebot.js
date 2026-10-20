@@ -7,6 +7,12 @@
 // Sources: { "apiKey": "..." }
 // Seal:    { "apiKey": "...", "action": "seal",
 //            "sites": ["https://example.com"], "sourceIds": ["..."] }
+// Agents:  { "apiKey", "action": "agents", "sourceId" }
+//          -> the source's channels and every agent (bot), with the channels
+//             each one answers on that source
+// Assign:  { "apiKey", "action": "assign", "sourceId", "botId", "channel" }
+//          -> lets that agent answer the channel on the source, keeping the
+//             channels and filters it already has there
 //
 // The key is sent on to CloseBot for this request and returned only inside
 // the sealed text; it is never stored or logged. Only the setup page (this
@@ -80,6 +86,71 @@ async function listSources(apiKey) {
   };
 }
 
+function cb(path, apiKey, init = {}) {
+  return fetch(CB_BASE + path, {
+    ...init,
+    headers: { 'X-CB-KEY': apiKey, Accept: 'application/json', 'Content-Type': 'application/json' },
+  });
+}
+
+function strings(v) {
+  return Array.isArray(v) ? v.filter((x) => typeof x === 'string') : [];
+}
+
+async function readAgents(apiKey, sourceId) {
+  const [chRes, botRes] = await Promise.all([
+    cb('/agency/source/' + encodeURIComponent(sourceId) + '/channels', apiKey),
+    cb('/bot', apiKey),
+  ]);
+  if (!chRes.ok || !botRes.ok) return { error: 'closebot_error', status: 502 };
+  const channels = ((await chRes.json()) || []).filter((c) => c && c.id).map((c) => ({ id: String(c.id), name: String(c.name || '') }));
+  const bots = (await botRes.json()) || [];
+  return {
+    channels,
+    bots,
+    agents: bots.filter((b) => b && b.id).map((b) => {
+      const here = (b.sources || []).find((x) => x && x.id === sourceId);
+      return {
+        id: String(b.id),
+        name: String(b.name || '').slice(0, 200),
+        published: (b.versions || []).some((v) => v && v.published),
+        onSource: !!here,
+        enabled: here ? here.enabled !== false : false,
+        channels: here ? strings(here.channelList) : [],
+      };
+    }),
+  };
+}
+
+async function assign(res, apiKey, body) {
+  const sourceId = String(body.sourceId || ''), botId = String(body.botId || ''), channel = String(body.channel || '');
+  if (!sourceId || !botId || !channel) return send(res, 400, { error: 'bad_assign' });
+  const read = await readAgents(apiKey, sourceId);
+  if (read.error) return send(res, read.status, { error: read.error });
+  if (!read.channels.some((c) => c.id === channel)) return send(res, 400, { error: 'unknown_channel' });
+  const bot = read.bots.find((b) => b && String(b.id) === botId);
+  if (!bot) return send(res, 400, { error: 'unknown_agent' });
+  const here = (bot.sources || []).find((x) => x && x.id === sourceId) || {};
+  const channels = strings(here.channelList);
+  if (!channels.includes(channel)) channels.push(channel);
+  // Sent back as it is, so the agent's other settings on this source stay put.
+  const input = { channels, enabled: true };
+  for (const k of ['tags', 'tagFilterConfig', 'channelRules', 'personaNameOverride']) {
+    if (here[k] !== undefined && here[k] !== null) input[k] = here[k];
+  }
+  const put = await cb('/bot/' + encodeURIComponent(botId) + '/source/' + encodeURIComponent(sourceId), apiKey, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  if (!put.ok) {
+    let detail = '';
+    try { const b = await put.json(); detail = String(b.detail || b.title || '').slice(0, 300); } catch (_) { /* no body */ }
+    return send(res, 502, { error: 'closebot_error', status: put.status, detail });
+  }
+  const others = read.agents.filter((a) => a.id !== botId && a.channels.includes(channel)).map((a) => a.name);
+  return send(res, 200, { assigned: true, channels, othersOnChannel: others });
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return send(res, 405, { error: 'method_not_allowed' });
   if (!isSameSite(req)) return send(res, 403, { error: 'origin_not_allowed' });
@@ -98,11 +169,22 @@ module.exports = async function handler(req, res) {
     return send(res, 502, { error: 'closebot_unreachable' });
   }
   if (listed.error) return send(res, listed.status, { error: listed.error });
+  const known = new Set(listed.sources.map((s) => s.id));
+  if (body.action === 'agents' || body.action === 'assign') {
+    if (!known.has(String(body.sourceId || ''))) return send(res, 400, { error: 'unknown_source' });
+    try {
+      if (body.action === 'assign') return await assign(res, apiKey, body);
+      const read = await readAgents(apiKey, String(body.sourceId));
+      if (read.error) return send(res, read.status, { error: read.error });
+      return send(res, 200, { channels: read.channels, agents: read.agents });
+    } catch (_) {
+      return send(res, 502, { error: 'closebot_unreachable' });
+    }
+  }
   if (body.action !== 'seal') return send(res, 200, { sources: listed.sources });
 
   const sites = origins(body.sites);
   if (!sites) return send(res, 400, { error: 'bad_sites' });
-  const known = new Set(listed.sources.map((s) => s.id));
   const sourceIds = Array.isArray(body.sourceIds) ? body.sourceIds.map(String).filter((id) => known.has(id)) : [];
   const sealed = seal({ k: apiKey, o: sites, s: sourceIds });
   if (!sealed) return send(res, 501, { error: 'not_configured' });
