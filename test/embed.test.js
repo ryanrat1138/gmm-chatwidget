@@ -512,6 +512,59 @@ test('note: cut from the visitor message when the conversation comes back', asyn
   assert.deepStrictEqual(shown, ['Is it expensive?', 'Not at all.']);
 });
 
+function captureNotePosts(page, reply) {
+  const posts = [];
+  return page.route('http://api.test/api/note', (route) => {
+    posts.push(JSON.parse(route.request().postData()));
+    route.fulfill({ status: reply.status || 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(reply.body) });
+  }).then(() => posts);
+}
+
+test('AI note: added through the service, so the first message goes as typed, and only once', async (page) => {
+  const notes = await captureNotePosts(page, { body: { added: true, matchedBy: 'email' } });
+  const sent = await captureMessages(page);
+  await page.goto(A('thanks-note.html?email=ai%40example.com&business_info=HVAC&team_size=6-20'));
+  await page.waitForFunction(() => window.GMMChat.noteAdded === true);
+  assert.deepStrictEqual(notes, [{ email: 'ai@example.com', phone: '', answers: { business_info: 'HVAC', team_size: '6-20' } }]);
+  await identity(page);
+  await page.waitForSelector('.cb-input');
+  await say(page, 'How much does it cost?');
+  await page.waitForFunction(() => window.__sendStatus === 200);
+  assert.deepStrictEqual(sent, ['How much does it cost?']);
+  await page.goto(A('thanks-note.html?email=ai%40example.com&business_info=HVAC'));
+  await page.waitForSelector('.cb-input');
+  await page.waitForTimeout(300);
+  assert.strictEqual(notes.length, 1, 'the note is added once per visit');
+});
+
+test('AI note: a sealed key from the setup page goes with the request', async (page) => {
+  const notes = await captureNotePosts(page, { body: { added: true } });
+  await page.goto(A('thanks-note-key.html?email=k%40example.com&business_info=HVAC'));
+  await page.waitForFunction(() => window.GMMChat.noteAdded === true);
+  assert.deepStrictEqual(notes, [{ email: 'k@example.com', phone: '', answers: { business_info: 'HVAC' }, key: 'v1.sealed-test' }]);
+});
+
+test('AI note: when the service has no CloseBot key, the answers go with the first message', async (page) => {
+  const notes = await captureNotePosts(page, { status: 501, body: { added: false, reason: 'not_configured' } });
+  const sent = await captureMessages(page);
+  await page.goto(A('thanks-note.html?email=nk%40example.com&business_info=HVAC'));
+  await page.waitForFunction(() => window.GMMChat.noteAdded === false);
+  await identity(page);
+  await page.waitForSelector('.cb-input');
+  await say(page, 'Hi');
+  await page.waitForFunction(() => window.__sendStatus === 200);
+  assert.strictEqual(notes.length, 1);
+  assert.deepStrictEqual(sent, ['Hi\n\n[Form answers, for reference: Business info: HVAC]']);
+});
+
+test('AI note: not asked for without an email or phone', async (page) => {
+  const notes = await captureNotePosts(page, { body: { added: true } });
+  await page.goto(A('thanks-note.html?business_info=HVAC'));
+  await page.waitForSelector('.cb-form-card');
+  await page.waitForTimeout(300);
+  assert.strictEqual(notes.length, 0);
+});
+
 test('call to action: inline card above the chat greets by name and starts the chat', async (page) => {
   await page.goto(A('embed-inline.html?email=cta%40example.com&first_name=Pat'));
   await page.waitForSelector('#gmmcw-cta:not(.gmmcw-cta-loading)');
