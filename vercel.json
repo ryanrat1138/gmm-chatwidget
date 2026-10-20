@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "",
-  "buildCommand": "mkdir -p public && cp loader/embed.js public/embed.js && cp site/index.html public/index.html && cp site/guide.html public/guide.html",
+  "buildCommand": "mkdir -p public && cp loader/embed.js loader/chat.js public/ && cp site/index.html site/chat-setup.html site/guide.html site/chat-demo.html public/",
   "outputDirectory": "public",
   "headers": [
     {
@@ -25,6 +25,33 @@
           "value": "nosniff"
         }
       ]
+    },
+    {
+      "source": "/chat.js",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, s-maxage=300"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/chat-setup",
+      "destination": "/chat-setup.html"
     }
   ]
 }

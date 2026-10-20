@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#40916C">
+<meta name="color-scheme" content="light">
+<meta name="robots" content="noindex">
+<title>Chat Widget Demo</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f2f6f3; --panel: #ffffff; --text: #16201a; --muted: #57635c; --line: #e0e7e2;
+    --accent: #40916C; --accent-ink: #2D6A4F; --accent-soft: #e6f2ec;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--font); }
+  main { max-width: 720px; margin: 0 auto; padding: 48px 16px 120px; }
+  .tag { display: inline-block; margin: 0 0 12px; padding: 2px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); font-size: 13px; font-weight: 600; }
+  h1 { margin: 0 0 8px; font-size: clamp(28px, 5vw, 36px); line-height: 1.2; }
+  .lead { margin: 0 0 28px; color: var(--muted); font-size: 18px; }
+  .card { margin: 0 0 20px; padding: 20px 22px; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; }
+  .card h2 { margin: 0 0 6px; font-size: 17px; }
+  .card p, .card li { margin: 0 0 6px; color: var(--muted); }
+  .card ul { margin: 0; padding-left: 20px; }
+  code { font: .875em var(--mono); background: var(--accent-soft); color: var(--accent-ink); padding: 1px 6px; border-radius: 5px; overflow-wrap: anywhere; }
+  a { color: var(--accent-ink); }
+</style>
+</head>
+<body>
+<main>
+  <p class="tag">Demo</p>
+  <h1>Our own chat window for CloseBot</h1>
+  <p class="lead">This page loads <code>/chat.js</code>, the chat we draw ourselves, connected to the live CloseBot source <code>4ts0AHLEWQsK5N84</code>. Open it with the button in the corner.</p>
+
+  <!-- The tag under test. It also puts its call-to-action card here. -->
+  <script src="/chat.js" data-source="4ts0AHLEWQsK5N84" data-layout="bubble" data-debug="true"></script>
+
+  <div class="card">
+    <h2>What to try</h2>
+    <ul>
+      <li>Open the chat: with no details known it asks for your name and email or phone first, then the conversation starts on that HighLevel contact.</li>
+      <li>Add <code>?email=you@example.com&amp;first_name=You</code> to this page's address: the chat skips the form, greets you by name, and the details vanish from the address bar.</li>
+      <li>Reload after chatting: the conversation comes back.</li>
+      <li>The browser console shows what the widget did (<code>data-debug="true"</code>), never the values.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>If the chat doesn't appear</h2>
+    <p>CloseBot only answers sites on the source's allowed domains. Add <code>gmm-chatwidget.vercel.app</code> there, or try the tag on your own site. The older <code>/embed.js</code> tag is unchanged and keeps working.</p>
+  </div>
+</main>
+</body>
+</html>
