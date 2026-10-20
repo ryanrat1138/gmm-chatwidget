@@ -47,6 +47,8 @@ First match wins:
 
 With `data-fields="business_info,team_size"`, a thank-you URL like `...?email=@Email&business_info=@Business&team_size=@Team` hands those answers to CloseBot's AI along with the visitor's first chat message, as a note after it: `[Form answers, for reference: Business info: HVAC; Team size: 6-20]`. The AI has them for its first reply, even while HighLevel is still filling in the contact's fields. The visitor's chat shows only what they typed, and the note is cut out again when CloseBot reloads the conversation, but HighLevel's conversation view shows it as part of their message. The answers are removed from the address bar like the contact details, and kept for the browser tab until a message goes through. `data-note="off"` turns this off.
 
+When the service next to the embed has a CloseBot API key (`CLOSEBOT_API_KEY`, see the main README), the answers go on the visitor's CloseBot conversation as a note only the AI sees instead, as soon as CloseBot has a conversation for them, and the first message goes exactly as typed. If the service can't find the conversation, the first-message note is used as above.
+
 `data-save-fields="true"` also writes the answers to the HighLevel contact through `/api/fields` (see the main README). Most setups don't need it: the Typeform-to-HighLevel connection already maps answers to custom fields.
 
 ### Call to action
@@ -75,7 +77,7 @@ As soon as the page is ready, the embed adds a card to the page that greets the 
 | `data-width` | `360px` | Chat window width on desktop (bubble layout); `data-height` sets its height |
 | `data-greeting` | `Hey {first_name}, what can I help you with today?` | First bot message when the visitor is identified and the chat would otherwise be empty. `{first_name}` becomes their first name, or "there". `off` for none. A CloseBot Welcome Message or past conversation takes its place |
 | `data-fields` | none | Form answers to pass to the AI with the visitor's first message, comma separated (e.g. `business_info`). Read from the thank-you page URL, or from same-named fields on a same-site form page (put it on the form page tag too) |
-| `data-note` | `on` | `off` stops the answers going with the first message |
+| `data-note` | `on` | `off` stops the answers going to the AI (as an AI-only note or with the first message) |
 | `data-save-fields` | `false` | `true` also saves the answers on the HighLevel contact through `/api/fields`, which needs configuring; see the main README |
 | `data-api` | the embed's own site | Where `/api/fields` lives |
 | `data-cta` | `on` | `off` for no call-to-action card on the page |
@@ -100,7 +102,7 @@ As soon as the page is ready, the embed adds a card to the page that greets the 
 - CloseBot hides its form after one submit per browser, so a returning visitor on the same browser keeps their earlier identity.
 - One CloseBot widget per page.
 - Matching needs an email or a phone. A name alone isn't enough.
-- The form answers reach the AI only once the visitor sends a message. They ride on CloseBot's message request, which isn't a public API either; if CloseBot changes it, the note is simply left off.
+- Without a CloseBot API key, the form answers reach the AI only once the visitor sends a message. They ride on CloseBot's message request, which isn't a public API either; if CloseBot changes it, the note is simply left off.
 
 ## Tests
 
@@ -108,6 +110,7 @@ As soon as the page is ready, the embed adds a card to the page that greets the 
 npm i -g playwright   # once
 NODE_PATH=$(npm root -g) node test/embed.test.js
 node test/api.test.js
+node test/note.test.js
 node test/typeform.test.js
 ```
 

@@ -1,5 +1,5 @@
 /*!
- * GMM Chat Embed v0.7.1
+ * GMM Chat Embed v0.8.0
  *
  * One tag that adds the CloseBot AI chat to a page and, on a thank-you page,
  * fills CloseBot's lead form with the name, email and phone the visitor just
@@ -82,7 +82,7 @@
 
   if (window.GMMChat) return; // tag pasted twice
 
-  var VERSION = '0.7.1';
+  var VERSION = '0.8.0';
   var STORE_KEY = 'gmmcw_contact';
   var NAME_KEY = 'gmmcw_first_name';
   var DEFAULT_GREETING = 'Hey {first_name}, what can I help you with today?';
@@ -613,6 +613,36 @@
       }
       return original.apply(window, arguments);
     };
+  }
+
+  // When the service next to this script has a CloseBot API key, the answers
+  // go on the visitor's CloseBot conversation as a note only the AI sees, and
+  // the first message stays as typed. Without a key, or when CloseBot has no
+  // conversation for the visitor yet, the first message carries them as above.
+  var NOTE_SENT_KEY = 'gmmcw_note_sent';
+
+  function sendAiNote(contact, extra) {
+    if (!config.note || !config.api || !window.fetch || !hasIdentity(contact)) return;
+    if (!Object.keys(extra).length) return;
+    var s = store();
+    try { if (s && s.getItem(NOTE_SENT_KEY)) { forgetNote(); return; } } catch (_) { /* ignore */ }
+    window.fetch(config.api + '/api/note', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ email: contact.email || '', phone: contact.phone || '', answers: extra }),
+      credentials: 'omit'
+    }).then(function (res) {
+      return res.json()['catch'](function () { return {}; });
+    }).then(function (r) {
+      api.noteAdded = !!(r && r.added);
+      if (api.noteAdded) {
+        forgetNote();
+        try { if (s) s.setItem(NOTE_SENT_KEY, '1'); } catch (_) { /* ignore */ }
+        log('form answers added to the conversation as an AI note');
+      } else {
+        log('AI note not added (' + ((r && r.reason) || 'error') + '); answers go with the first message');
+      }
+    })['catch'](function () { api.noteAdded = false; log('AI note not sent; answers go with the first message'); });
   }
 
   // Cut the note out of a visitor message CloseBot shows again from history.
@@ -1214,6 +1244,7 @@
       api.contact = { hasEmail: !!contact.email, hasPhone: !!contact.phone };
       log('contact found via', source);
       sendExtraFields(contact, extra);
+      sendAiNote(contact, extra);
       watchForLeadForm(contact);
     });
   });
