@@ -396,7 +396,7 @@
 
     <div class="sub-block" id="tfBlock">
       <h3>Typeform</h3>
-      <p class="hint">Typeform passes the answers to the thank-you page. The Install step builds the redirect link for you.</p>
+      <p class="hint">Typeform passes the answers to the thank-you page. The redirect link to set in Typeform is built for you below, after the form answers.</p>
       <details class="look" id="tfConnect">
         <summary>Fill this in from your Typeform <span class="opt">(optional)</span></summary>
         <div class="cta-body">
@@ -420,6 +420,23 @@
     <p class="hint">Names of form answers passed in the thank-you page address or asked on your own form, separated by commas. The AI gets them as a note only it can see when you connect your CloseBot account in step 1, or otherwise along with the visitor's first chat message. The visitor doesn't see them. <a class="guide" href="guide.html#answers" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: what to put here</a></p>
 
     <p class="note" id="aiNoteInfo"></p>
+
+    <div class="sub-block" id="tfCard">
+      <h3>Typeform redirect: send the answers to the thank-you page</h3>
+      <p class="hint">In Typeform, click <strong>+</strong> next to <strong>Endings</strong>, choose <strong>Redirect to URL</strong>, and enter this (needs a Typeform Plus plan or higher):</p>
+      <div class="code-block">
+        <div class="code-head"><span class="code-title">Redirect link</span></div>
+        <pre id="tfUrl"></pre>
+      </div>
+      <p class="hint">Type the part before each @ yourself, then type <code>@</code> and pick the matching question from the list. The embed removes these details from the address bar as soon as the page opens. <a class="guide" href="guide.html#typeform" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: set up the Typeform redirect</a></p>
+      <div id="tf-write" class="write-box" hidden>
+        <p><strong>Write it into the form:</strong> saves your form back to Typeform with this redirect in its <strong>Redirect to URL</strong> ending. Typeform's API saves the whole form at once, so <strong>try it on a duplicate first</strong> and check it in Typeform, publish any unsaved edits before you start, and make sure the form has exactly one Redirect to URL ending.</p>
+        <label class="check"><input id="tf-confirm" type="checkbox">
+          <span>I've published my edits and I'm OK with Typeform saving the whole form</span></label>
+        <div class="action"><button id="tf-write-btn" class="btn btn-primary" type="button" disabled>Write the redirect into my form</button><span class="status" id="tf-write-status" aria-live="polite"></span></div>
+        <p class="hint" id="tfWriteNeedsUrl" hidden>Add a thank-you page address starting with <code>https://</code> under <strong>Thank-you page address</strong> above to write the redirect.</p>
+      </div>
+    </div>
 
     <div class="check-card">
       <label class="check"><input id="hl" type="checkbox">
@@ -598,22 +615,6 @@
       </div>
     </div>
 
-    <div class="part-card" id="tfCard">
-      <h3>Typeform only: send the answers to the thank-you page</h3>
-      <p class="hint">In Typeform, click <strong>+</strong> next to <strong>Endings</strong>, choose <strong>Redirect to URL</strong>, and enter this (needs a Typeform Plus plan or higher):</p>
-      <div class="code-block">
-        <div class="code-head"><span class="code-title">Redirect link</span></div>
-        <pre id="tfUrl"></pre>
-      </div>
-      <p class="hint">Type the part before each @ yourself, then type <code>@</code> and pick the matching question from the list. The embed removes these details from the address bar as soon as the page opens. <a class="guide" href="guide.html#typeform" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: set up the Typeform redirect</a></p>
-      <div id="tf-write" class="write-box" hidden>
-        <p><strong>Write it into the form:</strong> saves your form back to Typeform with this redirect in its <strong>Redirect to URL</strong> ending. Typeform's API saves the whole form at once, so <strong>try it on a duplicate first</strong> and check it in Typeform, publish any unsaved edits before you start, and make sure the form has exactly one Redirect to URL ending.</p>
-        <label class="check"><input id="tf-confirm" type="checkbox">
-          <span>I've published my edits and I'm OK with Typeform saving the whole form</span></label>
-        <div class="action"><button id="tf-write-btn" class="btn btn-primary" type="button" disabled>Write the redirect into my form</button><span class="status" id="tf-write-status" aria-live="polite"></span></div>
-        <p class="hint" id="tfWriteNeedsUrl" hidden>Add a thank-you page address starting with <code>https://</code> in <a href="#form">step 2</a> to write the redirect.</p>
-      </div>
-    </div>
 
     <div class="part-card">
       <h3>In CloseBot</h3>
@@ -910,7 +911,7 @@
     box.appendChild(table);
     var hint = document.createElement('p');
     hint.className = 'hint';
-    hint.textContent = 'Set the contact questions, and pick "For the AI" on each answer the AI should know. The answer names, the thank-you page code and the redirect link in the Install step update as you go.';
+    hint.textContent = 'Set the contact questions, and pick "For the AI" on each answer the AI should know. The answer names, the redirect link below and the thank-you page code update as you go.';
     box.appendChild(hint);
   }
 
