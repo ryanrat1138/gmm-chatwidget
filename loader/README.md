@@ -110,6 +110,7 @@ As soon as the page is ready, the embed adds a card to the page that greets the 
 ```
 npm i -g playwright   # once
 NODE_PATH=$(npm root -g) node test/embed.test.js
+NODE_PATH=$(npm root -g) node test/chat.test.js   # chat.js, see CHAT.md
 node test/api.test.js
 node test/note.test.js
 node test/closebot.test.js
