@@ -177,6 +177,9 @@
   .color input[type=text] { min-width: 0; }
   textarea { min-height: 96px; font: 13px/1.5 var(--mono); resize: vertical; }
   .cta-body { padding: 4px 16px 18px; }
+  ol.mini-steps { margin: 12px 0 4px; padding-left: 22px; font-size: 15px; }
+  ol.mini-steps li { margin: 6px 0; }
+  #cb-sources .check { display: flex; gap: 10px; align-items: center; margin: 8px 0 0; font-size: 15px; }
   .cta-body label { font-size: 14px; }
   .cta-body .check { font-size: 16px; margin-top: 14px; }
   #ctaPreview { margin-top: 6px; padding: 18px; border-radius: 12px; background: #fff; color: #111827; border: 1px dashed var(--line-strong); overflow: hidden; }
@@ -393,7 +396,28 @@
 
     <label for="fields">Form answers for the AI (optional)</label>
     <input id="fields" type="text" placeholder="business_info, team_size" autocomplete="off" spellcheck="false">
-    <p class="hint">Names of form answers passed in the thank-you page address or asked on your own form, separated by commas. The AI gets them as a note only it can see (when a CloseBot API key is set up on the service), or otherwise along with the visitor's first chat message. The visitor doesn't see them. <a class="guide" href="guide.html#answers" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: what to put here</a></p>
+    <p class="hint">Names of form answers passed in the thank-you page address or asked on your own form, separated by commas. The AI gets them as a note only it can see when you connect CloseBot below, or otherwise along with the visitor's first chat message. The visitor doesn't see them. <a class="guide" href="guide.html#answers" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: what to put here</a></p>
+
+    <details class="look" id="aiNote">
+      <summary>Give the AI these answers as a hidden note <span class="opt">(optional, uses your CloseBot API key)</span></summary>
+      <div class="cta-body">
+        <p class="hint">Connect your CloseBot account and the answers are added to the visitor's conversation as an internal note that only the AI can see, as soon as the thank-you page opens. The visitor's first message then goes exactly as they typed it. Without this, the answers ride along with their first message instead.</p>
+        <ol class="mini-steps">
+          <li>Sign in to CloseBot as the account owner and open <a href="https://app.closebot.com/settings?tab=keys" target="_blank" rel="noopener">Settings &rsaquo; API Keys</a>.</li>
+          <li>Click <strong>+</strong> at the top of the table, name the key (for example <code>Chat embed</code>) and create it.</li>
+          <li>Copy the key straight away. CloseBot shows it only once.</li>
+          <li>Paste it below, enter your website's address and click <strong>Connect CloseBot</strong>.</li>
+        </ol>
+        <label for="cb-key">CloseBot API key</label>
+        <input id="cb-key" type="password" autocomplete="off" spellcheck="false">
+        <label for="cb-sites">Your website</label>
+        <input id="cb-sites" type="text" placeholder="https://your-site.com" autocomplete="off" spellcheck="false">
+        <p class="hint">The address of the site the thank-you page is on, starting with https://. Separate several sites with commas. The key only works from these sites.</p>
+        <div class="action"><button id="cb-connect" class="btn btn-primary" type="button">Connect CloseBot</button><span class="status" id="cb-status" aria-live="polite"></span></div>
+        <div id="cb-sources"></div>
+        <p class="hint">CloseBot checks the key, then it's locked to your sites and added to the code in scrambled form. It isn't stored anywhere, and it can't be read back out of your page. <a class="guide" href="guide.html#closebot-key" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: connect CloseBot</a></p>
+      </div>
+    </details>
 
     <div class="check-card">
       <label class="check"><input id="hl" type="checkbox">
@@ -673,6 +697,7 @@
     if (inline && height.value.trim() && height.value.trim() !== '600px') lines.push('  data-height="' + height.value.trim().replace(/"/g, '') + '"');
     var f = fieldList();
     if (f) lines.push('  data-fields="' + f + '"');
+    if (f && noteKey) lines.push('  data-note-key="' + noteKey + '"');
     var g = $('greeting').value.trim();
     if (!g) lines.push('  data-greeting="off"');
     else if (g !== DEFAULT_GREETING) lines.push('  data-greeting="' + g.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;') + '"');
@@ -953,6 +978,100 @@
     });
   });
 
+  // ---------- CloseBot key for the AI-only note ----------
+  var noteKey = '';
+  var cbSources = [];
+  var CB_ERRORS = {
+    bad_key: 'That doesn’t look like a CloseBot API key. Copy the whole key.',
+    closebot_key_rejected: 'CloseBot didn’t accept that key. Check you copied all of it, or create a new one.',
+    bad_sites: 'Enter your website’s address, starting with https:// (for example https://your-site.com).',
+    not_configured: 'This setup page can’t lock keys yet. Ask whoever hosts it to add SEAL_SECRET.',
+    rate_limited: 'Too many tries. Wait a minute and try again.'
+  };
+
+  function cbSites() {
+    return $('cb-sites').value.split(',').map(function (v) { return v.trim(); }).filter(Boolean);
+  }
+  function checkedSources() {
+    return [].map.call(document.querySelectorAll('#cb-sources input:checked'), function (b) { return b.value; });
+  }
+  function cbPost(body) {
+    return fetch('api/closebot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (res) {
+        return res.json().then(function (b) { return { ok: res.ok, body: b }; }, function () { return { ok: false, body: {} }; });
+      });
+  }
+  function cbFail(r) {
+    var status = $('cb-status');
+    status.className = 'status err';
+    status.textContent = CB_ERRORS[r.body && r.body.error] || 'Couldn’t connect to CloseBot. Try again in a moment.';
+  }
+  function sealKey() {
+    var status = $('cb-status');
+    status.className = 'status';
+    status.textContent = 'Locking the key to your site…';
+    return cbPost({ apiKey: $('cb-key').value.trim(), action: 'seal', sites: cbSites(), sourceIds: checkedSources() }).then(function (r) {
+      if (!r.ok) { noteKey = ''; render(); return cbFail(r); }
+      noteKey = r.body.sealed;
+      status.className = 'status';
+      status.textContent = 'Connected. The code in the Install step now includes your locked key' +
+        (fieldList() ? '.' : ' once you add form answers above.');
+      render();
+    });
+  }
+  function renderSources() {
+    var box = $('cb-sources');
+    box.innerHTML = '';
+    if (cbSources.length < 2) return;
+    var p = document.createElement('p');
+    p.className = 'hint';
+    p.textContent = 'Only look for the visitor in these CloseBot sources (optional; with none ticked, all are searched):';
+    box.appendChild(p);
+    cbSources.forEach(function (src) {
+      var label = document.createElement('label');
+      label.className = 'check';
+      var box2 = document.createElement('input');
+      box2.type = 'checkbox';
+      box2.value = src.id;
+      box2.addEventListener('change', function () { sealKey()['catch'](function () { cbFail({}); }); });
+      var span = document.createElement('span');
+      span.textContent = src.name + (src.category ? ' (' + src.category + ')' : '');
+      label.appendChild(box2);
+      label.appendChild(span);
+      box.appendChild(label);
+    });
+  }
+  $('cb-connect').addEventListener('click', function () {
+    var status = $('cb-status');
+    if (!$('cb-key').value.trim()) { status.className = 'status err'; status.textContent = 'Paste your CloseBot API key first.'; return; }
+    if (!cbSites().length) {
+      var site = '';
+      try { site = new URL($('ty-url').value.trim()).origin; } catch (_) { /* no address yet */ }
+      if (site) $('cb-sites').value = site;
+      else { status.className = 'status err'; status.textContent = CB_ERRORS.bad_sites; return; }
+    }
+    status.className = 'status';
+    status.textContent = 'Checking the key with CloseBot…';
+    $('cb-connect').disabled = true;
+    cbPost({ apiKey: $('cb-key').value.trim() }).then(function (r) {
+      if (!r.ok) return cbFail(r);
+      cbSources = r.body.sources || [];
+      renderSources();
+      return sealKey();
+    })['catch'](function () { cbFail({}); }).then(function () { $('cb-connect').disabled = false; });
+  });
+  [$('cb-key'), $('cb-sites')].forEach(function (el) {
+    el.addEventListener('input', function () {
+      if (!noteKey && !cbSources.length) return;
+      noteKey = '';
+      cbSources = [];
+      renderSources();
+      $('cb-status').className = 'status';
+      $('cb-status').textContent = 'Changed. Click Connect CloseBot again to use it.';
+      render();
+    });
+  });
+
   var TF_ERRORS = {
     bad_token: 'That doesn’t look like a Typeform token.',
     bad_form: 'That doesn’t look like a Typeform link.',
@@ -1104,6 +1223,7 @@
 
     var missing = [];
     if (!id) missing.push({ text: 'Your CloseBot source ID. Until it’s in, the code says PASTE_SOURCE_ID and Copy stays off.', step: 'closebot' });
+    if ($('cb-key').value.trim() && !noteKey) missing.push({ text: 'You pasted a CloseBot API key but haven’t clicked Connect CloseBot, so the hidden note isn’t in the code.', step: 'form' });
     if (kind === 'typeform' && !$('ty-url').value.trim()) missing.push({ text: 'Your thank-you page address, for the Typeform redirect link.', step: 'form' });
     var list = $('missingList');
     list.innerHTML = '';

@@ -89,7 +89,7 @@ module.exports = async function handler(req, res) {
   const body = parseBody(req);
   if (!body) return send(res, 400, { error: 'bad_json' });
   const apiKey = typeof body.apiKey === 'string' ? body.apiKey.trim() : '';
-  if (!/^[A-Za-z0-9_\-.:]{16,300}$/.test(apiKey)) return send(res, 400, { error: 'bad_key' });
+  if (!/^[\x21-\x7e]{16,300}$/.test(apiKey)) return send(res, 400, { error: 'bad_key' });
 
   let listed;
   try {

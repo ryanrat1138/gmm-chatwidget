@@ -78,6 +78,7 @@ As soon as the page is ready, the embed adds a card to the page that greets the 
 | `data-greeting` | `Hey {first_name}, what can I help you with today?` | First bot message when the visitor is identified and the chat would otherwise be empty. `{first_name}` becomes their first name, or "there". `off` for none. A CloseBot Welcome Message or past conversation takes its place |
 | `data-fields` | none | Form answers to pass to the AI with the visitor's first message, comma separated (e.g. `business_info`). Read from the thank-you page URL, or from same-named fields on a same-site form page (put it on the form page tag too) |
 | `data-note` | `on` | `off` stops the answers going to the AI (as an AI-only note or with the first message) |
+| `data-note-key` | none | The customer's CloseBot API key, sealed by the setup page's **Connect CloseBot**. The answers then go on their own CloseBot account as an AI-only note |
 | `data-save-fields` | `false` | `true` also saves the answers on the HighLevel contact through `/api/fields`, which needs configuring; see the main README |
 | `data-api` | the embed's own site | Where `/api/fields` lives |
 | `data-cta` | `on` | `off` for no call-to-action card on the page |
@@ -111,6 +112,7 @@ npm i -g playwright   # once
 NODE_PATH=$(npm root -g) node test/embed.test.js
 node test/api.test.js
 node test/note.test.js
+node test/closebot.test.js
 node test/typeform.test.js
 ```
 
