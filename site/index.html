@@ -49,6 +49,8 @@
   .choice input { margin-top: 5px; }
   .choice .hint { display: block; }
   .warn { color: var(--muted); font-size: 14px; }
+  a.guide { color: var(--accent); font-weight: 600; white-space: nowrap; }
+  a.guide::after { content: " \2197"; }
   details.look { margin-top: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
   details.look > summary { cursor: pointer; padding: 12px 14px; font-weight: 600; }
   details.look[open] > summary { border-bottom: 1px solid var(--line); }
@@ -108,7 +110,7 @@
     <h2><span class="step">1</span>Thank-you page: the chat</h2>
     <label for="source">CloseBot source ID</label>
     <input id="source" type="text" placeholder="Paste the CloseBot script tag or just the source ID" autocomplete="off" spellcheck="false">
-    <p class="hint">In CloseBot, open your HighLevel source and go to Setup. Paste the whole script tag here; the ID is the part after <code>source=</code>.</p>
+    <p class="hint">In CloseBot, open your HighLevel source and go to Setup. Paste the whole script tag here; the ID is the part after <code>source=</code>. <a class="guide" href="guide.html#source-id" target="_blank" rel="noopener">Step-by-step: find your source ID</a></p>
 
     <fieldset class="choices">
       <legend>How the chat shows</legend>
@@ -131,7 +133,7 @@
 
     <label for="fields">Form answers for the AI (optional)</label>
     <input id="fields" type="text" placeholder="business_info, team_size" autocomplete="off" spellcheck="false">
-    <p class="hint">Names of form answers passed in the thank-you page address or asked on your own form, separated by commas. They go to the AI along with the visitor's first chat message, so it has them right away, even before HighLevel has the contact's fields. The visitor doesn't see them; they do show in the HighLevel conversation.</p>
+    <p class="hint">Names of form answers passed in the thank-you page address or asked on your own form, separated by commas. They go to the AI along with the visitor's first chat message, so it has them right away, even before HighLevel has the contact's fields. The visitor doesn't see them; they do show in the HighLevel conversation. <a class="guide" href="guide.html#answers" target="_blank" rel="noopener">Step-by-step: what to put here</a></p>
 
     <details class="look" id="cta" open>
       <summary>Call to action on the page</summary>
@@ -272,9 +274,9 @@
 
   <section>
     <h2><span class="step">4</span>Typeform only: send the answers to the thank-you page</h2>
-    <p>In Typeform, open <strong>Endings</strong>, turn on <strong>Redirect to URL</strong>, and enter the thank-you page address followed by the answers:</p>
+    <p>In Typeform, click <strong>+</strong> next to <strong>Endings</strong>, choose <strong>Redirect to URL</strong>, and enter the thank-you page address followed by the answers (needs a Typeform Plus plan or higher):</p>
     <pre id="tfUrl"></pre>
-    <p class="hint">Type the part before each @ yourself, then type <code>@</code> and pick the matching question from the list. The embed removes these details from the address bar as soon as the page opens.</p>
+    <p class="hint">Type the part before each @ yourself, then type <code>@</code> and pick the matching question from the list. The embed removes these details from the address bar as soon as the page opens. <a class="guide" href="guide.html#typeform" target="_blank" rel="noopener">Step-by-step: set up the Typeform redirect</a></p>
   </section>
 </main>
 <script src="embed.js"></script>

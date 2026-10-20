@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "",
-  "buildCommand": "mkdir -p public && cp loader/embed.js public/embed.js && cp site/index.html public/index.html",
+  "buildCommand": "mkdir -p public && cp loader/embed.js public/embed.js && cp site/index.html public/index.html && cp site/guide.html public/guide.html",
   "outputDirectory": "public",
   "headers": [
     {

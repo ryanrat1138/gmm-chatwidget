@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Chat Embed Guide</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --text: #1d1d1b; --muted: #5f5f5a; --line: #e2e1dc;
+    --accent: #2f6f4f; --accent-text: #ffffff; --code-bg: #f0efea; --note-bg: #eef5f0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161615; --panel: #1f1f1d; --text: #ecebe6; --muted: #a3a29b; --line: #34332f;
+      --accent: #6fbf94; --accent-text: #10241a; --code-bg: #262623; --note-bg: #1f2b24; }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 16px 64px; }
+  h1 { font-size: 28px; line-height: 1.2; margin: 0 0 8px; }
+  h2 { font-size: 20px; margin: 0 0 4px; scroll-margin-top: 16px; }
+  h3 { font-size: 16px; margin: 22px 0 6px; }
+  p.lead { color: var(--muted); margin: 0 0 20px; }
+  a { color: var(--accent); }
+  nav { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
+  nav a { padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel);
+    text-decoration: none; color: var(--text); font-size: 14px; font-weight: 600; }
+  nav a:hover { border-color: var(--accent); }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px; margin-bottom: 16px; }
+  .sub { color: var(--muted); margin: 0 0 8px; }
+  ol.steps { counter-reset: step; list-style: none; padding: 0; margin: 12px 0 0; }
+  ol.steps > li { counter-increment: step; position: relative; padding: 0 0 16px 40px; }
+  ol.steps > li::before { content: counter(step); position: absolute; left: 0; top: 1px; width: 26px; height: 26px;
+    border-radius: 13px; background: var(--accent); color: var(--accent-text); font-size: 13px; font-weight: 700;
+    text-align: center; line-height: 26px; }
+  ol.steps > li:last-child { padding-bottom: 0; }
+  ul { margin: 6px 0 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  code { font: 14px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre { background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin: 8px 0 0;
+    overflow-x: auto; font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+  pre em { font-style: normal; background: var(--note-bg); border-radius: 3px; padding: 0 3px; color: var(--accent); font-weight: 600; }
+  .note { background: var(--note-bg); border-radius: 8px; padding: 12px 14px; margin: 14px 0 0; font-size: 15px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 15px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .back { display: inline-block; margin-bottom: 20px; font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="./">&larr; Back to setup</a>
+  <h1>Chat embed: step-by-step guide</h1>
+  <p class="lead">How to get your CloseBot source ID, and how to send Typeform answers to the thank-you page so the chat knows who the visitor is and what they told you.</p>
+  <nav>
+    <a href="#source-id">CloseBot source ID</a>
+    <a href="#typeform">Typeform redirect</a>
+    <a href="#answers">Form answers for the AI</a>
+    <a href="#test">Test it</a>
+  </nav>
+
+  <section id="source-id">
+    <h2>Find your CloseBot source ID</h2>
+    <p class="sub">Each CloseBot source has its own script. The source ID is the code at the end of it.</p>
+    <ol class="steps">
+      <li>Sign in at <a href="https://app.closebot.com" target="_blank" rel="noopener">app.closebot.com</a>.</li>
+      <li>Open the <strong>source</strong> connected to your HighLevel account, then click <strong>Setup</strong>.</li>
+      <li>Find the pixel script on the Setup page and copy all of it. It looks like this:
+        <pre>&lt;script src="https://api.closebot.com/scripts/cb.js?source=<em>4ts0AHLEWQsK5N84</em>"&gt;&lt;/script&gt;</pre>
+        The highlighted part after <code>source=</code> is the source ID.</li>
+      <li>Paste the whole script into the <strong>CloseBot source ID</strong> box on the setup page. It picks out the ID for you, or you can paste just the ID.</li>
+      <li>While you're on CloseBot's Setup page, add your website under <strong>Allowed domains</strong>, for example <code>greatmountainmarketing.com</code>, plus <code>www.greatmountainmarketing.com</code> if the site uses www (or <code>*.greatmountainmarketing.com</code> for every subdomain). CloseBot ignores pages on domains that aren't listed.</li>
+      <li>Under <strong>Chat Widgets</strong>, open your widget (or click <strong>New Widget</strong>), turn on its <strong>Form</strong> with <strong>Email</strong> and <strong>Phone</strong>, set it to show immediately, and target it to your thank-you page only.</li>
+    </ol>
+    <p class="note">You don't need to paste CloseBot's own script on the thank-you page as well. The embed loads it for you. If it's already in your site header, that's fine too; it won't load twice.<br>
+      CloseBot's help: <a href="https://docs.closebot.com/en/articles/14645307-setup" target="_blank" rel="noopener">Setup</a>, <a href="https://docs.closebot.com/en/articles/14645883-creating-and-ordering-widgets" target="_blank" rel="noopener">Creating widgets</a>.</p>
+  </section>
+
+  <section id="typeform">
+    <h2>Send Typeform answers to the thank-you page</h2>
+    <p class="sub">When someone finishes the Typeform, it sends them to your thank-you page with their answers in the address. The embed reads them, removes them from the address bar, and hands them to the chat.</p>
+    <p class="note">Redirecting to a URL needs a Typeform <strong>Plus</strong> plan or higher.</p>
+    <ol class="steps">
+      <li>On the setup page, fill in <strong>Form answers for the AI</strong> first if you want any (see <a href="#answers">below</a>). Section 4 of the setup page then shows the full redirect link to build.</li>
+      <li>In Typeform, open your form. In the <strong>Content</strong> panel, click <strong>+</strong> next to <strong>Endings</strong> and choose <strong>Redirect to URL</strong>. Pick <strong>URL</strong> as the destination.</li>
+      <li>Type your thank-you page address followed by <code>?</code>, then add each detail as <code>name=answer</code>, joined with <code>&amp;</code>. For each answer, type the name and <code>=</code> yourself, then type <code>@</code> and pick the matching question from the list:
+        <pre>https://greatmountainmarketing.com/thank-you/?email=<em>@Email</em>&amp;phone=<em>@Phone</em>&amp;first_name=<em>@First name</em>&amp;business_info=<em>@What does your business do?</em></pre>
+        Typeform shows each picked question as a tag in the address. Don't type the question text yourself.</li>
+      <li>Make sure the address starts with <code>https://</code>. Typeform won't redirect otherwise.</li>
+      <li>Click <strong>Publish</strong> (or <strong>Publish edits</strong>) so the change goes live.</li>
+    </ol>
+    <h3>The names the embed understands</h3>
+    <table>
+      <tr><th>Name in the link</th><th>Pick this question</th></tr>
+      <tr><td><code>email</code></td><td>Their email (this or phone is needed to match the HighLevel contact)</td></tr>
+      <tr><td><code>phone</code></td><td>Their phone number</td></tr>
+      <tr><td><code>first_name</code></td><td>First name (used in "You're all set, Ann!" and the chat greeting)</td></tr>
+      <tr><td><code>last_name</code></td><td>Last name</td></tr>
+      <tr><td><code>name</code></td><td>Full name, if the form asks for one box instead of first and last</td></tr>
+      <tr><td>Your own names</td><td>Any other answer you want the AI to see; list the same names in <strong>Form answers for the AI</strong></td></tr>
+    </table>
+    <p class="note">Typeform's help: <a href="https://help.typeform.com/hc/en-us/articles/360051791392" target="_blank" rel="noopener">End Screens and redirects</a>.</p>
+  </section>
+
+  <section id="answers">
+    <h2>What to put in "Form answers for the AI"</h2>
+    <p class="sub">Short names for the extra answers you want the AI to know about, separated by commas. Leave it empty if the AI only needs the contact details.</p>
+    <ol class="steps">
+      <li>Pick the Typeform questions the AI should know about, such as what their business does, team size or budget.</li>
+      <li>Give each one a short name using lowercase letters, numbers and underscores, no spaces: <code>business_info</code>, <code>team_size</code>, <code>budget</code>.</li>
+      <li>Type those names into the box, separated by commas:
+        <pre>business_info, team_size, budget</pre></li>
+      <li>Use exactly the same names in the Typeform redirect link, each followed by <code>=</code> and the question picked with <code>@</code>:
+        <pre>&amp;business_info=<em>@What does your business do?</em>&amp;team_size=<em>@How big is your team?</em>&amp;budget=<em>@Monthly budget</em></pre>
+        The setup page's section 4 builds this part of the link for you once the names are in the box.</li>
+      <li>Copy the thank-you page code again from the setup page, since the names are now part of it, and replace the old code on the page.</li>
+    </ol>
+    <p class="note">The answers ride along with the visitor's first chat message, as a note like <code>[Form answers, for reference: Business info: HVAC; Team size: 6-20]</code>. The AI reads it; the visitor never sees it. It does show in the HighLevel conversation, as part of their message. Names are turned into labels for the AI, so <code>business_info</code> reads "Business info".</p>
+  </section>
+
+  <section id="test">
+    <h2>Test it</h2>
+    <ol class="steps">
+      <li>Open your Typeform in a private (incognito) window, so CloseBot doesn't already know you, and submit it with a real-looking email.</li>
+      <li>On the thank-you page, the address bar should drop the answers within a moment, and the card should say "You're all set," with your first name.</li>
+      <li>Send a message in the chat. The AI's reply should already know your answers.</li>
+      <li>In HighLevel, the conversation should be on the contact the form created, with no duplicate contact.</li>
+    </ol>
+    <p class="note">If the card says "You're all set!" with no name, the redirect link is missing <code>first_name</code> or its <code>@</code> question. If the chat asks for name and email, the link is missing <code>email</code> and <code>phone</code>.</p>
+  </section>
+</main>
+</body>
+</html>
