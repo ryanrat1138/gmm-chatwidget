@@ -1506,7 +1506,7 @@
       'background:var(--gmmc-surface);border-top:1px solid var(--gmmc-line)}',
     '.gmmc-input{flex:1;min-width:0;height:44px;min-height:44px;max-height:132px;margin:0;padding:11px 16px;resize:none;' +
       'border:1px solid var(--gmmc-field-line);border-radius:22px;background:var(--gmmc-surface);color:var(--gmmc-text);' +
-      'font:inherit;line-height:1.4;outline:none;overflow-y:auto;transition:border-color .15s,box-shadow .15s}',
+      'font:inherit;line-height:1.4;outline:none;overflow-y:hidden;transition:border-color .15s,box-shadow .15s}',
     '.gmmc-input:focus{border-color:var(--gmmc-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--gmmc-accent) 22%,transparent)}',
     '.gmmc-input::placeholder{color:var(--gmmc-muted);opacity:1}',
     '.gmmc-input:disabled{background:var(--gmmc-bg);cursor:not-allowed}',
@@ -1651,7 +1651,10 @@
   function autosize() {
     var t = ui.input;
     t.style.height = 'auto';
-    t.style.height = Math.min(Math.max(t.scrollHeight + 2, 44), 132) + 'px';
+    var want = t.scrollHeight + 2;
+    t.style.height = Math.min(Math.max(want, 44), 132) + 'px';
+    // A scrollbar only once the text outgrows the box, not for a line or two.
+    t.style.overflowY = want > 132 ? 'auto' : 'hidden';
   }
 
   function updateSend() {
