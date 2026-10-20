@@ -122,6 +122,7 @@
     look: parseLook(attr),
     greeting: greetingSetting(attr('greeting')),
     note: attr('note') !== 'off',
+    noteKey: trim(attr('note-key')),
     saveFields: attr('save-fields') === 'true',
     cta: attr('cta') !== 'off',
     ctaTitle: attr('cta-title'),
@@ -621,6 +622,12 @@
   // conversation for the visitor yet, the first message carries them as above.
   var NOTE_SENT_KEY = 'gmmcw_note_sent';
 
+  function noteRequest(contact, extra) {
+    var r = { email: contact.email || '', phone: contact.phone || '', answers: extra };
+    if (config.noteKey) r.key = config.noteKey; // the customer's own sealed CloseBot key
+    return r;
+  }
+
   function sendAiNote(contact, extra) {
     if (!config.note || !config.api || !window.fetch || !hasIdentity(contact)) return;
     if (!Object.keys(extra).length) return;
@@ -629,7 +636,7 @@
     window.fetch(config.api + '/api/note', {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ email: contact.email || '', phone: contact.phone || '', answers: extra }),
+      body: JSON.stringify(noteRequest(contact, extra)),
       credentials: 'omit'
     }).then(function (res) {
       return res.json()['catch'](function () { return {}; });

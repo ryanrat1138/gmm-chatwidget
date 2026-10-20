@@ -116,11 +116,30 @@ test('refusals: origin, no key, no contact, no answers, bad key, rate limit', as
   assert.strictEqual(r.status, 429);
 });
 
+test('a sealed customer key is used for its own sites and sources only', async () => {
+  delete process.env.CLOSEBOT_API_KEY; delete process.env.ALLOWED_ORIGINS;
+  process.env.SEAL_SECRET = 's'.repeat(40);
+  process.env.HIGHLEVEL_PRIVATE_TOKEN = 'pit'; process.env.HIGHLEVEL_LOCATION_ID = 'loc1';
+  const { seal } = require('../lib/seal');
+  const key = seal({ k: 'customer-key', o: ['https://customer.example'], s: ['srcC'] });
+  searches = [[lead('C1', [['email', 'v@w.co']])]];
+  let r = await call({ origin: 'https://customer.example', body: { email: 'v@w.co', answers: { business_info: 'HVAC' }, key } });
+  assert.deepStrictEqual(r.body, { added: true, matchedBy: 'email', aiVisible: true });
+  assert.strictEqual(r.headers['access-control-allow-origin'], 'https://customer.example');
+  assert.strictEqual(notePosts()[0].init.headers['X-CB-KEY'], 'customer-key');
+  assert.deepStrictEqual(JSON.parse(calls.find((c) => c.url.endsWith('/lead/search')).init.body).sourceIds, ['srcC']);
+  assert.ok(!calls.some((c) => c.url.includes('leadconnectorhq')), 'the service\'s HighLevel is not used for a customer');
+  r = await call({ origin: ORIGIN, body: { email: 'v@w.co', answers: { business_info: 'HVAC' }, key } });
+  assert.strictEqual(r.status, 403);
+  r = await call({ origin: 'https://customer.example', body: { email: 'v@w.co', answers: { business_info: 'HVAC' }, key: key.slice(0, -3) + 'AAA' } });
+  assert.deepStrictEqual([r.status, r.body.reason], [400, 'bad_key']);
+});
+
 (async () => {
   let failed = 0;
   for (const t of tests) {
     calls = []; searches = []; noteStatus = 200; hlContact = null; handler._reset();
-    for (const k of Object.keys(process.env)) if (/^(CLOSEBOT|HIGHLEVEL|ALLOWED)_/.test(k)) delete process.env[k];
+    for (const k of Object.keys(process.env)) if (/^(CLOSEBOT|HIGHLEVEL|ALLOWED|SEAL)_/.test(k)) delete process.env[k];
     Object.assign(process.env, BASE_ENV);
     try { await t.fn(); console.log('ok   - ' + t.name); } catch (e) { failed++; console.log('FAIL - ' + t.name + '\n' + e.stack); }
   }

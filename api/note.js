@@ -5,10 +5,16 @@
 // CloseBot includes them in the AI's context.
 //
 // Body (JSON, sent as text/plain so browsers skip the CORS preflight):
-//   { "email": "...", "phone": "...", "answers": { "business_info": "HVAC" } }
+//   { "email": "...", "phone": "...", "answers": { "business_info": "HVAC" },
+//     "key": "v1...." }
+//
+// "key" is the customer's own CloseBot API key, sealed by the setup page
+// (api/closebot.js) together with the sites and sources it may be used for.
+// Without it, the service's own key and settings below are used.
 //
 // Environment:
-//   CLOSEBOT_API_KEY         CloseBot API key (Settings > API Keys)
+//   SEAL_SECRET              opens sealed keys (see lib/seal.js)
+//   CLOSEBOT_API_KEY         this service's own CloseBot API key, optional
 //   CLOSEBOT_SOURCE_IDS      optional: CloseBot source ids to search in,
 //                            comma separated (all sources when unset)
 //   ALLOWED_ORIGINS          sites allowed to call this, comma separated
@@ -20,6 +26,8 @@
 // few seconds. A lead is only used when it clearly belongs to this visitor and
 // has been active recently. When no lead is found the page falls back to
 // sending the answers with the first chat message.
+
+const { unseal } = require('../lib/seal');
 
 const CB_BASE = 'https://api.closebot.com';
 const HL_BASE = 'https://services.leadconnectorhq.com';
@@ -130,8 +138,7 @@ function recent(lead) {
   return !isNaN(t) && Date.now() - t < RECENT_MS;
 }
 
-async function findLead(key, who) {
-  const sourceIds = list(process.env.CLOSEBOT_SOURCE_IDS);
+async function findLead(key, sourceIds, who) {
   const terms = [who.email, who.phone].filter(Boolean);
   for (const term of terms) {
     const res = await cb('/lead/search', key, {
@@ -154,26 +161,39 @@ async function findLead(key, who) {
 
 module.exports = async function handler(req, res) {
   const origin = req.headers.origin || '';
-  const allowedOrigin = list(process.env.ALLOWED_ORIGINS).includes(origin) ? origin : '';
+  const envOrigin = list(process.env.ALLOWED_ORIGINS).includes(origin) ? origin : '';
 
   if (req.method === 'OPTIONS') {
-    if (allowedOrigin) {
+    if (envOrigin) {
       res.setHeader('Access-Control-Allow-Methods', 'POST');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     }
-    return send(res, 204, undefined, allowedOrigin);
+    return send(res, 204, undefined, envOrigin);
   }
   if (req.method !== 'POST') return send(res, 405, { error: 'POST only' });
-  if (!allowedOrigin) return send(res, 403, { error: 'origin not allowed' });
 
-  const key = process.env.CLOSEBOT_API_KEY;
-  if (!key) return send(res, 501, { added: false, reason: 'not_configured' }, allowedOrigin);
+  const body = parseBody(req);
+  if (!body) return send(res, 400, { added: false, reason: 'bad_json' }, envOrigin);
+
+  // The customer's sealed key, or this service's own.
+  let account;
+  if (body.key) {
+    const opened = unseal(body.key);
+    if (!opened || typeof opened.k !== 'string') return send(res, 400, { added: false, reason: 'bad_key' }, envOrigin);
+    const allowed = Array.isArray(opened.o) && opened.o.includes(origin) ? origin : '';
+    if (!allowed) return send(res, 403, { error: 'origin not allowed' });
+    account = { apiKey: opened.k, sourceIds: Array.isArray(opened.s) ? opened.s : [], origin: allowed, highLevel: false };
+  } else {
+    if (!envOrigin) return send(res, 403, { error: 'origin not allowed' });
+    if (!process.env.CLOSEBOT_API_KEY) return send(res, 501, { added: false, reason: 'not_configured' }, envOrigin);
+    account = { apiKey: process.env.CLOSEBOT_API_KEY, sourceIds: list(process.env.CLOSEBOT_SOURCE_IDS), origin: envOrigin, highLevel: true };
+  }
+  const allowedOrigin = account.origin;
+  const key = account.apiKey;
 
   const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
   if (rateLimited(ip)) return send(res, 429, { added: false, reason: 'rate_limited' }, allowedOrigin);
 
-  const body = parseBody(req);
-  if (!body) return send(res, 400, { added: false, reason: 'bad_json' }, allowedOrigin);
   const email = cleanEmail(body.email);
   const phone = phoneDigits(body.phone);
   if (!email && !phone) return send(res, 400, { added: false, reason: 'email_or_phone_required' }, allowedOrigin);
@@ -187,11 +207,11 @@ module.exports = async function handler(req, res) {
   if (!Object.keys(answers).length) return send(res, 400, { added: false, reason: 'no_answers' }, allowedOrigin);
 
   try {
-    const who = { email, phone, contactId: await highLevelContactId(email, phone) };
+    const who = { email, phone, contactId: account.highLevel ? await highLevelContactId(email, phone) : '' };
     let found = null;
     for (const delay of RETRY_DELAYS) {
       if (delay) await sleep(delay);
-      found = await findLead(key, who);
+      found = await findLead(key, account.sourceIds, who);
       if (found) break;
     }
     if (!found) return send(res, 200, { added: false, reason: 'lead_not_found' }, allowedOrigin);

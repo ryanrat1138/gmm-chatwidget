@@ -537,6 +537,13 @@ test('AI note: added through the service, so the first message goes as typed, an
   assert.strictEqual(notes.length, 1, 'the note is added once per visit');
 });
 
+test('AI note: a sealed key from the setup page goes with the request', async (page) => {
+  const notes = await captureNotePosts(page, { body: { added: true } });
+  await page.goto(A('thanks-note-key.html?email=k%40example.com&business_info=HVAC'));
+  await page.waitForFunction(() => window.GMMChat.noteAdded === true);
+  assert.deepStrictEqual(notes, [{ email: 'k@example.com', phone: '', answers: { business_info: 'HVAC' }, key: 'v1.sealed-test' }]);
+});
+
 test('AI note: when the service has no CloseBot key, the answers go with the first message', async (page) => {
   const notes = await captureNotePosts(page, { status: 501, body: { added: false, reason: 'not_configured' } });
   const sent = await captureMessages(page);
