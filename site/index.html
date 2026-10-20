@@ -341,12 +341,33 @@
   <section class="step" id="step-closebot" data-step="closebot" aria-labelledby="h-closebot">
     <p class="eyebrow">Step 1 of 5</p>
     <h2 id="h-closebot" tabindex="-1">Connect your CloseBot source</h2>
-    <p class="sub">The chat runs on CloseBot. Paste your source's script tag here, then check three settings in CloseBot.</p>
+    <p class="sub">The chat runs on CloseBot. Paste your source's script tag here, then check three settings in CloseBot. Connecting your CloseBot account is optional.</p>
 
     <label for="source">CloseBot source ID</label>
     <input id="source" type="text" placeholder="Paste the CloseBot script tag or just the source ID" autocomplete="off" spellcheck="false">
     <p class="field-msg" id="sourceMsg" aria-live="polite"></p>
     <p class="hint">In CloseBot, open your HighLevel source and go to Setup. Paste the whole script tag here; the ID is the part after <code>source=</code>. <a class="guide" href="guide.html#source-id" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: find your source ID</a></p>
+
+    <details class="look" id="aiNote">
+      <summary>Connect your CloseBot account <span class="opt">(optional, uses your CloseBot API key)</span></summary>
+      <div class="cta-body">
+        <p class="hint">Not needed for the chat itself. With it, the form answers from the next step are added to the visitor's conversation as an internal note that only the AI can see, as soon as the thank-you page opens. The visitor's first message then goes exactly as they typed it. Without this, the answers ride along with their first message instead.</p>
+        <ol class="mini-steps">
+          <li>Sign in to CloseBot as the account owner and open <a href="https://app.closebot.com/settings?tab=keys" target="_blank" rel="noopener">Settings &rsaquo; API Keys</a>.</li>
+          <li>Click <strong>+</strong> at the top of the table, name the key (for example <code>Chat embed</code>) and create it.</li>
+          <li>Copy the key straight away. CloseBot shows it only once.</li>
+          <li>Paste it below, enter your website's address and click <strong>Connect CloseBot</strong>.</li>
+        </ol>
+        <label for="cb-key">CloseBot API key</label>
+        <input id="cb-key" type="password" autocomplete="off" spellcheck="false">
+        <label for="cb-sites">Your website</label>
+        <input id="cb-sites" type="text" placeholder="https://your-site.com" autocomplete="off" spellcheck="false">
+        <p class="hint">The address of the site the thank-you page is on, starting with https://. Separate several sites with commas. The key only works from these sites.</p>
+        <div class="action"><button id="cb-connect" class="btn btn-primary" type="button">Connect CloseBot</button><span class="status" id="cb-status" aria-live="polite"></span></div>
+        <div id="cb-sources"></div>
+        <p class="hint">CloseBot checks the key, then it's locked to your sites and added to the code in scrambled form. It isn't stored anywhere, and it can't be read back out of your page. <a class="guide" href="guide.html#closebot-key" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: connect CloseBot</a></p>
+      </div>
+    </details>
 
     <h3 class="part">In CloseBot</h3>
     <ol class="tasks">
@@ -396,28 +417,9 @@
 
     <label for="fields">Form answers for the AI (optional)</label>
     <input id="fields" type="text" placeholder="business_info, team_size" autocomplete="off" spellcheck="false">
-    <p class="hint">Names of form answers passed in the thank-you page address or asked on your own form, separated by commas. The AI gets them as a note only it can see when you connect CloseBot below, or otherwise along with the visitor's first chat message. The visitor doesn't see them. <a class="guide" href="guide.html#answers" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: what to put here</a></p>
+    <p class="hint">Names of form answers passed in the thank-you page address or asked on your own form, separated by commas. The AI gets them as a note only it can see when you connect your CloseBot account in step 1, or otherwise along with the visitor's first chat message. The visitor doesn't see them. <a class="guide" href="guide.html#answers" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: what to put here</a></p>
 
-    <details class="look" id="aiNote">
-      <summary>Give the AI these answers as a hidden note <span class="opt">(optional, uses your CloseBot API key)</span></summary>
-      <div class="cta-body">
-        <p class="hint">Connect your CloseBot account and the answers are added to the visitor's conversation as an internal note that only the AI can see, as soon as the thank-you page opens. The visitor's first message then goes exactly as they typed it. Without this, the answers ride along with their first message instead.</p>
-        <ol class="mini-steps">
-          <li>Sign in to CloseBot as the account owner and open <a href="https://app.closebot.com/settings?tab=keys" target="_blank" rel="noopener">Settings &rsaquo; API Keys</a>.</li>
-          <li>Click <strong>+</strong> at the top of the table, name the key (for example <code>Chat embed</code>) and create it.</li>
-          <li>Copy the key straight away. CloseBot shows it only once.</li>
-          <li>Paste it below, enter your website's address and click <strong>Connect CloseBot</strong>.</li>
-        </ol>
-        <label for="cb-key">CloseBot API key</label>
-        <input id="cb-key" type="password" autocomplete="off" spellcheck="false">
-        <label for="cb-sites">Your website</label>
-        <input id="cb-sites" type="text" placeholder="https://your-site.com" autocomplete="off" spellcheck="false">
-        <p class="hint">The address of the site the thank-you page is on, starting with https://. Separate several sites with commas. The key only works from these sites.</p>
-        <div class="action"><button id="cb-connect" class="btn btn-primary" type="button">Connect CloseBot</button><span class="status" id="cb-status" aria-live="polite"></span></div>
-        <div id="cb-sources"></div>
-        <p class="hint">CloseBot checks the key, then it's locked to your sites and added to the code in scrambled form. It isn't stored anywhere, and it can't be read back out of your page. <a class="guide" href="guide.html#closebot-key" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: connect CloseBot</a></p>
-      </div>
-    </details>
+    <p class="note" id="aiNoteInfo"></p>
 
     <div class="check-card">
       <label class="check"><input id="hl" type="checkbox">
@@ -716,6 +718,9 @@
     renderPreview(inline, look);
     renderCtaPreview(inline, look);
     copy.disabled = !id;
+    $('aiNoteInfo').innerHTML = noteKey
+      ? '<strong>Hidden note is on.</strong> The AI gets these answers as a note only it can see, from your CloseBot account connected in step 1.'
+      : 'Optional: connect your CloseBot account in <a href="#closebot">step 1</a> and the AI gets these answers as a note only it can see, as soon as the thank-you page opens.';
     copy.nextElementSibling.textContent = '';
     refreshWizard();
   }
@@ -1015,7 +1020,7 @@
       noteKey = r.body.sealed;
       status.className = 'status';
       status.textContent = 'Connected. The code in the Install step now includes your locked key' +
-        (fieldList() ? '.' : ' once you add form answers above.');
+        (fieldList() ? '.' : ' once you add form answers in the next step.');
       render();
     });
   }
@@ -1223,7 +1228,7 @@
 
     var missing = [];
     if (!id) missing.push({ text: 'Your CloseBot source ID. Until it’s in, the code says PASTE_SOURCE_ID and Copy stays off.', step: 'closebot' });
-    if ($('cb-key').value.trim() && !noteKey) missing.push({ text: 'You pasted a CloseBot API key but haven’t clicked Connect CloseBot, so the hidden note isn’t in the code.', step: 'form' });
+    if ($('cb-key').value.trim() && !noteKey) missing.push({ text: 'You pasted a CloseBot API key but haven’t clicked Connect CloseBot, so the hidden note isn’t in the code.', step: 'closebot' });
     if (kind === 'typeform' && !$('ty-url').value.trim()) missing.push({ text: 'Your thank-you page address, for the Typeform redirect link.', step: 'form' });
     var list = $('missingList');
     list.innerHTML = '';
