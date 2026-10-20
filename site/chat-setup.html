@@ -349,12 +349,12 @@
   <section class="step" id="step-closebot" data-step="closebot" aria-labelledby="h-closebot">
     <p class="eyebrow">Step 1 of 5</p>
     <h2 id="h-closebot" tabindex="-1">Connect your CloseBot source</h2>
-    <p class="sub">The chat runs on CloseBot. Paste your source's script tag here, then check three settings in CloseBot.</p>
+    <p class="sub">The chat runs on CloseBot. Paste your source's script tag here, or connect your CloseBot account below and pick the source, then check three settings in CloseBot.</p>
 
     <label for="source">CloseBot source ID</label>
     <input id="source" type="text" placeholder="Paste the CloseBot script tag or just the source ID" autocomplete="off" spellcheck="false">
     <p class="field-msg" id="sourceMsg" aria-live="polite"></p>
-    <p class="hint">In CloseBot, open your HighLevel source and go to Setup. Paste the whole script tag here; the ID is the part after <code>source=</code>. <a class="guide" href="guide.html#source-id" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: find your source ID</a></p>
+    <p class="hint">In CloseBot, open your HighLevel source and go to Setup. Paste the whole script tag here; the ID is the part after <code>source=</code>. If you connect your CloseBot account below, picking the source fills this in. <a class="guide" href="guide.html#source-id" target="_blank" rel="noopener" aria-haspopup="dialog">Step-by-step: find your source ID</a></p>
 
 
     <details class="look" id="cbAccount">
@@ -1000,6 +1000,7 @@
   // ---------- CloseBot key for the AI-only note ----------
   var noteKey = '';
   var cbSources = [];
+  var autoSource = ''; // a source ID this page filled in from the account
   var CB_ERRORS = {
     bad_key: 'That doesn’t look like a CloseBot API key. Copy the whole key.',
     closebot_key_rejected: 'CloseBot didn’t accept that key. Check you copied all of it, or create a new one.',
@@ -1063,16 +1064,35 @@
     if (!cbSources.length) return;
     box.appendChild(el('h3', '', 'Which CloseBot source is this chat on?'));
     var only = cbSources.length === 1;
-    if (!only) box.appendChild(radio('cbSource', '', 'Not sure: search all my sources', true, onSource));
+    var pasted = sourceId(source.value);
+    var match = cbSources.filter(function (src) { return pasted && src.key === pasted; })[0];
+    if (!only) box.appendChild(radio('cbSource', '', 'Not sure: search all my sources', !match, onSource));
     cbSources.forEach(function (src) {
-      box.appendChild(radio('cbSource', src.id, src.name + (src.category ? ' (' + src.category + ')' : ''), only, onSource));
+      box.appendChild(radio('cbSource', src.id, src.name + (src.category ? ' (' + src.category + ')' : ''), only || src === match, onSource));
     });
-    if (only) loadAgents(cbSources[0].id);
+    if (only || match) { fillSource(); loadAgents((match || cbSources[0]).id); }
   }
   function onSource() {
     var id = checkedSources()[0];
+    fillSource();
     sealKey()['catch'](function () { cbFail({}); });
     if (id) loadAgents(id); else $('cb-agents').innerHTML = '';
+  }
+  function pickedOther(id) {
+    var picked = checkedSources()[0];
+    var src = cbSources.filter(function (s) { return s.id === picked; })[0];
+    return src && src.key && src.key !== id ? src : null;
+  }
+  // The picked source's script key is the source ID, so it needn't be pasted
+  // too. A pasted ID is only replaced if this page filled it in.
+  function fillSource() {
+    var id = checkedSources()[0];
+    var src = cbSources.filter(function (s) { return s.id === id; })[0];
+    var now = source.value.trim();
+    if (src && src.key && (!now || now === autoSource) && now !== src.key) {
+      source.value = autoSource = src.key;
+      render();
+    }
   }
 
   // The agents on that source, and which one answers the chat channel.
@@ -1335,7 +1355,8 @@
     var raw = source.value.trim(), id = sourceId(raw);
     var msg = $('sourceMsg');
     if (!raw) { msg.className = 'field-msg'; msg.textContent = ''; }
-    else if (id) { msg.className = 'field-msg ok'; msg.textContent = 'Source ID found: ' + id; }
+    else if (id && pickedOther(id)) { msg.className = 'field-msg err'; msg.textContent = 'This source ID isn’t the one for ' + pickedOther(id).name + ', the source picked below. Clear this box to fill it in from your pick.'; }
+    else if (id) { msg.className = 'field-msg ok'; msg.textContent = (id === autoSource ? 'Source ID filled in from your CloseBot account: ' : 'Source ID found: ') + id; }
     else { msg.className = 'field-msg err'; msg.textContent = 'That doesn’t look like a CloseBot script tag or source ID. Paste the whole script from CloseBot’s Setup page.'; }
     if (id && nudged) { nudged = false; setNudge(''); show(current, false); return; }
 

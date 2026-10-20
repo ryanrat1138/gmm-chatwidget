@@ -82,6 +82,9 @@ async function listSources(apiKey) {
       name: String(s.name || '').slice(0, 200),
       category: String(s.category || ''),
       scriptInstalled: !!s.scriptInstalled,
+      // The key in the source's script tag (cb.js?source=...), which the
+      // setup page uses as the source ID. Not the access token.
+      key: /^[A-Za-z0-9_-]{6,64}$/.test(String(s.key || '')) ? String(s.key) : '',
     })),
   };
 }

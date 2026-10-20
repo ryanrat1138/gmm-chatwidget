@@ -23,7 +23,7 @@ global.fetch = async (url, init = {}) => {
   return {
     ok: sourcesStatus < 300, status: sourcesStatus,
     json: async () => ({ total: 2, results: [
-      { sourceId: 'src1', name: 'Main HighLevel', category: 'GHL', scriptInstalled: true, accessToken: 'secret' },
+      { sourceId: 'src1', name: 'Main HighLevel', category: 'GHL', scriptInstalled: true, key: '4ts0AHLEWQsK5N84', accessToken: 'secret' },
       { sourceId: 'src2', name: 'Second', category: 'GHL' },
     ] }),
   };
@@ -49,8 +49,8 @@ test('lists the account\'s sources, without their tokens', async () => {
   const r = await call({ body: { apiKey: KEY } });
   assert.strictEqual(r.status, 200);
   assert.deepStrictEqual(r.body.sources, [
-    { id: 'src1', name: 'Main HighLevel', category: 'GHL', scriptInstalled: true },
-    { id: 'src2', name: 'Second', category: 'GHL', scriptInstalled: false },
+    { id: 'src1', name: 'Main HighLevel', category: 'GHL', scriptInstalled: true, key: '4ts0AHLEWQsK5N84' },
+    { id: 'src2', name: 'Second', category: 'GHL', scriptInstalled: false, key: '' },
   ]);
   assert.strictEqual(calls[0].init.headers['X-CB-KEY'], KEY);
   assert.ok(calls[0].url.startsWith('https://api.closebot.com/agency/source'));
