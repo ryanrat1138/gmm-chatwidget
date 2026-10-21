@@ -2033,7 +2033,7 @@
       C + ' .gmmc-cta-text a{color:inherit;text-decoration:underline}',
       C + ' .gmmc-cta-text strong{font-weight:700}',
       C + '.gmmc-cta-has-video{flex-wrap:wrap}',
-      C + ' .gmmc-cta-video{flex:0 0 100%;order:9;position:relative;aspect-ratio:16/9;overflow:hidden;' +
+      C + ' .gmmc-cta-video{flex:0 0 100%;position:relative;aspect-ratio:16/9;overflow:hidden;' +
         'border-radius:calc(var(--gmmc-radius) * .6);background:#000}',
       C + ' .gmmc-cta-video iframe,' + C + ' .gmmc-cta-video video{position:absolute;top:0;left:0;width:100%;height:100%;border:0;margin:0}',
       C + ' .gmmc-cta-btn{flex:none;display:inline-flex;align-items:center;gap:8px;margin:0;padding:12px 22px;' +
@@ -2206,7 +2206,7 @@
     card.querySelector('.gmmc-cta-label').textContent = trim(texts.button) || d.button;
     if (!trim(card.querySelector('.gmmc-cta-title').textContent)) card.querySelector('.gmmc-cta-title').style.display = 'none';
     var video = trim(texts.video) ? ctaVideo(texts.video) : null;
-    if (video) { card.appendChild(video); card.classList.add('gmmc-cta-has-video'); }
+    if (video) { card.insertBefore(video, card.firstChild); card.classList.add('gmmc-cta-has-video'); }
     styleCta(card, look, accent);
     return card;
   }

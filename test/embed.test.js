@@ -667,6 +667,7 @@ test('call to action: formatted text keeps only safe tags, and a video link beco
       link: [text.querySelector('a').target, text.querySelector('a').rel],
       video: frame && frame.src,
       wraps: card.classList.contains('gmmcw-cta-has-video'),
+      first: card.firstElementChild.className,
       sources: [
         src('https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=x'),
         src('https://www.youtube.com/shorts/dQw4w9WgXcQ'),
@@ -688,6 +689,7 @@ test('call to action: formatted text keeps only safe tags, and a video link beco
   assert.deepStrictEqual(r.link, ['_blank', 'noopener noreferrer']);
   assert.strictEqual(r.video, 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0');
   assert.strictEqual(r.wraps, true);
+  assert.strictEqual(r.first, 'gmmcw-cta-video');
   assert.deepStrictEqual(r.sources, [
     'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0',
     'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0',

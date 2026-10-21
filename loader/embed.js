@@ -61,7 +61,7 @@
  *   data-cta-text="Have a question while you wait? ..."   (empty for none)
  *     It can use <strong>, <em>, <u>, <a href>, <ul>/<ol>/<li>, <p> and <br>,
  *     and {first_name}; anything else is dropped.
- *   data-cta-video="https://youtu.be/..."   a video under the card: YouTube,
+ *   data-cta-video="https://youtu.be/..."   a video at the top of the card: YouTube,
  *     Vimeo, Loom, Wistia, or a direct .mp4/.webm link
  *   data-cta-button="Chat with us"
  *   data-cta-target="#chat-cta"  put it inside this element instead
@@ -966,9 +966,9 @@
       C + ' .gmmcw-cta-text ul,' + C + ' .gmmcw-cta-text ol{margin:.3em 0 .5em;padding:0 0 0 1.3em}',
       C + ' .gmmcw-cta-text a{color:inherit;text-decoration:underline}',
       C + ' .gmmcw-cta-text strong{font-weight:700}',
-      // A video goes full width under the rest of the card.
+      // A video goes full width at the top of the card.
       C + '.gmmcw-cta-has-video{flex-wrap:wrap}',
-      C + ' .gmmcw-cta-video{flex:0 0 100%;order:9;position:relative;aspect-ratio:16/9;overflow:hidden;' +
+      C + ' .gmmcw-cta-video{flex:0 0 100%;position:relative;aspect-ratio:16/9;overflow:hidden;' +
         'border-radius:calc(var(--gmmcw-radius) * .6);background:#000}',
       C + ' .gmmcw-cta-video iframe,' + C + ' .gmmcw-cta-video video{position:absolute;top:0;left:0;width:100%;height:100%;border:0;margin:0}',
       C + ' .gmmcw-cta-btn{flex:none;display:inline-flex;align-items:center;gap:8px;margin:0;padding:12px 22px;' +
@@ -1143,7 +1143,7 @@
     el.querySelector('.gmmcw-cta-label').textContent = trim(texts.button) || d.button;
     if (!trim(el.querySelector('.gmmcw-cta-title').textContent)) el.querySelector('.gmmcw-cta-title').style.display = 'none';
     var video = trim(texts.video) ? ctaVideo(texts.video) : null;
-    if (video) { el.appendChild(video); el.classList.add('gmmcw-cta-has-video'); }
+    if (video) { el.insertBefore(video, el.firstChild); el.classList.add('gmmcw-cta-has-video'); }
     styleCta(el, look, accent);
     return el;
   }
