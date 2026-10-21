@@ -135,5 +135,19 @@ test('the download zip holds the current plugin files', function () {
 	eq($zip->numFiles >= count($files), true);
 });
 
+test('the plugin page shows the current version and every release', function () {
+	$plugin = file_get_contents(__DIR__ . '/../wordpress/jarchat/jarchat.php');
+	$readme = file_get_contents(__DIR__ . '/../wordpress/jarchat/readme.txt');
+	$page = file_get_contents(__DIR__ . '/../site/wordpress.html');
+	preg_match('/^ \* Version:\s*(\S+)/m', $plugin, $v);
+	eq(strpos($readme, 'Stable tag: ' . $v[1]) !== false, true, 'readme.txt Stable tag');
+	eq(JARCHAT_VERSION, $v[1], 'JARCHAT_VERSION');
+	eq(strpos($page, '<strong id="version">' . $v[1] . '</strong>') !== false, true, 'site/wordpress.html version');
+	preg_match_all('/^= (\S+) =$/m', $readme, $releases);
+	foreach ($releases[1] as $r) {
+		eq(strpos($page, 'data-version="' . $r . '"') !== false, true, "release notes for $r on site/wordpress.html");
+	}
+});
+
 echo "\n$passed/" . ($passed + $failed) . " passed\n";
 exit($failed ? 1 : 0);

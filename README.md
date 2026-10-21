@@ -10,7 +10,7 @@ A smart chat for form thank-you pages. After someone submits a HighLevel form, H
 
 **Setup:** open https://gmm-chatwidget.vercel.app and follow its five steps: CloseBot (paste the source ID), Your form, Chat style, Install (copy the tag onto the thank-you page) and Test. A second, chat-free tag goes on the form page when the form is on your own site, and Typeform users get the redirect link to set up.
 
-**WordPress:** the plugin in [wordpress/jarchat](wordpress/jarchat) (download: https://gmm-chatwidget.vercel.app/jarchat-wordpress.zip) saves the setup page's code once under Settings › JARchat, then `[jarchat]` goes on the thank-you page and `[jarchat_form]` on the form page. After changing the plugin, rebuild the zip with `cd wordpress && zip -X -r jarchat.zip jarchat`; `php test/wordpress.test.php` checks it is current.
+**WordPress:** the plugin in [wordpress/jarchat](wordpress/jarchat) (install steps and release notes: https://gmm-chatwidget.vercel.app/wordpress.html) saves the setup page's code once under Settings › JARchat, then `[jarchat]` goes on the thank-you page and `[jarchat_form]` on the form page. After changing the plugin, rebuild the zip with `cd wordpress && zip -X -r jarchat.zip jarchat`; `php test/wordpress.test.php` checks it is current. For a new version, bump `Version` and `JARCHAT_VERSION` in jarchat.php and the Stable tag and changelog in readme.txt, and add the release notes to [site/wordpress.html](site/wordpress.html); the test checks they match.
 
 **Brand:** logo files are in [brand/](brand). Tagline: Join. Answer. Relay.
 

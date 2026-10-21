@@ -243,6 +243,7 @@ test('form: shown when no contact is known, composer waits, and the details go t
   assert.deepStrictEqual(after, { form: false, input: false, focused: 'gmmc-input' });
   assert.deepStrictEqual((await state(page)).messages, [{ sender: 'bot', text: 'Hey Ann, what can I help you with today?' }]);
   assert.strictEqual(await page.evaluate(() => document.querySelector('.gmmc-cta-title').textContent), 'You\u2019re all set, Ann!');
+  assert.strictEqual(await page.evaluate(() => document.querySelector('.gmmc-cta-icon svg').getAttribute('viewBox')), '10 4 44 58', 'the card shows the jar');
   // Back on the page later: CloseBot already knows them, so no form.
   mock.state.requests = [];
   await page.reload();

@@ -956,7 +956,9 @@
     inline: { text: 'Have a question while you wait? Our virtual assistant is right below and ready to chat.', button: 'Start chatting' },
     bubble: { text: 'Have a question while you wait? Our virtual assistant is ready to chat.', button: 'Chat with us' }
   };
-  var CTA_ICON = '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01" stroke-width="2.6"/></svg>';
+  var CTA_ICON = '<svg viewBox="10 4 44 58" width="22" height="29" aria-hidden="true" fill="currentColor"><rect x="20" y="6" width="24" height="8" rx="3"/>' +
+    '<path fill-rule="evenodd" d="M22 17H42C48 17 52 21 52 27V43C52 49 48 53 42 53H25L15 60L17 51C14 49 12 46 12 43V27C12 21 16 17 22 17Z' +
+    'M24 32a3 3 0 1 0 0 6a3 3 0 1 0 0-6ZM32 32a3 3 0 1 0 0 6a3 3 0 1 0 0-6ZM40 32a3 3 0 1 0 0 6a3 3 0 1 0 0-6Z"/></svg>';
   var CTA_ARROW = { inline: '\u2193', bubble: '\u2192' };
   var CTA_PENDING_COLOR = '#9ca3af'; // until CloseBot's color is known
 
