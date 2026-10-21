@@ -83,7 +83,8 @@ As soon as the page is ready, the embed adds a card to the page that greets the 
 | `data-api` | the embed's own site | Where `/api/fields` lives |
 | `data-cta` | `on` | `off` for no call-to-action card on the page |
 | `data-cta-title` | `You're all set, {first_name}!` | Card heading. `{first_name}` becomes the first name; with none, the name and the comma before it drop out |
-| `data-cta-text` | "Have a question while you wait? Our virtual assistant is …" | Card text; empty for none |
+| `data-cta-text` | "Have a question while you wait? Our virtual assistant is …" | Card text; empty for none. It can use `<strong>`, `<em>`, `<u>`, `<a href="https://…">`, `<ul>`/`<ol>`/`<li>`, `<p>` and `<br>`, and `{first_name}` (their first name, or "there"). Other tags are dropped, and links open in a new tab |
+| `data-cta-video` | | A video under the card's text: a YouTube, Vimeo, Loom or Wistia link, or a direct `.mp4`/`.webm` file (https only). YouTube plays from youtube-nocookie.com |
 | `data-cta-button` | `Start chatting` (inline), `Chat with us` (bubble) | Button label |
 | `data-cta-wait` | `20000` | How long (ms) the card waits for the chat before it goes away |
 | `data-cta-target` | next to the chat or tag | A CSS selector (e.g. `#chat-cta`) for an element to put the card in instead |

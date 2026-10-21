@@ -487,6 +487,20 @@ test('call to action: greets by name; its button opens the bubble or focuses the
   await until(page, () => document.querySelector('gmmc-chat').shadowRoot.activeElement?.id === 'gmmc-input');
 });
 
+test('call to action: formatted text with the visitor’s name, and a video under it', async (page) => {
+  pages['cta-rich'] = doc('CTA rich', tag('data-layout="bubble" data-cta-text="&lt;strong&gt;Hi {first_name}&lt;/strong&gt; &lt;img src=x onerror=&quot;window.__xss=1&quot;&gt;&lt;a href=&quot;https://example.com&quot;&gt;Read more&lt;/a&gt;" ' +
+    'data-cta-video="https://vimeo.com/76979871"'));
+  await page.goto(P('cta-rich') + '?email=r%40example.com&first_name=Rae');
+  await page.waitForSelector('#gmmc-cta:not(.gmmc-cta-loading)');
+  const r = await page.evaluate(() => {
+    const c = document.getElementById('gmmc-cta');
+    return { html: c.querySelector('.gmmc-cta-text').innerHTML, video: c.querySelector('.gmmc-cta-video iframe').src,
+      xss: window.__xss || 0, wide: c.querySelector('.gmmc-cta-video').getBoundingClientRect().width > c.querySelector('.gmmc-cta-body').getBoundingClientRect().width };
+  });
+  assert.deepStrictEqual(r, { html: '<strong>Hi Rae</strong> <a href="https://example.com" target="_blank" rel="noopener noreferrer">Read more</a>',
+    video: 'https://player.vimeo.com/video/76979871', xss: 0, wide: true });
+});
+
 test('call to action: goes away when the chat can\u2019t load', async (page) => {
   mock.state.failConfig = true;
   mock.state.failSession = true;
