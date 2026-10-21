@@ -1,4 +1,4 @@
-# GMM Chat Widget (`chat.js`)
+# JARchat chat window (`chat.js`)
 
 A second, separate embed that draws its **own** chat window and talks to CloseBot directly. The original `embed.js` (served as `/embed.js`) is unchanged: it loads CloseBot's widget script and works around it. Pick one per page.
 
@@ -53,6 +53,7 @@ All `embed.js` attributes are accepted. These apply:
 | `data-cta`, `data-cta-title`, `data-cta-text`, `data-cta-video`, `data-cta-button`, `data-cta-wait`, `data-cta-target` | | Call to action, as in `embed.js` |
 | `data-email`, `data-phone`, `data-first-name`, `data-last-name`, `data-name` | | HighLevel merge fields |
 | `data-backend`, `data-hl-origins`, `data-debug` | | As in `embed.js` |
+| `data-launcher-icon` | jar | The corner button's icon (bubble layout). `closebot` uses the icon picked in CloseBot |
 | `data-widget-key` | | The chat widget's own public key, to skip looking it up for the page (see below) |
 | `data-closebot-api` | `https://api.closebot.com` | Where CloseBot's chat endpoints are (for tests) |
 

@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "",
-  "buildCommand": "mkdir -p public && cp loader/embed.js loader/chat.js public/ && cp site/index.html site/chat-setup.html site/guide.html site/chat-demo.html public/",
+  "buildCommand": "mkdir -p public && cp loader/embed.js loader/chat.js site/* brand/*.svg public/ && cp wordpress/jarchat.zip public/jarchat-wordpress.zip",
   "outputDirectory": "public",
   "headers": [
     {

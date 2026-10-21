@@ -704,6 +704,24 @@ test('call to action: formatted text keeps only safe tags, and a video link beco
   assert.strictEqual(await page.evaluate(() => window.__xss), 0);
 });
 
+test('corner button: CloseBot\'s icon gives way to the JARchat jar; data-launcher-icon="closebot" keeps it', async (page) => {
+  await page.goto(A('embed-bubble.html'));
+  await page.waitForSelector('.cb-btn');
+  await page.evaluate(() => { document.querySelector('.cb-btn').innerHTML = '<svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z"/></svg>'; });
+  const r = await page.evaluate(() => {
+    const btn = document.querySelector('.cb-btn');
+    const after = getComputedStyle(btn, '::before');
+    return { svg: getComputedStyle(btn.querySelector('svg')).display, jar: after.content, w: after.width, mask: /svg/.test(after.webkitMaskImage || after.maskImage) };
+  });
+  assert.deepStrictEqual(r, { svg: 'none', jar: '""', w: '28px', mask: true });
+  await page.goto(A('embed-bubble.html').replace('embed-bubble.html', 'embed-look-bubble.html'));
+  await page.waitForSelector('.cb-btn');
+  assert.strictEqual(await page.evaluate(() => !!document.getElementById('gmmcw-launcher')), true);
+  await page.setContent('<!doctype html><body><script src="' + A('../../loader/embed.js').replace('/test/fixtures/../../', '/') + '" data-source="src_123" data-layout="bubble" data-launcher-icon="closebot" data-closebot-src="/test/fixtures/mock-closebot.js"></script>');
+  await page.waitForFunction(() => !!window.GMMChat);
+  assert.strictEqual(await page.evaluate(() => !!document.getElementById('gmmcw-launcher')), false);
+});
+
 (async () => {
   const servers = [await serve(PORT_A), await serve(PORT_B)];
   const browser = await chromium.launch();

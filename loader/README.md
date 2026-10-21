@@ -1,4 +1,4 @@
-# GMM Chat Embed
+# JARchat embed (`embed.js`)
 
 One tag that adds the CloseBot AI chat to a page. On a thank-you page it also fills CloseBot's contact form with the name, email and phone the visitor just submitted and sends it in the background, so the chat starts on their existing HighLevel contact.
 
@@ -74,6 +74,7 @@ As soon as the page is ready, the embed adds a card to the page that greets the 
 | `data-shadow` | CloseBot's | `none`, `soft` or `strong` |
 | `data-border` | CloseBot's | `on` (thin line) or `off` |
 | `data-position` | right | `left` puts the corner button and window on the left (bubble layout) |
+| `data-launcher-icon` | jar | The corner button shows the JARchat jar. `closebot` keeps CloseBot's own icon |
 | `data-width` | `360px` | Chat window width on desktop (bubble layout); `data-height` sets its height |
 | `data-greeting` | `Hey {first_name}, what can I help you with today?` | First bot message when the visitor is identified and the chat would otherwise be empty. `{first_name}` becomes their first name, or "there". `off` for none. A CloseBot Welcome Message or past conversation takes its place |
 | `data-fields` | none | Form answers to pass to the AI with the visitor's first message, comma separated (e.g. `business_info`). Read from the thank-you page URL, or from same-named fields on a same-site form page (put it on the form page tag too) |

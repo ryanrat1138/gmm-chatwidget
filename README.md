@@ -1,4 +1,6 @@
-# GMM Chat Widget
+# JARchat
+
+**Join. Answer. Relay.**
 
 A smart chat for form thank-you pages. After someone submits a HighLevel form, HighLevel survey or Typeform, the thank-you page opens a CloseBot AI chat that already knows what they submitted.
 
@@ -7,6 +9,10 @@ A smart chat for form thank-you pages. After someone submits a HighLevel form, H
 - **AI:** CloseBot (API + chat widget)
 
 **Setup:** open https://gmm-chatwidget.vercel.app and follow its five steps: CloseBot (paste the source ID), Your form, Chat style, Install (copy the tag onto the thank-you page) and Test. A second, chat-free tag goes on the form page when the form is on your own site, and Typeform users get the redirect link to set up.
+
+**WordPress:** the plugin in [wordpress/jarchat](wordpress/jarchat) (download: https://gmm-chatwidget.vercel.app/jarchat-wordpress.zip) saves the setup page's code once under Settings › JARchat, then `[jarchat]` goes on the thank-you page and `[jarchat_form]` on the form page. After changing the plugin, rebuild the zip with `cd wordpress && zip -X -r jarchat.zip jarchat`; `php test/wordpress.test.php` checks it is current.
+
+**Brand:** logo files are in [brand/](brand). Tagline: Join. Answer. Relay.
 
 See [docs/PLAN.md](docs/PLAN.md) for the architecture, data flow, security notes and phased build. The live version of the plan is at https://claude.ai/code/artifact/5025efa5-0f98-4b86-888c-340c0c85a75f
 
