@@ -26,6 +26,10 @@
     '.wp-save .status.err{color:var(--err)}.wp-save .status.ok{color:var(--ok)}';
   document.head.appendChild(style);
 
+  // Plugin 1.2 and later (&fit=1) grow the frame to fit this page, so
+  // WordPress's own scrollbar is the only one.
+  if (/[?&]fit=1(&|#|$)/.test(location.search)) fitFrame();
+
   // Switching between the two chat windows stays inside WordPress.
   [].forEach.call(document.querySelectorAll('.widget-pick a.choice'), function (a) {
     a.setAttribute('href', a.getAttribute('href').replace(/[?#].*$/, '') + location.search);
@@ -82,4 +86,34 @@
     if (e.source !== parent || e.origin !== origin || !e.data || e.data.type !== 'jarchat:saved') return;
     done(!!e.data.ok, String(e.data.message || (e.data.ok ? 'Saved.' : 'Couldn\'t save.')));
   });
+
+  function fitFrame() {
+    document.documentElement.classList.add('wp-fit');
+    // WordPress already shows the JARchat heading, and the step buttons sit
+    // at the end of each step once nothing scrolls inside the frame.
+    style.textContent += '.wp-fit,.wp-fit body{overflow:hidden}' +
+      '.wp-fit .intro h1,.wp-fit .intro .lead{display:none}.wp-fit .widget-pick-label{margin-top:0}' +
+      '.wp-fit main{padding-top:20px;padding-bottom:24px}.wp-fit .wizard-nav{position:static}';
+    var last = 0;
+    function size() {
+      var h = Math.ceil(document.body.getBoundingClientRect().height);
+      if (h === last) return;
+      last = h;
+      parent.postMessage({ type: 'jarchat:height', height: h }, origin);
+    }
+    if (window.ResizeObserver) new ResizeObserver(size).observe(document.body);
+    addEventListener('load', size);
+    size();
+    // A new step starts at the step buttons; WordPress scrolls there if they're out of view.
+    addEventListener('hashchange', function () {
+      var stepper = $('stepper');
+      size();
+      if (stepper) parent.postMessage({ type: 'jarchat:step', top: Math.round(stepper.getBoundingClientRect().top) }, origin);
+    });
+    // The guide's pop-up would open in the middle of a frame taller than the
+    // screen, so guide links open the guide in a new tab instead.
+    addEventListener('click', function (e) {
+      if (e.target.closest && e.target.closest('a.guide')) e.stopPropagation();
+    }, true);
+  }
 })();

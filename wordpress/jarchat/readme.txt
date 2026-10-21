@@ -4,7 +4,7 @@ Tags: chat, ai chat, thank you page, closebot, highlevel
 Requires at least: 5.7
 Tested up to: 6.8
 Requires PHP: 7.2
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 
 Join. Answer. Relay. Adds the JARchat AI chat to form thank-you pages with a shortcode.
 
@@ -38,6 +38,10 @@ Any setting from the code can be changed for one page by naming it without `data
 * `[jarchat greeting="Hi {first_name}!"]`
 
 == Changelog ==
+
+= 1.2.0 =
+* The setup grows to its full height on Settings › JARchat, so only the page scrolls.
+* Moving to the next step scrolls to its top.
 
 = 1.1.0 =
 * The setup runs inside Settings › JARchat, with a "Save to WordPress" button at its last step.

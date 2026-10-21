@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       JARchat
  * Description:       Join. Answer. Relay. Adds the JARchat AI chat to form thank-you pages with a shortcode. Set it up under Settings › JARchat, then put [jarchat] on the thank-you page.
- * Version:           1.1.0
+ * Version:           1.2.0
  * Requires at least: 5.7
  * Requires PHP:      7.2
  * Author:            Great Mountain Marketing
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 	exit;
 }
 
-define('JARCHAT_VERSION', '1.1.0');
+define('JARCHAT_VERSION', '1.2.0');
 define('JARCHAT_OPTION', 'jarchat_settings');
 if (!defined('JARCHAT_SETUP_URL')) {
 	define('JARCHAT_SETUP_URL', 'https://gmm-chatwidget.vercel.app/');
@@ -291,13 +291,25 @@ function jarchat_wizard_script() {
 (function () {
   var frame = document.getElementById('jarchat-wizard');
   var setupOrigin = new URL(JARCHAT.setup, location.href).origin;
-  frame.src = JARCHAT.setup + (JARCHAT.setup.indexOf('?') === -1 ? '?' : '&') + 'wp=' + encodeURIComponent(location.origin);
+  // fit=1: the setup page reports its height, and the frame grows to fit it.
+  frame.src = JARCHAT.setup + (JARCHAT.setup.indexOf('?') === -1 ? '?' : '&') + 'wp=' + encodeURIComponent(location.origin) + '&fit=1';
   function answer(ok, message) {
     frame.contentWindow.postMessage({ type: 'jarchat:saved', ok: ok, message: message }, setupOrigin);
   }
   window.addEventListener('message', function (e) {
     if (e.origin !== setupOrigin || e.source !== frame.contentWindow) return;
     var d = e.data;
+    if (d && d.type === 'jarchat:height' && typeof d.height === 'number') {
+      frame.style.height = Math.max(300, Math.min(20000, Math.round(d.height))) + 'px';
+      frame.setAttribute('scrolling', 'no');
+      return;
+    }
+    if (d && d.type === 'jarchat:step' && typeof d.top === 'number') {
+      // Below the admin bar, the new step's buttons should be in view.
+      var y = frame.getBoundingClientRect().top + d.top;
+      if (y < 40 || y > window.innerHeight - 80) window.scrollBy(0, y - 48);
+      return;
+    }
     if (!d || d.type !== 'jarchat:save' || typeof d.chat !== 'string') return;
     var body = new FormData();
     body.append('action', 'jarchat_save');
