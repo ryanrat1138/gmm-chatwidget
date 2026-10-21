@@ -647,6 +647,61 @@ test('call to action: none with data-cta="off", and it goes away when no chat sh
   await page.waitForSelector('#gmmcw-cta', { state: 'detached', timeout: 3000 });
 });
 
+test('call to action: formatted text keeps only safe tags, and a video link becomes a player', async (page) => {
+  await page.goto(A('embed-inline.html'));
+  await page.waitForFunction(() => window.GMMChat && GMMChat.ctaPreview);
+  const r = await page.evaluate(() => {
+    window.__xss = 0;
+    const card = GMMChat.ctaPreview({
+      'cta-text': '<p>Hi <b>{first_name}</b>, <i>see</i> <u>this</u>:</p><ul><li>One</li></ul>' +
+        '<a href="https://example.com/a">site</a> <a href="javascript:window.__xss=1">bad</a>' +
+        '<img src="x" onerror="window.__xss=1"><script>window.__xss=1</script><span style="color:red" onclick="1">plain</span>',
+      'cta-video': 'https://youtu.be/dQw4w9WgXcQ?t=3'
+    }, 'Ann');
+    document.body.appendChild(card);
+    const text = card.querySelector('.gmmcw-cta-text');
+    const frame = card.querySelector('.gmmcw-cta-video iframe');
+    const src = (u) => { const v = GMMChat.ctaPreview({ 'cta-video': u }).querySelector('.gmmcw-cta-video iframe, .gmmcw-cta-video video'); return v ? v.src : null; };
+    return {
+      html: text.innerHTML,
+      link: [text.querySelector('a').target, text.querySelector('a').rel],
+      video: frame && frame.src,
+      wraps: card.classList.contains('gmmcw-cta-has-video'),
+      sources: [
+        src('https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=x'),
+        src('https://www.youtube.com/shorts/dQw4w9WgXcQ'),
+        src('https://vimeo.com/76979871'),
+        src('https://vimeo.com/76979871/abc123def0'),
+        src('https://www.loom.com/share/0123456789abcdef0123456789abcdef'),
+        src('https://acme.wistia.com/medias/a1b2c3d4e5'),
+        src('https://cdn.example.com/clip.mp4'),
+        src('http://youtu.be/dQw4w9WgXcQ'),
+        src('https://example.com/page'),
+        src('javascript:alert(1)')
+      ],
+      noName: GMMChat.ctaPreview({ 'cta-text': 'Hey {first_name}!' }).querySelector('.gmmcw-cta-text').textContent
+    };
+  });
+  await page.waitForTimeout(100);
+  assert.strictEqual(r.html, '<p>Hi <strong>Ann</strong>, <em>see</em> <u>this</u>:</p><ul><li>One</li></ul>' +
+    '<a href="https://example.com/a" target="_blank" rel="noopener noreferrer">site</a> badplain');
+  assert.deepStrictEqual(r.link, ['_blank', 'noopener noreferrer']);
+  assert.strictEqual(r.video, 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0');
+  assert.strictEqual(r.wraps, true);
+  assert.deepStrictEqual(r.sources, [
+    'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0',
+    'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0',
+    'https://player.vimeo.com/video/76979871',
+    'https://player.vimeo.com/video/76979871?h=abc123def0',
+    'https://www.loom.com/embed/0123456789abcdef0123456789abcdef',
+    'https://fast.wistia.net/embed/iframe/a1b2c3d4e5',
+    'https://cdn.example.com/clip.mp4',
+    null, null, null
+  ]);
+  assert.strictEqual(r.noName, 'Hey there!');
+  assert.strictEqual(await page.evaluate(() => window.__xss), 0);
+});
+
 (async () => {
   const servers = [await serve(PORT_A), await serve(PORT_B)];
   const browser = await chromium.launch();

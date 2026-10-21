@@ -118,6 +118,7 @@
     cta: attr('cta') !== 'off',
     ctaTitle: attr('cta-title'),
     ctaText: attr('cta-text'),
+    ctaVideo: attr('cta-video'),
     ctaButton: attr('cta-button'),
     ctaTarget: attr('cta-target'),
     ctaWaitMs: parseInt(attr('cta-wait') || '20000', 10),
@@ -2027,6 +2028,14 @@
       C + ' .gmmc-cta-body{flex:1;min-width:0}',
       C + ' .gmmc-cta-title{margin:0 0 4px;padding:0;font-size:1.3em;font-weight:700;line-height:1.25;color:inherit}',
       C + ' .gmmc-cta-text{margin:0;padding:0;font-size:.95em;color:inherit;opacity:.78}',
+      C + ' .gmmc-cta-text p{margin:0 0 .5em}' + C + ' .gmmc-cta-text p:last-child{margin-bottom:0}',
+      C + ' .gmmc-cta-text ul,' + C + ' .gmmc-cta-text ol{margin:.3em 0 .5em;padding:0 0 0 1.3em}',
+      C + ' .gmmc-cta-text a{color:inherit;text-decoration:underline}',
+      C + ' .gmmc-cta-text strong{font-weight:700}',
+      C + '.gmmc-cta-has-video{flex-wrap:wrap}',
+      C + ' .gmmc-cta-video{flex:0 0 100%;order:9;position:relative;aspect-ratio:16/9;overflow:hidden;' +
+        'border-radius:calc(var(--gmmc-radius) * .6);background:#000}',
+      C + ' .gmmc-cta-video iframe,' + C + ' .gmmc-cta-video video{position:absolute;top:0;left:0;width:100%;height:100%;border:0;margin:0}',
       C + ' .gmmc-cta-btn{flex:none;display:inline-flex;align-items:center;gap:8px;margin:0;padding:12px 22px;' +
         'border:0;border-radius:var(--gmmc-btn-radius,999px);background:var(--gmmc-accent);color:var(--gmmc-on-accent);' +
         'font-size:1em;font-weight:600;line-height:1.2;cursor:pointer;-webkit-appearance:none;appearance:none;' +
@@ -2065,6 +2074,102 @@
     return trim(template.replace(/[,\s]*\{\s*first_?name\s*\}/gi, ''));
   }
 
+  // The card's text can carry a little formatting. It is rebuilt from a short
+  // list of tags, so nothing else (scripts, styles, event handlers) gets in.
+  var CTA_TAGS = { B: 'strong', STRONG: 'strong', I: 'em', EM: 'em', U: 'u', BR: 'br', P: 'p', DIV: 'p', UL: 'ul', OL: 'ol', LI: 'li', A: 'a' };
+
+  function fillName(text, name) {
+    return text.replace(/\{\s*first_?name\s*\}/gi, name || 'there');
+  }
+
+  function copyRich(from, to, name) {
+    for (var n = from.firstChild; n; n = n.nextSibling) {
+      if (n.nodeType === 3) { to.appendChild(document.createTextNode(fillName(n.nodeValue, name))); continue; }
+      if (n.nodeType !== 1) continue;
+      var tag = CTA_TAGS[n.nodeName];
+      if (!tag) {
+        if (!/^(SCRIPT|STYLE|IFRAME|OBJECT|EMBED|TEMPLATE|NOSCRIPT|SVG|MATH)$/i.test(n.nodeName)) copyRich(n, to, name);
+        continue;
+      }
+      var el = document.createElement(tag);
+      if (tag === 'a') {
+        var href = trim(n.getAttribute('href'));
+        if (!/^(https?:|mailto:|tel:)/i.test(href)) { copyRich(n, to, name); continue; }
+        el.href = href;
+        el.target = '_blank';
+        el.rel = 'noopener noreferrer';
+      }
+      copyRich(n, el, name);
+      to.appendChild(el);
+    }
+  }
+
+  function setCtaText(box, html, name) {
+    while (box.firstChild) box.removeChild(box.firstChild);
+    var t = document.createElement('template');
+    t.innerHTML = String(html || '');
+    copyRich(t.content, box, name);
+    box.style.display = trim(box.textContent) ? '' : 'none';
+  }
+
+  // A video link becomes a player: YouTube, Vimeo, Loom, Wistia, or a direct
+  // video file. Anything else is skipped.
+  function ctaVideoSrc(url) {
+    var u;
+    try { u = new URL(trim(url)); } catch (_) { return null; }
+    if (u.protocol !== 'https:') return null;
+    var host = u.hostname.replace(/^(www\.|m\.)/, '');
+    var path = u.pathname;
+    var m;
+    if (host === 'youtu.be') m = path.match(/^\/([\w-]{6,})/);
+    else if (/(^|\.)youtube(-nocookie)?\.com$/.test(host)) {
+      m = path === '/watch' ? [0, u.searchParams.get('v')] : path.match(/^\/(?:embed|shorts|live|v)\/([\w-]{6,})/);
+    }
+    if (m && m[1] && /^[\w-]{6,}$/.test(m[1])) return { frame: 'https://www.youtube-nocookie.com/embed/' + m[1] + '?rel=0' };
+    if (host === 'vimeo.com' || host === 'player.vimeo.com') {
+      m = path.match(/(?:^|\/)(\d{5,})(?:\/([\da-f]{6,}))?/);
+      if (m) {
+        var h = m[2] || u.searchParams.get('h');
+        return { frame: 'https://player.vimeo.com/video/' + m[1] + (h && /^[\da-f]+$/.test(h) ? '?h=' + h : '') };
+      }
+    }
+    if (host === 'loom.com') {
+      m = path.match(/^\/(?:share|embed)\/([\da-f]{16,})/);
+      if (m) return { frame: 'https://www.loom.com/embed/' + m[1] };
+    }
+    if (/(^|\.)wistia\.(com|net)$/.test(host)) {
+      m = path.match(/\/(?:medias|iframe)\/(\w{6,})/);
+      if (m) return { frame: 'https://fast.wistia.net/embed/iframe/' + m[1] };
+    }
+    if (/\.(mp4|webm|mov|m4v)$/i.test(path)) return { file: u.href };
+    return null;
+  }
+
+  function ctaVideo(url) {
+    var src = ctaVideoSrc(url);
+    if (!src) { log('data-cta-video isn\u2019t a video link we can play: ' + url); return null; }
+    var box = document.createElement('div');
+    box.className = 'gmmc-cta-video';
+    var v;
+    if (src.frame) {
+      v = document.createElement('iframe');
+      v.src = src.frame;
+      v.title = 'Video';
+      v.setAttribute('loading', 'lazy');
+      v.setAttribute('allow', 'autoplay; fullscreen; picture-in-picture; encrypted-media');
+      v.setAttribute('allowfullscreen', '');
+      v.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+    } else {
+      v = document.createElement('video');
+      v.src = src.file;
+      v.controls = true;
+      v.setAttribute('playsinline', '');
+      v.setAttribute('preload', 'metadata');
+    }
+    box.appendChild(v);
+    return box;
+  }
+
   function styleCta(el, l, accent) {
     var set = function (prop, v) { if (v) el.style.setProperty(prop, v); };
     set('--gmmc-accent', l.color || accent);
@@ -2091,16 +2196,17 @@
     card.setAttribute('role', 'region');
     card.setAttribute('aria-label', 'Chat with us');
     card.innerHTML = '<div class="gmmc-cta-icon">' + CTA_ICON + '</div>' +
-      '<div class="gmmc-cta-body"><p class="gmmc-cta-title"></p><p class="gmmc-cta-text"></p></div>' +
+      '<div class="gmmc-cta-body"><p class="gmmc-cta-title"></p><div class="gmmc-cta-text"></div></div>' +
       '<button type="button" class="gmmc-cta-btn"><span class="gmmc-cta-label"></span>' +
       '<span class="gmmc-cta-arrow" aria-hidden="true">' + CTA_ARROW[layout] + '</span>' +
       '<span class="gmmc-cta-dots" aria-hidden="true"><i></i><i></i><i></i></span></button>';
     var title = texts.title === null || texts.title === undefined ? CTA_DEFAULTS.title : texts.title;
     card.querySelector('.gmmc-cta-title').textContent = ctaTitleText(title, name);
-    card.querySelector('.gmmc-cta-text').textContent = texts.text === null || texts.text === undefined ? d.text : texts.text;
+    setCtaText(card.querySelector('.gmmc-cta-text'), texts.text === null || texts.text === undefined ? d.text : texts.text, name);
     card.querySelector('.gmmc-cta-label').textContent = trim(texts.button) || d.button;
     if (!trim(card.querySelector('.gmmc-cta-title').textContent)) card.querySelector('.gmmc-cta-title').style.display = 'none';
-    if (!trim(card.querySelector('.gmmc-cta-text').textContent)) card.querySelector('.gmmc-cta-text').style.display = 'none';
+    var video = trim(texts.video) ? ctaVideo(texts.video) : null;
+    if (video) { card.appendChild(video); card.classList.add('gmmc-cta-has-video'); }
     styleCta(card, look, accent);
     return card;
   }
@@ -2128,7 +2234,7 @@
     var put = ctaPlace(layout);
     if (!put) { log('no spot for the call to action on the page'); return; }
     var cached = lookColor(getItem(local(), COLOR_KEY) || '');
-    ctaEl = buildCta(layout, { title: config.ctaTitle, text: config.ctaText, button: config.ctaButton },
+    ctaEl = buildCta(layout, { title: config.ctaTitle, text: config.ctaText, button: config.ctaButton, video: config.ctaVideo },
       config.look, greetingName, lookColor(String(settings.primaryColor || '')) || cached || DEFAULT_COLOR);
     ctaEl.id = CTA_ID;
     var btn = ctaEl.querySelector('.gmmc-cta-btn');
@@ -2162,6 +2268,8 @@
     if (!ctaEl) return;
     var title = config.ctaTitle === null ? CTA_DEFAULTS.title : config.ctaTitle;
     ctaEl.querySelector('.gmmc-cta-title').textContent = ctaTitleText(title, greetingName);
+    var text = config.ctaText === null ? CTA_DEFAULTS[ctaEl.classList.contains('gmmc-cta-bubble') ? 'bubble' : 'inline'].text : config.ctaText;
+    setCtaText(ctaEl.querySelector('.gmmc-cta-text'), text, greetingName);
   }
 
   // ---------- boot ----------

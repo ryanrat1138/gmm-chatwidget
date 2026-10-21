@@ -50,7 +50,7 @@ All `embed.js` attributes are accepted. These apply:
 | `data-timestamps` | off | `on` shows the time under each message (always in the hover title) |
 | `data-greeting` | `Hey {first_name}, …` | Opening message when CloseBot has no Welcome Message; `off` for none |
 | `data-fields`, `data-note`, `data-note-key`, `data-save-fields`, `data-api` | | Form answers for the AI, as in `embed.js` |
-| `data-cta`, `data-cta-title`, `data-cta-text`, `data-cta-button`, `data-cta-wait`, `data-cta-target` | | Call to action, as in `embed.js` |
+| `data-cta`, `data-cta-title`, `data-cta-text`, `data-cta-video`, `data-cta-button`, `data-cta-wait`, `data-cta-target` | | Call to action, as in `embed.js` |
 | `data-email`, `data-phone`, `data-first-name`, `data-last-name`, `data-name` | | HighLevel merge fields |
 | `data-backend`, `data-hl-origins`, `data-debug` | | As in `embed.js` |
 | `data-widget-key` | | The chat widget's own public key, to skip looking it up for the page (see below) |

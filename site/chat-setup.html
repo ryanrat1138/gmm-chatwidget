@@ -198,6 +198,30 @@
   .cta-body .check { font-size: 16px; margin-top: 14px; }
   #ctaPreview { margin-top: 6px; padding: 18px; border-radius: 12px; background: #fff; color: #111827; border: 1px dashed var(--line-strong); overflow: hidden; }
   #ctaPreview .gmmcw-cta { margin: 0; animation: none; }
+  #greeting { min-height: 0; font: inherit; }
+  .presets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0 0; font-size: 14px; color: var(--muted); }
+  .presets button { padding: 5px 12px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--panel); color: var(--text); font: inherit; font-size: 13px; cursor: pointer; }
+  .presets button:hover { border-color: var(--accent); }
+  .presets button[aria-pressed=true] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-deep); font-weight: 600; }
+  .presets button:focus-visible, .rich-bar button:focus-visible { outline: 3px solid var(--accent-ring); outline-offset: 1px; }
+  .rich { background: var(--panel); border: 1px solid var(--line-strong); border-radius: 10px; transition: border-color .15s, box-shadow .15s; }
+  .rich:hover { border-color: #aebdb4; }
+  .rich:focus-within { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-ring); }
+  .rich-bar { display: flex; flex-wrap: wrap; gap: 2px; padding: 5px; border-bottom: 1px solid var(--line); }
+  .rich-bar button { min-width: 32px; height: 30px; padding: 0 8px; border: 0; border-radius: 7px; background: none; color: var(--text); font: inherit; font-size: 14px; cursor: pointer; }
+  .rich-bar button:hover { background: var(--soft); }
+  .rich-bar button[aria-pressed=true] { background: var(--accent-soft); color: var(--accent-deep); }
+  .rich-bar .sep { width: 1px; margin: 4px 4px; background: var(--line); }
+  .rich-link { display: flex; gap: 6px; padding: 6px; border-bottom: 1px solid var(--line); }
+  .rich-link[hidden] { display: none; }
+  .rich-link input[type=text] { padding: 6px 10px; font-size: 14px; }
+  .rich-link button { flex: none; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--panel); color: var(--text); font: inherit; font-size: 13px; cursor: pointer; }
+  .rich-link button.go { border-color: var(--accent-ink); background: var(--accent-ink); color: #fff; }
+  .rich-area { min-height: 72px; padding: 10px 13px; outline: none; line-height: 1.5; overflow-wrap: anywhere; }
+  .rich-area:empty::before { content: attr(data-placeholder); color: #8a958f; pointer-events: none; }
+  .rich-area p { margin: 0 0 .5em; }
+  .rich-area ul, .rich-area ol { margin: .3em 0; padding-left: 1.4em; }
+  .rich-area a { color: var(--accent-ink); }
   .preview-wrap { position: sticky; top: 16px; align-self: start; min-width: 0; }
   #preview { position: relative; height: 520px; margin-top: 12px; padding: 16px; border-radius: 12px; overflow: hidden;
     background: repeating-linear-gradient(45deg, #ecefed, #ecefed 10px, #e4e8e5 10px, #e4e8e5 20px);
@@ -486,7 +510,14 @@
     </div>
 
     <label for="greeting">Opening message</label>
-    <input id="greeting" type="text" value="Hey {first_name}, what can I help you with today?" autocomplete="off">
+    <textarea id="greeting" rows="3" autocomplete="off">Hey {first_name}, what can I help you with today?</textarea>
+    <div class="presets" id="greetingPresets" role="group" aria-label="Opening message examples">
+      <span>Start from:</span>
+      <button type="button" data-text="Hey {first_name}, what can I help you with today?">Default</button>
+      <button type="button" data-text="Hey {first_name}, thanks for taking our survey! One of our treatment coordinators will reach out to you shortly. In the meantime, I'm happy to help with any questions you have.">Treatment coordinator</button>
+      <button type="button" data-text="Hey {first_name}, thanks for taking our survey! Someone from our support team will reach out to you shortly. In the meantime, I'm happy to help with any questions you have.">Support team</button>
+      <button type="button" data-text="Hey {first_name}, thanks for getting in touch! A member of our team will follow up with you soon. Until then, feel free to ask me anything.">Our team</button>
+    </div>
     <p class="hint">Shown as the bot's first message when the chat would otherwise open empty, because the visitor's details were sent for them. <code>{first_name}</code> becomes their first name, or "there" if it isn't known. Leave it empty for none. If you set a Welcome Message in CloseBot, that shows instead.</p>
 
     <details class="look" id="cta" open>
@@ -497,11 +528,30 @@
         <div id="ctaFields">
           <label for="cta-title">Heading</label>
           <input id="cta-title" type="text" autocomplete="off">
-          <label for="cta-text">Text</label>
-          <input id="cta-text" type="text" autocomplete="off">
+          <label id="cta-text-label">Text</label>
+          <div class="rich">
+            <div class="rich-bar" id="ctaBar" role="toolbar" aria-label="Text formatting">
+              <button type="button" data-cmd="bold" aria-label="Bold" title="Bold" aria-pressed="false"><b>B</b></button>
+              <button type="button" data-cmd="italic" aria-label="Italic" title="Italic" aria-pressed="false"><i>I</i></button>
+              <button type="button" data-cmd="underline" aria-label="Underline" title="Underline" aria-pressed="false"><u>U</u></button>
+              <span class="sep" aria-hidden="true"></span>
+              <button type="button" data-cmd="insertUnorderedList" aria-label="Bulleted list" title="Bulleted list" aria-pressed="false">&bull; List</button>
+              <button type="button" data-cmd="link" aria-label="Add a link" title="Add a link">Link</button>
+              <button type="button" data-cmd="clear" aria-label="Clear formatting" title="Clear formatting">Clear</button>
+            </div>
+            <div class="rich-link" id="ctaLinkRow" hidden>
+              <input id="cta-link" type="text" placeholder="https://example.com" spellcheck="false" autocomplete="off" aria-label="Link address">
+              <button type="button" class="go" id="ctaLinkAdd">Add link</button>
+              <button type="button" id="ctaLinkCancel">Cancel</button>
+            </div>
+            <div id="cta-text" class="rich-area" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="cta-text-label"></div>
+          </div>
+          <label for="cta-video">Video <span class="opt">(optional)</span></label>
+          <input id="cta-video" type="text" placeholder="https://www.youtube.com/watch?v=..." spellcheck="false" autocomplete="off">
+          <p class="hint">A YouTube, Vimeo, Loom or Wistia link, or a direct .mp4 file. It plays under the card's text.</p>
           <label for="cta-button">Button</label>
           <input id="cta-button" type="text" autocomplete="off">
-          <p class="hint"><code>{first_name}</code> becomes their first name; with no name, "You're all set, {first_name}!" reads "You're all set!". It uses the style settings below and your CloseBot color unless you pick a brand color.</p>
+          <p class="hint"><code>{first_name}</code> becomes their first name. With no name, the heading "You're all set, {first_name}!" reads "You're all set!" and the text says "there". It uses the style settings below and your CloseBot color unless you pick a brand color.</p>
           <label>Preview</label>
           <div id="ctaPreview"></div>
         </div>
@@ -728,7 +778,7 @@
     var f = fieldList();
     if (f) lines.push('  data-fields="' + f + '"');
     if (f && noteKey) lines.push('  data-note-key="' + noteKey + '"');
-    var g = $('greeting').value.trim();
+    var g = $('greeting').value.replace(/\s+/g, ' ').trim();
     if (!g) lines.push('  data-greeting="off"');
     else if (g !== DEFAULT_GREETING) lines.push('  data-greeting="' + g.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;') + '"');
     if (hl.checked) {
@@ -796,7 +846,7 @@
   function ctaOptions(inline) {
     var d = CTA[inline ? 'inline' : 'bubble'];
     $('cta-title').placeholder = CTA.title;
-    $('cta-text').placeholder = d.text;
+    $('cta-text').setAttribute('data-placeholder', d.text);
     $('cta-button').placeholder = d.button;
     $('ctaFields').style.display = $('cta-on').checked ? '' : 'none';
     $('ctaHint').textContent = inline
@@ -804,27 +854,179 @@
       : 'Shows where you paste the code, with a button that opens the chat.';
     if (!$('cta-on').checked) return { cta: 'off' };
     var o = {};
-    ['title', 'text', 'button'].forEach(function (k) {
-      var v = $('cta-' + k).value.trim();
+    CTA_KEYS.forEach(function (k) {
+      var v = ctaField(k);
       if (v) o['cta-' + k] = v;
     });
     return o;
   }
 
+  var CTA_KEYS = ['title', 'text', 'video', 'button'];
+  function ctaField(k) { return k === 'text' ? ctaTextValue() : $('cta-' + k).value.trim(); }
+
+  // The card's text editor. What it holds is rebuilt from the same short list
+  // of tags the widget keeps, so the tag only carries clean HTML.
+  var RICH_TAGS = { B: 'strong', STRONG: 'strong', I: 'em', EM: 'em', U: 'u', BR: 'br', P: 'p', DIV: 'p', UL: 'ul', OL: 'ol', LI: 'li', A: 'a' };
+  function richHtml(node) {
+    var out = '';
+    for (var n = node.firstChild; n; n = n.nextSibling) {
+      if (n.nodeType === 3) { out += n.nodeValue.replace(/\u00a0/g, ' ').replace(/&(?=#?\w+;)/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); continue; }
+      if (n.nodeType !== 1) continue;
+      var tag = RICH_TAGS[n.nodeName];
+      var inner = richHtml(n);
+      if (!tag) { out += inner; continue; }
+      if (tag === 'br') { out += '<br>'; continue; }
+      if (tag === 'p' && n.querySelector('ul,ol,p,div')) { out += richBlocks(n); continue; }
+      if (tag === 'a') {
+        var href = (n.getAttribute('href') || '').trim();
+        out += /^(https?:|mailto:|tel:)/i.test(href) ? '<a href="' + href.replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '">' + inner + '</a>' : inner;
+        continue;
+      }
+      if ((tag === 'p' || tag === 'li') && !inner.replace(/<br>/g, '').trim()) { if (tag === 'p' && out) out += '<br>'; continue; }
+      out += '<' + tag + '>' + inner.replace(/<br>$/, '') + '</' + tag + '>';
+    }
+    return out;
+  }
+  // The browser can put a list inside a paragraph; split it so each block
+  // stands on its own.
+  function richBlocks(node) {
+    var out = '', run = document.createElement('div');
+    function flush() {
+      var h = richHtml(run).replace(/(<br>)+$/, '');
+      if (h.replace(/<br>/g, '').trim()) out += '<p>' + h + '</p>';
+      run = document.createElement('div');
+    }
+    for (var c = node.firstChild; c; c = c.nextSibling) {
+      if (c.nodeType === 1 && /^(UL|OL|P|DIV)$/.test(c.nodeName)) {
+        flush();
+        var one = document.createElement('div');
+        one.appendChild(c.cloneNode(true));
+        out += richHtml(one);
+      } else run.appendChild(c.cloneNode(true));
+    }
+    flush();
+    return out;
+  }
+  function ctaTextValue() {
+    var box = $('cta-text');
+    if (!box.textContent.trim()) return '';
+    return richHtml(box).replace(/(<br>)+$/, '').trim();
+  }
+
   function renderCtaPreview(inline, look) {
     var box = $('ctaPreview');
+    var oldVideo = box.querySelector('.gmmcw-cta-video');
     box.innerHTML = '';
     if (!$('cta-on').checked || !window.GMMChat || !window.GMMChat.ctaPreview) return;
     var opts = { layout: inline ? 'inline' : 'bubble' };
     Object.keys(look).forEach(function (k) { opts[k] = look[k]; });
-    ['title', 'text', 'button'].forEach(function (k) {
-      var v = $('cta-' + k).value.trim();
+    CTA_KEYS.forEach(function (k) {
+      var v = ctaField(k);
       if (v) opts['cta-' + k] = v;
     });
     var el = window.GMMChat.ctaPreview(opts, 'Ryan');
     el.querySelector('button').tabIndex = -1;
+    [].forEach.call(el.querySelectorAll('a'), function (a) { a.tabIndex = -1; });
+    // Keep the playing video when only other settings change.
+    var video = el.querySelector('.gmmcw-cta-video');
+    if (video && oldVideo && videoSrc(oldVideo) === videoSrc(video)) video.parentNode.replaceChild(oldVideo, video);
     box.appendChild(el);
   }
+  function videoSrc(box) { var v = box.querySelector('iframe,video'); return v ? v.src : ''; }
+
+  // Formatting buttons. They keep the cursor in the text while clicked.
+  (function () {
+    var area = $('cta-text'), bar = $('ctaBar'), row = $('ctaLinkRow'), link = $('cta-link');
+    var saved = null;
+    try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (_) { /* older browsers */ }
+    function changed() {
+      if (!area.textContent.trim() && !area.querySelector('li')) area.innerHTML = '';
+      area.dispatchEvent(new Event('input'));
+    }
+    function pressed() {
+      var inside = document.activeElement === area;
+      [].forEach.call(bar.querySelectorAll('[aria-pressed]'), function (b) {
+        var on = false;
+        try { on = inside && document.queryCommandState(b.getAttribute('data-cmd')); } catch (_) { /* unsupported */ }
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    }
+    function selectionInArea() {
+      var sel = getSelection();
+      return sel.rangeCount && area.contains(sel.getRangeAt(0).commonAncestorContainer) ? sel.getRangeAt(0) : null;
+    }
+    bar.addEventListener('mousedown', function (e) { if (e.target.closest('button')) e.preventDefault(); });
+    bar.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (!b) return;
+      var cmd = b.getAttribute('data-cmd');
+      if (document.activeElement !== area) area.focus();
+      if (cmd === 'link') {
+        saved = selectionInArea();
+        row.hidden = false;
+        link.value = '';
+        link.focus();
+        return;
+      }
+      if (cmd === 'clear') { document.execCommand('removeFormat'); document.execCommand('unlink'); }
+      else document.execCommand(cmd);
+      changed();
+      pressed();
+    });
+    function closeLink() { row.hidden = true; area.focus(); if (saved) { var sel = getSelection(); sel.removeAllRanges(); sel.addRange(saved); } saved = null; }
+    function addLink() {
+      var url = link.value.trim();
+      if (url && !/^(https?:|mailto:|tel:)/i.test(url)) url = (/@/.test(url) && !/\//.test(url) ? 'mailto:' : 'https://') + url;
+      var range = saved;
+      closeLink();
+      if (!url) return;
+      if (range && !range.collapsed) document.execCommand('createLink', false, url);
+      else {
+        var a = document.createElement('a');
+        a.href = url;
+        a.textContent = url.replace(/^(https?:\/\/|mailto:|tel:)/i, '');
+        if (range) range.insertNode(a); else area.appendChild(a);
+      }
+      changed();
+    }
+    $('ctaLinkAdd').addEventListener('click', addLink);
+    $('ctaLinkCancel').addEventListener('click', closeLink);
+    link.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); addLink(); }
+      if (e.key === 'Escape') { e.preventDefault(); closeLink(); }
+    });
+    // Pasted text comes in plain, without the formatting of where it was copied.
+    area.addEventListener('paste', function (e) {
+      e.preventDefault();
+      document.execCommand('insertText', false, (e.clipboardData || window.clipboardData).getData('text/plain'));
+    });
+    area.addEventListener('keydown', function (e) {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+      var cmd = { b: 'bold', i: 'italic', u: 'underline' }[e.key.toLowerCase()];
+      if (cmd) { e.preventDefault(); document.execCommand(cmd); changed(); pressed(); }
+    });
+    area.addEventListener('input', function (e) { if (e.isTrusted) changed(); });
+    document.addEventListener('selectionchange', pressed);
+    area.addEventListener('blur', pressed);
+  })();
+
+  // Opening message examples fill the field.
+  (function () {
+    var field = $('greeting');
+    var buttons = [].slice.call(document.querySelectorAll('#greetingPresets button'));
+    function mark() {
+      var v = field.value.replace(/\s+/g, ' ').trim();
+      buttons.forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-text') === v ? 'true' : 'false'); });
+    }
+    buttons.forEach(function (b) {
+      b.addEventListener('click', function () {
+        field.value = b.getAttribute('data-text');
+        field.dispatchEvent(new Event('input'));
+      });
+    });
+    field.addEventListener('input', mark);
+    mark();
+  })();
 
   // Color pickers fill the text box next to them; a typed hex moves the picker.
   [].forEach.call(document.querySelectorAll('.color input[type=color]'), function (picker) {
@@ -1437,7 +1639,7 @@
   addEventListener('hashchange', function () { show(stepFromHash(), true); });
   [].forEach.call(document.querySelectorAll('input[name=formKind]'), function (r) { r.addEventListener('change', refreshWizard); });
 
-  [source, height, hl, $('fields'), $('ty-url'), $('greeting'), $('cta-on'), $('cta-title'), $('cta-text'), $('cta-button'), $('lk-font'), $('lk-font-name'), $('lk-window-height'), $('lk-css')]
+  [source, height, hl, $('fields'), $('ty-url'), $('greeting'), $('cta-on'), $('cta-title'), $('cta-text'), $('cta-video'), $('cta-button'), $('lk-font'), $('lk-font-name'), $('lk-window-height'), $('lk-css')]
     .concat(LOOK_FIELDS.map(function (k) { return $('lk-' + k); })).concat([].slice.call(layouts)).forEach(function (el) {
     el.addEventListener('input', render); el.addEventListener('change', render);
   });
