@@ -1,5 +1,5 @@
 /*!
- * GMM Chat Widget v0.1.0
+ * JARchat v0.1.0 (chat.js)
  *
  * Our own chat window for CloseBot. Where embed.js loads CloseBot's widget
  * script and works around it, this file draws the whole chat itself and talks
@@ -71,7 +71,9 @@
   };
 
   var script = document.currentScript || (function () {
+    // Loaded late (a WordPress or Cloudflare script optimizer): find our own tag.
     var all = document.getElementsByTagName('script');
+    for (var i = all.length - 1; i >= 0; i--) if (/\/chat\.js([?#]|$)/.test(all[i].src)) return all[i];
     return all[all.length - 1];
   })();
 
@@ -119,6 +121,7 @@
     ctaTitle: attr('cta-title'),
     ctaText: attr('cta-text'),
     ctaVideo: attr('cta-video'),
+    launcherIcon: (attr('launcher-icon') || '').toLowerCase(),
     ctaButton: attr('cta-button'),
     ctaTarget: attr('cta-target'),
     ctaWaitMs: parseInt(attr('cta-wait') || '20000', 10),
@@ -130,7 +133,7 @@
   function log() {
     if (!config.debug || !window.console) return;
     var args = Array.prototype.slice.call(arguments);
-    args.unshift('[gmm-chat-widget]');
+    args.unshift('[jarchat]');
     window.console.log.apply(window.console, args);
   }
 
@@ -1346,6 +1349,7 @@
   // ---------- UI ----------
 
   var ICONS = {
+    jar: '<svg viewBox="10 4 44 58" fill="currentColor" aria-hidden="true" focusable="false"><rect x="20" y="6" width="24" height="8" rx="3"/><path fill-rule="evenodd" d="M22 17H42C48 17 52 21 52 27V43C52 49 48 53 42 53H25L15 60L17 51C14 49 12 46 12 43V27C12 21 16 17 22 17ZM24 32a3 3 0 1 0 0 6a3 3 0 1 0 0-6ZM32 32a3 3 0 1 0 0 6a3 3 0 1 0 0-6ZM40 32a3 3 0 1 0 0 6a3 3 0 1 0 0-6Z"/></svg>',
     chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/></svg>',
     dots: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01" stroke-width="2.6"/></svg>',
     headset: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><path d="M4 14h3v6H5a1 1 0 0 1-1-1zM20 14h-3v6h2a1 1 0 0 0 1-1z"/></svg>',
@@ -1356,7 +1360,10 @@
     file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 11.5 12.5 20a5 5 0 0 1-7-7L14 4.5a3.3 3.3 0 0 1 4.7 4.7l-8.5 8.5a1.7 1.7 0 0 1-2.4-2.4L15.5 7.6"/></svg>'
   };
 
+  // The corner button shows the JARchat jar; data-launcher-icon="closebot"
+  // uses the icon picked in CloseBot instead.
   function launcherIcon(name) {
+    if (config.launcherIcon !== 'closebot') return ICONS.jar;
     name = String(name || '').toLowerCase();
     if (/head|support|agent/.test(name)) return ICONS.headset;
     if (/help|question/.test(name)) return ICONS.help;
@@ -1404,6 +1411,7 @@
     '.gmmc-left .gmmc-launcher{right:auto;left:20px}',
     '.gmmc-launcher .gmmc-ico{position:absolute;display:flex;transition:transform .2s ease,opacity .2s ease}',
     '.gmmc-launcher svg{width:28px;height:28px}',
+    '.gmmc-launcher .gmmc-ico-open svg{width:30px;height:34px}',
     '.gmmc-launcher .gmmc-ico-close{opacity:0;transform:rotate(-60deg)}',
     '.gmmc-open .gmmc-launcher .gmmc-ico-open{opacity:0;transform:rotate(60deg)}',
     '.gmmc-open .gmmc-launcher .gmmc-ico-close{opacity:1;transform:none}',
@@ -1556,7 +1564,7 @@
     if (!bubble && config.look.header === 'hide') wrap.classList.add('gmmc-noheader');
     wrap.innerHTML =
       (bubble ? '<button type="button" class="gmmc-launcher" aria-controls="gmmc-panel" aria-expanded="false" aria-label="Open chat">' +
-        '<span class="gmmc-ico gmmc-ico-open"></span><span class="gmmc-ico gmmc-ico-close">' + ICONS.close + '</span>' +
+        '<span class="gmmc-ico gmmc-ico-open">' + launcherIcon('') + '</span><span class="gmmc-ico gmmc-ico-close">' + ICONS.close + '</span>' +
         '<span class="gmmc-badge" aria-hidden="true" hidden></span></button>' : '') +
       '<section class="gmmc-panel" id="gmmc-panel" aria-labelledby="gmmc-title"' + (bubble ? ' role="dialog" aria-modal="false"' : '') + '>' +
         '<header class="gmmc-header"><div class="gmmc-avatar" aria-hidden="true"></div>' +

@@ -502,6 +502,19 @@ test('call to action: formatted text with the visitor’s name, and a video at t
     video: 'https://player.vimeo.com/video/76979871', xss: 0, wide: true, top: true });
 });
 
+test('corner button: shows the JARchat jar, or CloseBot’s icon with data-launcher-icon="closebot"', async (page) => {
+  mock.state.configs[KEY] = { chatTitle: 'Acme', iconName: 'headset', leadCaptureForm: { isEnabled: false } };
+  await page.goto(P('bubble'));
+  await untilState(page, 's.started');
+  const jar = await inWidget(page, (root) => root.querySelector('.gmmc-ico-open svg').getAttribute('viewBox'));
+  assert.strictEqual(jar, '10 4 44 58');
+  pages['bubble-cbicon'] = doc('Bubble CloseBot icon', tag('data-layout="bubble" data-cta="off" data-launcher-icon="closebot"'));
+  await page.goto(P('bubble-cbicon'));
+  await untilState(page, 's.started');
+  const icon = await inWidget(page, (root) => root.querySelector('.gmmc-ico-open svg path').getAttribute('d'));
+  assert.ok(/^M4 14v-2/.test(icon), 'headset icon: ' + icon);
+});
+
 test('call to action: goes away when the chat can\u2019t load', async (page) => {
   mock.state.failConfig = true;
   mock.state.failSession = true;

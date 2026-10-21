@@ -1,5 +1,5 @@
 /*!
- * GMM Chat Embed v0.8.0
+ * JARchat embed v0.8.0 (embed.js)
  *
  * One tag that adds the CloseBot AI chat to a page and, on a thank-you page,
  * fills CloseBot's lead form with the name, email and phone the visitor just
@@ -105,7 +105,9 @@
   var HL_ORIGIN_RE = /(^|\.)(leadconnectorhq\.com|msgsndr\.com|gohighlevel\.com)$/i;
 
   var script = document.currentScript || (function () {
+    // Loaded late (a WordPress or Cloudflare script optimizer): find our own tag.
     var all = document.getElementsByTagName('script');
+    for (var i = all.length - 1; i >= 0; i--) if (/\/embed\.js([?#]|$)/.test(all[i].src)) return all[i];
     return all[all.length - 1];
   })();
 
@@ -132,6 +134,7 @@
     ctaTitle: attr('cta-title'),
     ctaText: attr('cta-text'),
     ctaVideo: attr('cta-video'),
+    launcherIcon: (attr('launcher-icon') || '').toLowerCase(),
     ctaButton: attr('cta-button'),
     ctaTarget: attr('cta-target'),
     closebotSrc: attr('closebot-src') || CLOSEBOT_SRC,
@@ -261,6 +264,22 @@
     log('applied look');
   }
 
+  // CloseBot's corner button shows the JARchat jar instead of CloseBot's icon
+  // (data-launcher-icon="closebot" keeps CloseBot's). CloseBot rebuilds the
+  // button's icon, so this is CSS: its icon is hidden and the jar drawn in white.
+  var JAR_MASK = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='10 4 44 58'%3E%3Crect x='20' y='6' width='24' height='8' rx='3'/%3E%3Cpath fill-rule='evenodd' d='M22 17H42C48 17 52 21 52 27V43C52 49 48 53 42 53H25L15 60L17 51C14 49 12 46 12 43V27C12 21 16 17 22 17ZM24 32a3 3 0 1 0 0 6a3 3 0 1 0 0-6ZM32 32a3 3 0 1 0 0 6a3 3 0 1 0 0-6ZM40 32a3 3 0 1 0 0 6a3 3 0 1 0 0-6Z'/%3E%3C/svg%3E\")";
+
+  function applyLauncherIcon() {
+    if (config.launcherIcon === 'closebot' || document.getElementById('gmmcw-launcher')) return;
+    var B = '[data-cb].cb-btn';
+    var style = document.createElement('style');
+    style.id = 'gmmcw-launcher';
+    style.textContent = B + '>svg{display:none!important}' +
+      B + '::before{content:"";display:block;width:28px;height:36px;background:#fff;' +
+      '-webkit-mask:' + JAR_MASK + ' center/contain no-repeat;mask:' + JAR_MASK + ' center/contain no-repeat}';
+    (document.head || document.documentElement).appendChild(style);
+  }
+
   function greetingSetting(v) {
     if (v === null) return DEFAULT_GREETING;
     v = trim(v);
@@ -270,7 +289,7 @@
   function log() {
     if (!config.debug || !window.console) return;
     var args = Array.prototype.slice.call(arguments);
-    args.unshift('[gmm-chat]');
+    args.unshift('[jarchat embed]');
     window.console.log.apply(window.console, args);
   }
 
@@ -1315,6 +1334,7 @@
   var urlResult = takeUrlContact();
   placeContainer();
   applyLook();
+  applyLauncherIcon();
   addNoteToFirstMessage();
   // Wait for the page to finish parsing, so a CloseBot tag further down the
   // page is seen and CloseBot is not loaded twice.
