@@ -138,6 +138,60 @@ test('messages from anything but the setup frame are ignored', async (page) => {
   assert.strictEqual(JSON.stringify(saved()), before);
 });
 
+async function fitted(page, frame) {
+  await page.waitForFunction(() => document.getElementById('jarchat-wizard').getAttribute('scrolling') === 'no');
+  // Let the frame settle at its new height.
+  await page.waitForFunction(async () => {
+    const f = document.getElementById('jarchat-wizard');
+    const h = parseInt(f.style.height, 10);
+    await new Promise((r) => setTimeout(r, 150));
+    return h === parseInt(f.style.height, 10);
+  });
+  return frame.evaluate(() => ({
+    inner: document.documentElement.scrollHeight - innerHeight,
+    body: Math.ceil(document.body.getBoundingClientRect().height),
+    frame: innerHeight,
+  }));
+}
+
+test('the setup grows to fit, so only the WordPress page scrolls', async (page) => {
+  const frame = await wizard(page);
+  let r = await fitted(page, frame);
+  assert.ok(r.inner <= 1, `nothing to scroll inside the frame (${r.inner}px over)`);
+  assert.strictEqual(r.frame, r.body);
+  assert.strictEqual(await frame.isVisible('.intro h1'), false, 'WordPress already shows the heading');
+  const first = r.frame;
+  await frame.evaluate(() => { location.hash = 'install'; });
+  await frame.waitForSelector('#wpSaveBtn', { state: 'visible' });
+  r = await fitted(page, frame);
+  assert.ok(r.inner <= 1);
+  assert.notStrictEqual(r.frame, first, 'the frame follows the step\'s height');
+});
+
+test('Next scrolls WordPress back to the top of the new step', async (page) => {
+  await page.setViewportSize({ width: 1200, height: 700 });
+  const frame = await wizard(page);
+  await fitted(page, frame);
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await frame.click('#nextBtn'); // the source ID nudge
+  await frame.click('#nextBtn');
+  await frame.waitForFunction(() => location.hash === '#form');
+  await page.waitForTimeout(300);
+  const top = await page.evaluate(async () => {
+    const f = document.getElementById('jarchat-wizard');
+    return f.getBoundingClientRect().top;
+  }) + await frame.evaluate(() => document.getElementById('stepper').getBoundingClientRect().top);
+  assert.ok(top >= 0 && top < 700, `step buttons in view (at ${top}px)`);
+});
+
+test('inside WordPress, guide links open the guide in a new tab', async (page) => {
+  const frame = await wizard(page);
+  await fitted(page, frame);
+  const [tab] = await Promise.all([page.context().waitForEvent('page'), frame.click('a.guide >> nth=0')]);
+  assert.match(tab.url(), /guide\.html#source-id$/);
+  assert.strictEqual(await frame.evaluate(() => document.getElementById('guideBox').open), false);
+});
+
 test('opened on its own, the setup page has no Save to WordPress', async (page) => {
   await page.goto(`${SITE}/site/index.html?wp=${encodeURIComponent(`http://127.0.0.1:${PORT_WP}`)}`);
   await page.waitForLoadState();

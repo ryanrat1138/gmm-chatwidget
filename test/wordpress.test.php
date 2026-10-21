@@ -186,6 +186,7 @@ test('the settings page frames the setup page and only trusts messages from it',
 	eq(strpos($html, '"setup":"' . JARCHAT_SETUP_URL . '"') !== false, true);
 	eq(strpos($html, '"nonce":"nonce-jarchat_save"') !== false, true);
 	eq(strpos($html, 'e.origin !== setupOrigin || e.source !== frame.contentWindow') !== false, true);
+	eq(strpos($html, "'&fit=1'") !== false, true, 'asks the setup page to report its height');
 	eq(strpos($html, '<details open id="jarchat-manual">') !== false, true, 'nothing saved: the paste boxes are open');
 });
 
