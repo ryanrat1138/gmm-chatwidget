@@ -1,0 +1,170 @@
+// End-to-end test of the WordPress plugin's built-in setup: Settings › JARchat
+// (test/wp-admin-server.php, on one origin) frames the setup page (site/, on
+// another) and "Save to WordPress" saves its code into the plugin.
+// Run with: node test/wp-admin.test.js
+// Needs PHP and Playwright with a Chromium build.
+const http = require('http');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const assert = require('assert');
+const { spawn } = require('child_process');
+const { chromium } = require('playwright');
+
+const ROOT = path.join(__dirname, '..');
+const PORT_SITE = 8793; // the hosted setup page
+const PORT_WP = 8794; // the WordPress site
+const SITE = `http://127.0.0.1:${PORT_SITE}`;
+const ADMIN = `http://127.0.0.1:${PORT_WP}/wp-admin/options-general.php?page=jarchat`;
+const STATE = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'jarchat-')), 'options.json');
+
+function serve(port) {
+  const server = http.createServer((req, res) => {
+    const file = path.join(ROOT, decodeURIComponent(new URL(req.url, 'http://x').pathname));
+    if (!file.startsWith(ROOT) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
+      res.writeHead(404); return res.end('not found');
+    }
+    res.writeHead(200, { 'Content-Type': file.endsWith('.js') ? 'text/javascript' : file.endsWith('.svg') ? 'image/svg+xml' : 'text/html' });
+    fs.createReadStream(file).pipe(res);
+  });
+  return new Promise((resolve) => server.listen(port, '127.0.0.1', () => resolve(server)));
+}
+
+function startWordPress() {
+  const php = spawn('php', ['-S', `127.0.0.1:${PORT_WP}`, path.join(__dirname, 'wp-admin-server.php')], {
+    env: { ...process.env, JARCHAT_SETUP: `${SITE}/site/index.html`, JARCHAT_STATE: STATE },
+    stdio: 'ignore',
+  });
+  return new Promise((resolve, reject) => {
+    const tryIt = (n) => http.get(ADMIN, (res) => { res.resume(); resolve(php); })
+      .on('error', () => (n ? setTimeout(() => tryIt(n - 1), 100) : reject(new Error('php -S did not start'))));
+    tryIt(50);
+  });
+}
+
+const saved = () => (fs.existsSync(STATE) ? JSON.parse(fs.readFileSync(STATE, 'utf8')).jarchat_settings || null : null);
+const tests = [];
+const test = (name, fn) => tests.push({ name, fn });
+
+async function wizard(page) {
+  await page.goto(ADMIN);
+  const el = await page.waitForSelector('#jarchat-wizard');
+  const frame = await el.contentFrame();
+  await frame.waitForSelector('#wpSaveBtn', { state: 'attached' });
+  return frame;
+}
+
+async function setSource(frame, value) {
+  await frame.evaluate((v) => {
+    const s = document.getElementById('source');
+    s.value = v;
+    s.dispatchEvent(new Event('input'));
+    location.hash = 'install';
+  }, value);
+  await frame.waitForSelector('#wpSaveBtn', { state: 'visible' });
+}
+
+test('the setup opens inside Settings › JARchat, without its own top bar', async (page) => {
+  const frame = await wizard(page);
+  assert.ok(frame.url().startsWith(`${SITE}/site/index.html?wp=${encodeURIComponent(`http://127.0.0.1:${PORT_WP}`)}`));
+  const r = await frame.evaluate(() => ({
+    topbar: getComputedStyle(document.querySelector('.topbar')).display,
+    pick: [].map.call(document.querySelectorAll('.widget-pick a.choice'), (a) => a.getAttribute('href').includes('?wp=')),
+  }));
+  assert.deepStrictEqual(r, { topbar: 'none', pick: [true, true] });
+  assert.strictEqual(await page.isVisible('#jarchat-manual[open]'), true, 'nothing saved yet: the paste boxes are open');
+});
+
+test('Save to WordPress stays off until the code has a source ID', async (page) => {
+  const frame = await wizard(page);
+  await frame.evaluate(() => { location.hash = 'install'; });
+  await frame.waitForSelector('#wpSaveBtn', { state: 'visible' });
+  assert.strictEqual(await frame.isDisabled('#wpSaveBtn'), true);
+  await setSource(frame, 'src_wp');
+  assert.strictEqual(await frame.isDisabled('#wpSaveBtn'), false);
+});
+
+test('Save to WordPress saves the code into the plugin and says what to do next', async (page) => {
+  const frame = await wizard(page);
+  await setSource(frame, 'src_wp');
+  await frame.click('#wpSaveBtn');
+  await frame.waitForFunction(() => /^Saved\./.test(document.getElementById('wpSaveStatus').textContent));
+  assert.match(await frame.textContent('#wpSaveStatus'), /\[jarchat\] on the thank-you page/);
+  const s = saved();
+  assert.strictEqual(s.chat_tag.src, `${SITE}/embed.js`);
+  assert.strictEqual(s.chat_tag.data.source, 'src_wp');
+  assert.ok(s.form_tag, 'with no form picked, the form page code is saved too');
+  assert.match(await page.inputValue('#jarchat-chat'), /data-source="src_wp"/);
+  assert.match(await page.textContent('#jarchat-saved'), /^Saved\./);
+  // Back later: the saved code shows, folded away.
+  await page.reload();
+  assert.match(await page.inputValue('#jarchat-chat'), /data-source="src_wp"/);
+  assert.strictEqual(await page.isVisible('#jarchat-manual[open]'), false);
+});
+
+test('our own chat window saves the same way', async (page) => {
+  await wizard(page);
+  const el = await page.$('#jarchat-wizard');
+  await page.evaluate(() => {
+    const f = document.getElementById('jarchat-wizard');
+    f.src = f.src.replace('/index.html', '/chat-setup.html');
+  });
+  const frame = await el.contentFrame();
+  await frame.waitForURL(/chat-setup\.html\?wp=/);
+  await frame.waitForSelector('#wpSaveBtn', { state: 'attached' });
+  await setSource(frame, 'src_own');
+  await frame.click('#wpSaveBtn');
+  await frame.waitForFunction(() => /^Saved\./.test(document.getElementById('wpSaveStatus').textContent));
+  assert.strictEqual(saved().chat_tag.src, `${SITE}/chat.js`);
+  assert.strictEqual(saved().chat_tag.data.source, 'src_own');
+});
+
+test('messages from anything but the setup frame are ignored', async (page) => {
+  await wizard(page);
+  const before = JSON.stringify(saved());
+  const evil = '<script src="https://gmm-chatwidget.vercel.app/chat.js" data-source="evil"></script>';
+  await page.evaluate((chat) => window.postMessage({ type: 'jarchat:save', chat }, '*'), evil);
+  // A frame at the setup page's address that isn't the setup frame.
+  await page.evaluate((src) => {
+    const f = document.createElement('iframe');
+    f.src = src;
+    f.id = 'other';
+    document.body.appendChild(f);
+  }, `${SITE}/test/fixtures/form.html`);
+  const other = await (await page.waitForSelector('#other')).contentFrame();
+  await other.waitForLoadState();
+  await other.evaluate((chat) => parent.postMessage({ type: 'jarchat:save', chat }, '*'), evil);
+  await page.waitForTimeout(600);
+  assert.strictEqual(JSON.stringify(saved()), before);
+});
+
+test('opened on its own, the setup page has no Save to WordPress', async (page) => {
+  await page.goto(`${SITE}/site/index.html?wp=${encodeURIComponent(`http://127.0.0.1:${PORT_WP}`)}`);
+  await page.waitForLoadState();
+  assert.strictEqual(await page.$('#wpSaveBtn'), null);
+  assert.strictEqual(await page.isVisible('.topbar'), true);
+});
+
+(async () => {
+  const server = await serve(PORT_SITE);
+  const php = await startWordPress();
+  const browser = await chromium.launch();
+  let failed = 0;
+  for (const t of tests) {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    try {
+      await t.fn(page);
+      console.log('ok   -', t.name);
+    } catch (err) {
+      failed++;
+      console.log('FAIL -', t.name, '\n      ', err.message.split('\n')[0]);
+    }
+    await context.close();
+  }
+  await browser.close();
+  php.kill();
+  server.close();
+  console.log(`\n${tests.length - failed}/${tests.length} passed`);
+  process.exit(failed ? 1 : 0);
+})();

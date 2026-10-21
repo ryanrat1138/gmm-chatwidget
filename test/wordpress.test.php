@@ -1,30 +1,8 @@
 <?php
-// Tests for the WordPress plugin, with the few WordPress functions it uses
-// stubbed. Run with: php test/wordpress.test.php
+// Tests for the WordPress plugin, with the WordPress functions it uses
+// stubbed (test/wp-stubs.php). Run with: php test/wordpress.test.php
 
-define('ABSPATH', __DIR__);
-$GLOBALS['options'] = array();
-$GLOBALS['shortcodes'] = array();
-$GLOBALS['errors'] = array();
-$GLOBALS['admin'] = false;
-
-function add_shortcode($tag, $fn) { $GLOBALS['shortcodes'][$tag] = $fn; }
-function add_action() {}
-function add_filter() {}
-function register_setting() {}
-function add_options_page() {}
-function plugin_basename($f) { return basename(dirname($f)) . '/' . basename($f); }
-function get_option($k, $d = false) { return isset($GLOBALS['options'][$k]) ? $GLOBALS['options'][$k] : $d; }
-function wp_parse_args($a, $d) { return array_merge($d, $a); }
-function wp_parse_url($u) { return parse_url($u); }
-function wp_unslash($v) { return stripslashes($v); }
-function esc_attr($v) { return htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8'); }
-function esc_html($v) { return htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8'); }
-function esc_html__($v) { return esc_html($v); }
-function __($v) { return $v; }
-function current_user_can() { return $GLOBALS['admin']; }
-function add_settings_error($setting, $code, $msg, $type = 'error') { $GLOBALS['errors'][] = array($code, $type); }
-
+require __DIR__ . '/wp-stubs.php';
 require __DIR__ . '/../wordpress/jarchat/jarchat.php';
 
 $failed = 0;
@@ -124,13 +102,100 @@ test('saving: bad code is refused with a message, a missing source warns', funct
 	eq($out['chat_tag']['src'], 'https://gmm-chatwidget.vercel.app/chat.js');
 });
 
+test('custom CSS after the tag is kept, and cannot end its style block early', function () {
+	$tag = jarchat_parse_tag("<script src=\"https://gmm-chatwidget.vercel.app/embed.js\" data-source=\"x\"></script>\n<style>\n.cb-btn { color: red }\n</style>");
+	eq($tag['css'], '.cb-btn { color: red }');
+	$html = jarchat_render_tag(array('src' => $tag['src'], 'data' => array(), 'css' => 'a{}</style><script>alert(1)</script>'), array());
+	eq(substr_count(strtolower($html), '</style'), 1, 'only the real closing tag');
+	eq(substr_count(strtolower($html), '<script'), 1, 'no second script');
+	eq(jarchat_parse_tag($html)['css'], 'a{}\3c /style>\3c script>alert(1)\3c /script>');
+	eq(jarchat_parse_tag('<script src="https://gmm-chatwidget.vercel.app/chat.js"></script>')['css'] ?? null, null);
+});
+
+test('a copy of the setup page on this computer may use http; other sites may not', function () {
+	eq(jarchat_parse_tag('<script src="http://127.0.0.1:8793/embed.js"></script>')['src'], 'http://127.0.0.1:8793/embed.js');
+	eq(jarchat_parse_tag('<script src="http://localhost/chat.js"></script>')['src'], 'http://localhost/chat.js');
+	eq(jarchat_parse_tag('<script src="http://127.0.0.1.evil.example/chat.js"></script>'), null);
+});
+
+test('saving keeps backslashes: WordPress has already unslashed the form', function () {
+	$out = jarchat_sanitize(array('chat_code' => '<script src="https://gmm-chatwidget.vercel.app/chat.js" data-source="s" data-greeting="a\\b"></script>'));
+	eq($out['chat_tag']['data']['greeting'], 'a\\b');
+});
+
+function ajax_save($post, $nonce = 'nonce-jarchat_save') {
+	$_POST = $post;
+	$_REQUEST = $post + array('_ajax_nonce' => $nonce);
+	try {
+		jarchat_ajax_save();
+	} catch (WPStubJson $r) {
+		return $r;
+	}
+	throw new Exception('no JSON answer');
+}
+
+test('Save to WordPress: stores the code, keeps the saved form code when none is sent', function () use ($SETUP_CODE) {
+	$GLOBALS['admin'] = true;
+	$GLOBALS['options']['jarchat_settings'] = jarchat_sanitize(array(
+		'chat_code' => '',
+		'form_code' => '<script src="https://gmm-chatwidget.vercel.app/embed.js" data-fields="old"></script>',
+	));
+	// Sent slashed, as PHP and WordPress pass $_POST to the handler.
+	$r = ajax_save(array('chat_code' => addslashes($SETUP_CODE)));
+	eq($r->body['success'], true);
+	eq(strpos($r->body['data']['message'], 'Saved.') === 0, true);
+	eq($r->body['data']['warning'], false);
+	$s = jarchat_settings();
+	eq($s['chat_tag']['data']['greeting'], "Hey {first_name}, I'm here & happy to help.");
+	eq($s['form_tag']['data']['fields'], 'old', 'form code kept');
+	eq($r->body['data']['chat_code'], $s['chat_code']);
+	$r = ajax_save(array('chat_code' => addslashes($SETUP_CODE), 'form_code' => '<script src="https://gmm-chatwidget.vercel.app/embed.js" data-fields="new"></script>'));
+	eq(jarchat_settings()['form_tag']['data']['fields'], 'new');
+	eq(strpos($r->body['data']['message'], '[jarchat_form]') !== false, true);
+	$GLOBALS['admin'] = false;
+});
+
+test('Save to WordPress: refuses bad code, other users and a missing nonce, and warns without a source', function () use ($SETUP_CODE) {
+	$GLOBALS['admin'] = true;
+	$GLOBALS['options']['jarchat_settings'] = jarchat_sanitize(array('chat_code' => $SETUP_CODE));
+	$before = $GLOBALS['options']['jarchat_settings'];
+	$r = ajax_save(array('chat_code' => '<script src="https://evil.example/x.js"></script>'));
+	eq($r->body['success'], false);
+	eq(strpos($r->body['data']['message'], 'isn’t a JARchat script tag') !== false, true);
+	eq($GLOBALS['options']['jarchat_settings'], $before, 'nothing saved');
+	eq(ajax_save(array('chat_code' => $SETUP_CODE), 'wrong')->status, 403);
+	$GLOBALS['admin'] = false;
+	$r = ajax_save(array('chat_code' => $SETUP_CODE));
+	eq(array($r->status, $r->body['success']), array(403, false));
+	eq($GLOBALS['options']['jarchat_settings'], $before, 'still nothing saved');
+	$GLOBALS['admin'] = true;
+	$r = ajax_save(array('chat_code' => '<script src="https://gmm-chatwidget.vercel.app/chat.js"></script>'));
+	eq(array($r->body['success'], $r->body['data']['warning']), array(true, true));
+	eq(strpos($r->body['data']['message'], 'no source ID') !== false, true);
+	$GLOBALS['admin'] = false;
+});
+
+test('the settings page frames the setup page and only trusts messages from it', function () {
+	$GLOBALS['admin'] = true;
+	$GLOBALS['options']['jarchat_settings'] = array();
+	ob_start();
+	jarchat_settings_page();
+	$html = ob_get_clean();
+	$GLOBALS['admin'] = false;
+	eq(strpos($html, '<iframe id="jarchat-wizard"') !== false, true);
+	eq(strpos($html, '"setup":"' . JARCHAT_SETUP_URL . '"') !== false, true);
+	eq(strpos($html, '"nonce":"nonce-jarchat_save"') !== false, true);
+	eq(strpos($html, 'e.origin !== setupOrigin || e.source !== frame.contentWindow') !== false, true);
+	eq(strpos($html, '<details open id="jarchat-manual">') !== false, true, 'nothing saved: the paste boxes are open');
+});
+
 test('the download zip holds the current plugin files', function () {
 	$dir = __DIR__ . '/../wordpress/jarchat';
 	$zip = new ZipArchive();
 	eq($zip->open(__DIR__ . '/../wordpress/jarchat.zip'), true, 'wordpress/jarchat.zip opens');
 	$files = array_values(array_filter(scandir($dir), function ($f) { return $f[0] !== '.'; }));
 	foreach ($files as $f) {
-		eq($zip->getFromName('jarchat/' . $f), file_get_contents("$dir/$f"), "jarchat/$f is out of date; run: cd wordpress && zip -r jarchat.zip jarchat");
+		eq($zip->getFromName('jarchat/' . $f) === file_get_contents("$dir/$f"), true, "jarchat/$f is out of date; run: cd wordpress && zip -X -r jarchat.zip jarchat");
 	}
 	eq($zip->numFiles >= count($files), true);
 });
