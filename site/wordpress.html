@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#40916C">
+<meta name="color-scheme" content="light">
+<title>JARchat for WordPress</title>
+<link rel="icon" href="jarchat-mark.svg" type="image/svg+xml">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f2f6f3; --panel: #ffffff; --soft: #f7faf8; --text: #16201a; --muted: #57635c; --line: #e0e7e2; --line-strong: #c9d4cd;
+    --accent: #40916C; --accent-ink: #2D6A4F; --accent-deep: #1B4332; --accent-soft: #e6f2ec; --accent-ring: rgba(64, 145, 108, .32);
+    --radius: 16px;
+    --shadow: 0 1px 2px rgba(16, 40, 28, .05), 0 10px 30px -8px rgba(16, 40, 28, .12);
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; background: var(--bg); }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--font); overflow-x: hidden; }
+  a { color: var(--accent-ink); text-underline-offset: 2px; }
+  a:hover { color: var(--accent-deep); }
+  a:focus-visible { outline: 3px solid var(--accent-ring); outline-offset: 2px; border-radius: 4px; }
+  code { font: .875em var(--mono); background: var(--accent-soft); color: var(--accent-deep); padding: 1px 6px; border-radius: 5px; overflow-wrap: anywhere; }
+
+  .topbar { background: var(--panel); border-bottom: 1px solid var(--line); }
+  .wrap { max-width: 760px; margin: 0 auto; padding-left: 16px; padding-right: 16px; }
+  .topbar .wrap { display: flex; align-items: center; gap: 12px; min-height: 60px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; letter-spacing: -.01em; flex: 1; min-width: 0; }
+  .logo { flex: none; display: flex; }
+  .logo svg { width: 26px; height: 35px; }
+  .wordmark { font-weight: 800; color: var(--accent-deep); letter-spacing: -.02em; }
+  .wordmark span { font-weight: 500; color: var(--accent); }
+  .brand-sub { font-weight: 500; color: var(--muted); }
+  .topbar a.pill { font-size: 14px; font-weight: 600; text-decoration: none; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--soft); white-space: nowrap; }
+  .topbar a.pill:hover { border-color: var(--accent); }
+
+  main { padding-top: 36px; padding-bottom: 72px; }
+  h1 { font-size: clamp(26px, 4.2vw, 34px); line-height: 1.18; letter-spacing: -.02em; margin: 0 0 10px; }
+  p.lead { color: var(--muted); font-size: 17px; margin: 0 0 22px; }
+  .get { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin-bottom: 32px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 999px; background: var(--accent-ink); color: #fff;
+    font-weight: 700; text-decoration: none; }
+  .btn:hover { background: var(--accent-deep); color: #fff; }
+  .btn svg { width: 18px; height: 18px; }
+  .meta { color: var(--muted); font-size: 14px; }
+
+  section.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 26px 30px 28px; margin-bottom: 20px; }
+  h2 { font-size: 22px; letter-spacing: -.01em; margin: 0 0 14px; }
+  h3 { font-size: 17px; margin: 22px 0 6px; }
+  section.card > p:last-child { margin-bottom: 0; }
+  ol.steps { list-style: none; counter-reset: s; margin: 0; padding: 0; }
+  ol.steps > li { counter-increment: s; position: relative; padding: 0 0 16px 44px; }
+  ol.steps > li:last-child { padding-bottom: 0; }
+  ol.steps > li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent-soft); color: var(--accent-deep); font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+  .note { color: var(--muted); font-size: 15px; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: left; vertical-align: top; padding: 9px 10px 9px 0; border-bottom: 1px solid var(--line); }
+  td code { white-space: nowrap; }
+  th { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  tr:last-child td { border-bottom: 0; }
+  .release { border-left: 3px solid var(--accent); padding: 2px 0 2px 16px; margin-top: 4px; }
+  .release + .release { margin-top: 20px; }
+  .release h3 { margin: 0 0 4px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+  .release time { font-size: 14px; font-weight: 500; color: var(--muted); }
+  .release ul { margin: 0; padding-left: 1.2em; }
+
+  @media (max-width: 560px) {
+    section.card { padding: 22px 16px 24px; }
+    .topbar a.pill { padding: 6px 10px; }
+  }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand"><span class="logo"><svg viewBox="12 6 40 54" aria-hidden="true"><rect x="20" y="6" width="24" height="8" rx="3" fill="#52B788"/><path d="M22 17H42C48 17 52 21 52 27V43C52 49 48 53 42 53H25L15 60L17 51C14 49 12 46 12 43V27C12 21 16 17 22 17Z" fill="#2D6A4F"/><circle cx="24" cy="35" r="3" fill="#fff"/><circle cx="32" cy="35" r="3" fill="#fff"/><circle cx="40" cy="35" r="3" fill="#fff"/></svg></span>
+      <span><span class="wordmark">JAR<span>chat</span></span> <span class="brand-sub">for WordPress</span></span></div>
+    <a class="pill" href="./">Setup</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>The JARchat WordPress plugin</h1>
+  <p class="lead">Paste your JARchat code into WordPress once, then add the chat to any page with a shortcode. No script tags in the page editor, and nothing for script optimizers to break.</p>
+  <div class="get">
+    <a class="btn" href="jarchat-wordpress.zip" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Download the plugin</a>
+    <span class="meta">Version <strong id="version">1.0.0</strong> · WordPress 5.7 or later · PHP 7.2 or later</span>
+  </div>
+
+  <section class="card" id="install">
+    <h2>Install and activate</h2>
+    <ol class="steps">
+      <li>Download the plugin with the button above. Keep it as a .zip file; don't unzip it.</li>
+      <li>In WordPress, go to <strong>Plugins › Add New Plugin</strong> and click <strong>Upload Plugin</strong> at the top.</li>
+      <li>Choose <code>jarchat-wordpress.zip</code>, click <strong>Install Now</strong>, then <strong>Activate Plugin</strong>.</li>
+      <li>On the <a href="./">JARchat setup page</a>, work through the steps and copy the <strong>Thank-you page code</strong> from the last step.</li>
+      <li>In WordPress, go to <strong>Settings › JARchat</strong>, paste the code into <strong>Thank-you page code</strong> and click <strong>Save Changes</strong>.</li>
+      <li>Edit the thank-you page, add a <strong>Shortcode</strong> block where the chat (or its card) should appear, and type <code>[jarchat]</code>.</li>
+    </ol>
+    <p class="note">If your form is on this same WordPress site, also paste the <strong>Form page code</strong> under Settings › JARchat and put <code>[jarchat_form]</code> on the form page. Typeform and HighLevel funnel forms don't need it.</p>
+  </section>
+
+  <section class="card" id="shortcodes">
+    <h2>Shortcodes</h2>
+    <table>
+      <thead><tr><th>Shortcode</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>[jarchat]</code></td><td>Adds the chat to the thank-you page with your saved settings.</td></tr>
+        <tr><td><code>[jarchat_form]</code></td><td>Goes on the form page. It shows no chat; it remembers what the visitor submits.</td></tr>
+      </tbody>
+    </table>
+    <h3>Changing one page</h3>
+    <p>Any setting from the code can be changed for a single page by naming it in the shortcode without the <code>data-</code> part, for example <code>[jarchat layout="bubble"]</code>, <code>[jarchat cta="off"]</code> or <code>[jarchat greeting="Hi {first_name}!"]</code>.</p>
+  </section>
+
+  <section class="card" id="updating">
+    <h2>Updating</h2>
+    <p>The chat itself loads from JARchat's server, so most improvements reach your site without touching the plugin. When a new plugin version is listed below:</p>
+    <ol class="steps">
+      <li>Download the plugin again from this page.</li>
+      <li>Go to <strong>Plugins › Add New Plugin › Upload Plugin</strong> and upload the new file.</li>
+      <li>WordPress says the plugin is already installed. Click <strong>Replace current with uploaded</strong>.</li>
+    </ol>
+    <p class="note">Your saved code and shortcodes stay as they are.</p>
+  </section>
+
+  <section class="card" id="releases">
+    <h2>Release notes</h2>
+    <div class="release" data-version="1.0.0">
+      <h3>1.0.0 <time datetime="2026-10-21">October 21, 2026</time></h3>
+      <ul>
+        <li>First release: the Settings › JARchat page and the <code>[jarchat]</code> and <code>[jarchat_form]</code> shortcodes.</li>
+        <li>Per-page settings in the shortcode, such as <code>layout="bubble"</code>.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+</body>
+</html>

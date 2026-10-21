@@ -2012,7 +2012,7 @@
     inline: { text: 'Have a question while you wait? Our virtual assistant is right below and ready to chat.', button: 'Start chatting' },
     bubble: { text: 'Have a question while you wait? Our virtual assistant is ready to chat.', button: 'Chat with us' }
   };
-  var CTA_ICON = ICONS.dots.replace('aria-hidden="true"', 'aria-hidden="true" width="24" height="24"');
+  var CTA_ICON = ICONS.jar.replace('aria-hidden="true"', 'aria-hidden="true" width="22" height="29"');
   var CTA_ARROW = { inline: '\u2193', bubble: '\u2192' };
 
   function addCtaStyles() {

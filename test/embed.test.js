@@ -575,10 +575,11 @@ test('call to action: inline card above the chat greets by name and starts the c
       next: cta.nextElementSibling && cta.nextElementSibling.id,
       title: cta.querySelector('.gmmcw-cta-title').textContent,
       button: cta.querySelector('.gmmcw-cta-btn').textContent,
-      inline: cta.classList.contains('gmmcw-cta-inline')
+      inline: cta.classList.contains('gmmcw-cta-inline'),
+      icon: cta.querySelector('.gmmcw-cta-icon svg').getAttribute('viewBox')
     };
   });
-  assert.deepStrictEqual(r, { next: 'cb-widget-container', title: 'You’re all set, Pat!', button: 'Start chatting↓', inline: true });
+  assert.deepStrictEqual(r, { next: 'cb-widget-container', title: 'You’re all set, Pat!', button: 'Start chatting↓', inline: true, icon: '10 4 44 58' });
   await page.waitForFunction(() => document.getElementById('gmmcw-cta').style.getPropertyValue('--gmmcw-accent') === '#3b82f6');
   await page.click('.gmmcw-cta-btn');
   await page.waitForFunction(() => document.activeElement && document.activeElement.classList.contains('cb-input'));
