@@ -86,10 +86,10 @@
 
 <main class="wrap">
   <h1>The JARchat WordPress plugin</h1>
-  <p class="lead">Paste your JARchat code into WordPress once, then add the chat to any page with a shortcode. No script tags in the page editor, and nothing for script optimizers to break.</p>
+  <p class="lead">Set up JARchat right inside WordPress and save it with one click, then add the chat to any page with a shortcode. No code to copy, no script tags in the page editor, and nothing for script optimizers to break.</p>
   <div class="get">
     <a class="btn" href="jarchat-wordpress.zip" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Download the plugin</a>
-    <span class="meta">Version <strong id="version">1.0.0</strong> · WordPress 5.7 or later · PHP 7.2 or later</span>
+    <span class="meta">Version <strong id="version">1.1.0</strong> · WordPress 5.7 or later · PHP 7.2 or later</span>
   </div>
 
   <section class="card" id="install">
@@ -98,11 +98,11 @@
       <li>Download the plugin with the button above. Keep it as a .zip file; don't unzip it.</li>
       <li>In WordPress, go to <strong>Plugins › Add New Plugin</strong> and click <strong>Upload Plugin</strong> at the top.</li>
       <li>Choose <code>jarchat-wordpress.zip</code>, click <strong>Install Now</strong>, then <strong>Activate Plugin</strong>.</li>
-      <li>On the <a href="./">JARchat setup page</a>, work through the steps and copy the <strong>Thank-you page code</strong> from the last step.</li>
-      <li>In WordPress, go to <strong>Settings › JARchat</strong>, paste the code into <strong>Thank-you page code</strong> and click <strong>Save Changes</strong>.</li>
+      <li>Go to <strong>Settings › JARchat</strong>. The JARchat setup opens right there; work through its steps.</li>
+      <li>At the last step, click <strong>Save to WordPress</strong>.</li>
       <li>Edit the thank-you page, add a <strong>Shortcode</strong> block where the chat (or its card) should appear, and type <code>[jarchat]</code>.</li>
     </ol>
-    <p class="note">If your form is on this same WordPress site, also paste the <strong>Form page code</strong> under Settings › JARchat and put <code>[jarchat_form]</code> on the form page. Typeform and HighLevel funnel forms don't need it.</p>
+    <p class="note">If your form is on this same WordPress site, also put <code>[jarchat_form]</code> on the form page; Save to WordPress saves its code too. Typeform and HighLevel funnel forms don't need it. To paste code from the <a href="./">setup page</a> yourself instead, open <strong>Saved code</strong> under Settings › JARchat.</p>
   </section>
 
   <section class="card" id="shortcodes">
@@ -126,11 +126,19 @@
       <li>Go to <strong>Plugins › Add New Plugin › Upload Plugin</strong> and upload the new file.</li>
       <li>WordPress says the plugin is already installed. Click <strong>Replace current with uploaded</strong>.</li>
     </ol>
-    <p class="note">Your saved code and shortcodes stay as they are.</p>
+    <p class="note">Your saved code and shortcodes stay as they are. To change the chat later, go back to Settings › JARchat, go through the setup again and click Save to WordPress.</p>
   </section>
 
   <section class="card" id="releases">
     <h2>Release notes</h2>
+    <div class="release" data-version="1.1.0">
+      <h3>1.1.0 <time datetime="2026-10-21">October 21, 2026</time></h3>
+      <ul>
+        <li>The setup runs inside Settings › JARchat, with a <strong>Save to WordPress</strong> button at its last step. No more copying and pasting code.</li>
+        <li>Keeps the custom CSS from the setup's look step.</li>
+        <li>Code with a backslash in it is saved as written.</li>
+      </ul>
+    </div>
     <div class="release" data-version="1.0.0">
       <h3>1.0.0 <time datetime="2026-10-21">October 21, 2026</time></h3>
       <ul>

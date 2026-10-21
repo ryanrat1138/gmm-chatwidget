@@ -673,13 +673,13 @@
         <li id="placeInline">Paste it where the chat should appear. HighLevel: a Custom JS/HTML element. WordPress: a Custom HTML block.</li>
         <li>Keep it above any analytics or tracking code if the builder allows, so they never see the visitor's details in the address bar.</li>
         <li>If CloseBot's own script tag is already on the site, you can leave it; the chat won't load twice.</li>
-        <li>On WordPress, the <a href="wordpress.html" target="_blank" rel="noopener">JARchat plugin</a> is easier: paste this code once under Settings › JARchat, then put <code>[jarchat]</code> on the thank-you page.</li>
+        <li class="wp-hide">On WordPress, the <a href="wordpress.html" target="_blank" rel="noopener">JARchat plugin</a> is easier: paste this code once under Settings › JARchat, then put <code>[jarchat]</code> on the thank-you page.</li>
       </ul>
     </div>
 
     <div class="part-card" id="formCard">
       <h3>Form page: no chat, just remembers the details</h3>
-      <p class="hint">Only needed when the form is on your own website, including a HighLevel form embedded there. Skip it for Typeform and for HighLevel funnel forms. No chat shows on the form page. With the WordPress plugin, paste it under Settings › JARchat and put <code>[jarchat_form]</code> on the form page.</p>
+      <p class="hint">Only needed when the form is on your own website, including a HighLevel form embedded there. Skip it for Typeform and for HighLevel funnel forms. No chat shows on the form page. <span class="wp-hide">With the WordPress plugin, paste it under Settings › JARchat and put <code>[jarchat_form]</code> on the form page.</span></p>
       <div class="code-block">
         <div class="code-head"><span class="code-title">Form page code</span><button id="copyForm" class="btn btn-copy" data-target="formOut">Copy code</button><span class="status" aria-live="polite"></span></div>
         <pre id="formOut"></pre>
@@ -1516,5 +1516,6 @@
   syncWriteButton();
 })();
 </script>
+<script src="wp-bridge.js"></script>
 </body>
 </html>
