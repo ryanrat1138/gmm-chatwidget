@@ -1184,8 +1184,8 @@
     base = esc(base.replace(/[?#].*$/, ''));
     var parts = [];
     if (tfRows) {
-      CONTACT_ROLES.forEach(function (role) {
-        tfRows.forEach(function (r) { if (r.role === role) parts.push(role + '=<em>@' + esc(r.title) + '</em>'); });
+      linkRoles().forEach(function (role) {
+        tfRows.forEach(function (r) { if (r.role === role) parts.push(roleParam(role) + '=<em>@' + esc(r.title) + '</em>'); });
       });
       var picked = {};
       tfRows.forEach(function (r) {
@@ -1202,6 +1202,24 @@
   // ---------- read the questions from Typeform ----------
 
   var CONTACT_ROLES = ['email', 'phone', 'first_name', 'last_name', 'name'];
+  // WordPress reads some words in a page address as its own: name=... looks
+  // up a post by that slug, so the page shows "Page not found". The full name
+  // goes as full_name, and answers never take these words.
+  var WP_RESERVED = ('attachment attachment_id author author_name calendar cat category category_name comments_popup cpage custom ' +
+    'customized day debug embed error exact feed fields hour m minute monthnum more name nonce offset order orderby p page ' +
+    'page_id paged pagename pb perm post post_format post_status post_type posts preview robots s search second sentence ' +
+    'showposts static status subpost subpost_id tag tag_id taxonomy tb term terms theme title type types w year').split(' ');
+  // What the chat reads as contact details.
+  var CONTACT_PARAMS = ['email', 'cb_email', 'phone', 'cb_phone', 'first_name', 'firstname', 'cb_first_name',
+    'last_name', 'lastname', 'cb_last_name', 'name', 'full_name', 'cb_name', 'cb_ref'];
+  // With a first and a last name, a full name adds nothing to the link.
+  function linkRoles() {
+    var has = {};
+    tfRows.forEach(function (r) { has[r.role] = true; });
+    return CONTACT_ROLES.filter(function (role) { return role !== 'name' || !(has.first_name && has.last_name); });
+  }
+  function roleParam(role) { return role === 'name' ? 'full_name' : role; }
+  function safeKey(k) { return k && (WP_RESERVED.indexOf(k) !== -1 || CONTACT_PARAMS.indexOf(k) !== -1) ? k + '_answer' : k; }
   var ROLE_LABELS = { '': 'Not used', email: 'Email', phone: 'Phone', first_name: 'First name', last_name: 'Last name', name: 'Full name', ai: 'For the AI' };
   var tfRows = null;
 
@@ -1219,7 +1237,7 @@
   function slug(title, used) {
     var k = title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 30).replace(/_+$/, '');
     if (!/^[a-z]/.test(k)) k = 'answer_' + k;
-    if (CONTACT_ROLES.indexOf(k) !== -1) k += '_answer';
+    k = safeKey(k);
     var base = k, n = 2;
     while (used[k]) k = base + '_' + n++;
     used[k] = true;
@@ -1267,7 +1285,7 @@
         syncFieldsFromRows();
       });
       key.addEventListener('input', function () {
-        r.key = key.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+        r.key = safeKey(key.value.toLowerCase().replace(/[^a-z0-9_]/g, ''));
         syncFieldsFromRows();
       });
       key.addEventListener('blur', function () { key.value = r.key; });
@@ -1286,8 +1304,8 @@
 
   function redirectParams() {
     var out = [];
-    CONTACT_ROLES.forEach(function (role) {
-      tfRows.forEach(function (r) { if (r.role === role) out.push({ name: role, ref: r.ref }); });
+    linkRoles().forEach(function (role) {
+      tfRows.forEach(function (r) { if (r.role === role) out.push({ name: roleParam(role), ref: r.ref }); });
     });
     tfRows.forEach(function (r) { if (r.role === 'ai' && r.key) out.push({ name: r.key, ref: r.ref }); });
     return out;

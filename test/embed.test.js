@@ -412,16 +412,16 @@ function captureFieldPosts(page) {
   }).then(() => posts);
 }
 
-test('extra fields: values in the URL go to the service and leave the address bar', async (page) => {
+test('extra fields: values in the URL go to the service and leave the address bar; Typeform blanks are left out', async (page) => {
   const posts = await captureFieldPosts(page);
-  await page.goto(A('thanks-fields.html?email=ed%40example.com&business_info=HVAC&utm_source=fb&other=keep'));
+  await page.goto(A('thanks-fields.html?email=ed%40example.com&phone=_____&business_info=HVAC&team_size=_____&utm_source=fb&other=keep'));
   await identity(page);
   await page.waitForFunction(() => window.GMMChat.fieldsSent === true);
   assert.strictEqual(posts.length, 1);
   assert.deepStrictEqual(posts[0].body, { email: 'ed@example.com', phone: '', fields: { business_info: 'HVAC' } });
   assert.ok(/^text\/plain/.test(posts[0].type), 'should be a simple request');
   const seen = await page.evaluate(() => window.__urlSeenByCloseBot);
-  assert.ok(!/business_info|email/.test(seen), 'CloseBot saw extra details: ' + seen);
+  assert.ok(!/business_info|team_size|email|phone/.test(seen), 'CloseBot saw extra details: ' + seen);
   assert.ok(/other=keep/.test(seen) && /utm_source=fb/.test(seen), 'unrelated params should stay');
 });
 
