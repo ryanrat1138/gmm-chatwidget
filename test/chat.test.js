@@ -613,7 +613,7 @@ test('note: without an AI note, the answers go with the first message only, unse
   assert.ok(!/Form answers/.test(shown), shown);
 });
 
-test('form echo: CloseBot\u2019s "Thanks, got it!" for the sent details never shows, now or on reload; the AI saying it later does', async (page) => {
+test('form echo: CloseBot\u2019s "Thanks, got it!" for the sent details never shows, at the start, later on, or on reload', async (page) => {
   mock.state.reply = () => 'Thanks, got it!';
   await page.goto(P('inline') + '?email=echo%40example.com');
   await untilState(page, 's.identified && s.connected');
@@ -623,11 +623,15 @@ test('form echo: CloseBot\u2019s "Thanks, got it!" for the sent details never sh
   assert.deepStrictEqual(await bubbles(page, 'bot'), ['Hey there, what can I help you with today?']);
   await page.fill('.gmmc-input', 'Can you note my email?');
   await page.keyboard.press('Enter');
+  await until(page, () => window.GMMChatWidget.state().messages.length === 2);
+  mock.botSay(sid, 'Perfect, talk soon.');
   await until(page, () => window.GMMChatWidget.state().messages.length === 3);
+  const live = (await state(page)).messages.map((m) => m.text);
+  assert.deepStrictEqual(live.slice(1), ['Can you note my email?', 'Perfect, talk soon.']);
   await page.goto(P('inline'));
   await untilState(page, 's.resumed && s.connected');
   await page.waitForTimeout(300);
-  assert.deepStrictEqual((await state(page)).messages.map((m) => m.text), ['Can you note my email?', 'Thanks, got it!']);
+  assert.deepStrictEqual((await state(page)).messages.map((m) => m.text), ['Can you note my email?', 'Perfect, talk soon.']);
 });
 
 test('reconnect: after the stream drops, missed messages arrive once', async (page) => {
