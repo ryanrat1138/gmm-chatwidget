@@ -46,7 +46,8 @@ All `embed.js` attributes are accepted. These apply:
 | `data-position` | right | `left` for the bubble on the left |
 | `data-color` | CloseBot's, else `#40916C` | Brand color |
 | `data-font`, `data-font-size`, `data-radius`, `data-background`, `data-text-color`, `data-bot-bubble`, `data-bot-text`, `data-visitor-bubble`, `data-visitor-text`, `data-header-text`, `data-header="hide"`, `data-shadow`, `data-border` | | As in `embed.js`, applied to this chat |
-| `data-title` | CloseBot's title, else "Chat with us" | Header title |
+| `data-title` | CloseBot's title, else "Chat with us" | Header title (the assistant's name) |
+| `data-avatar` | CloseBot's picture, else a chat icon | Header picture: an `https://` address, or a `data:image/…;base64,` PNG, JPEG, WebP or GIF (the setup page puts an uploaded picture in the tag this way, cropped to 96×96). Anything else is ignored; a picture that doesn't load shows the icon |
 | `data-timestamps` | off | `on` shows the time under each message (always in the hover title) |
 | `data-greeting` | `Hey {first_name}, …` | Opening message when CloseBot has no Welcome Message; `off` for none |
 | `data-fields`, `data-note`, `data-note-key`, `data-save-fields`, `data-api` | | Form answers for the AI, as in `embed.js` |

@@ -119,6 +119,55 @@ test('our own chat window saves the same way', async (page) => {
   assert.strictEqual(saved().chat_tag.data.source, 'src_own');
 });
 
+test('a name and uploaded picture go in the code and save to WordPress', async (page) => {
+  await wizard(page);
+  const el = await page.$('#jarchat-wizard');
+  await page.evaluate(() => {
+    const f = document.getElementById('jarchat-wizard');
+    f.src = f.src.replace('/index.html', '/chat-setup.html');
+  });
+  const frame = await el.contentFrame();
+  await frame.waitForURL(/chat-setup\.html\?wp=/);
+  await frame.waitForSelector('#wpSaveBtn', { state: 'attached' });
+  // A 300x200 picture comes back as a small centered square.
+  const png = await frame.evaluate(() => {
+    const c = document.createElement('canvas'); c.width = 300; c.height = 200;
+    const g = c.getContext('2d'); g.fillStyle = '#e11d48'; g.fillRect(0, 0, 300, 200); g.fillStyle = '#1d4ed8'; g.fillRect(50, 0, 200, 200);
+    return c.toDataURL('image/png').split(',')[1];
+  });
+  await frame.evaluate(() => { location.hash = 'style'; });
+  await frame.fill('#persona-name', 'Jamie "J" Lee');
+  await frame.setInputFiles('#avatarFile', { name: 'jamie.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') });
+  await frame.waitForFunction(() => /Picture added/.test(document.getElementById('avatarMsg').textContent));
+  const pic = await frame.evaluate(() => {
+    const m = /data-avatar="([^"]+)"/.exec(document.getElementById('out').textContent);
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+        const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+        resolve({ src: m[1], w: img.width, h: img.height, corner: Array.from(g.getImageData(2, 2, 1, 1).data.slice(0, 3)) });
+      };
+      img.src = m[1];
+    });
+  });
+  assert.match(pic.src, /^data:image\/(webp|png|jpeg);base64,/);
+  assert.ok(pic.src.length < 30000, `small enough for the tag (${pic.src.length} characters)`);
+  assert.deepStrictEqual([pic.w, pic.h], [96, 96]);
+  assert.ok(pic.corner[2] > 150 && pic.corner[0] < 100, 'cropped to the middle square');
+  assert.strictEqual(await frame.textContent('#preview .cb-header-title'), 'Jamie "J" Lee');
+  assert.strictEqual(await frame.getAttribute('#preview .cb-header-avatar', 'src'), pic.src);
+  await setSource(frame, 'src_persona');
+  await frame.click('#wpSaveBtn');
+  await frame.waitForFunction(() => /^Saved\./.test(document.getElementById('wpSaveStatus').textContent));
+  assert.strictEqual(saved().chat_tag.data.title, 'Jamie "J" Lee');
+  assert.strictEqual(saved().chat_tag.data.avatar, pic.src);
+  // Removing the picture takes it out of the code.
+  await frame.evaluate(() => { location.hash = 'style'; });
+  await frame.click('#avatarClear');
+  assert.doesNotMatch(await frame.textContent('#out'), /data-avatar/);
+});
+
 test('messages from anything but the setup frame are ignored', async (page) => {
   await wizard(page);
   const before = JSON.stringify(saved());
