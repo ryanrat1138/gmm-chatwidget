@@ -618,11 +618,23 @@
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
 
-  function setNote(extra) {
-    var parts = Object.keys(extra).map(function (k) {
+  // Who the visitor is, at the top of the note.
+  function contactParts(c) {
+    var parts = [];
+    if (!c) return parts;
+    var name = c.name || [c.firstName, c.lastName].filter(Boolean).join(' ');
+    if (name) parts.push('Name: ' + name);
+    if (c.email) parts.push('Email: ' + c.email);
+    if (c.phone) parts.push('Phone: ' + c.phone);
+    return parts;
+  }
+
+  function setNote(extra, contact) {
+    var answers = Object.keys(extra).map(function (k) {
       return fieldLabel(k) + ': ' + String(extra[k]).replace(/\s+/g, ' ').slice(0, 500);
     });
-    if (!parts.length) return;
+    if (!answers.length) return;
+    var parts = contactParts(contact).concat(answers);
     noteText = '\n\n' + NOTE_MARK + ' ' + parts.join('; ') + ']';
     setItem(store(), NOTE_KEY, noteText);
   }
@@ -638,7 +650,8 @@
   }
 
   function noteRequest(contact, extra) {
-    var r = { email: contact.email || '', phone: contact.phone || '', answers: extra };
+    var name = contact.name || [contact.firstName, contact.lastName].filter(Boolean).join(' ');
+    var r = { name: name, email: contact.email || '', phone: contact.phone || '', answers: extra };
     if (config.noteKey) r.key = config.noteKey; // the customer's own sealed CloseBot key
     return r;
   }
@@ -1130,6 +1143,8 @@
       setItem(local(), identKey(), JSON.stringify({ s: sid, sig: contactSig(contact) }));
       clearSavedContact();
       log('CloseBot has the visitor\u2019s details (' + how + ')');
+      // Details from the chat's own form join the note for the first message.
+      if (config.note && noteText) setNote(state.extra, contact);
       sendAiNote(contact, state.extra);
       sendExtraFields(contact, state.extra);
     }, function (err) {
@@ -2425,7 +2440,7 @@
       state.extra = extra;
       if (config.note) {
         noteText = getItem(store(), NOTE_KEY) || '';
-        setNote(extra);
+        setNote(extra, contact);
       }
       log(contact ? 'contact found via ' + source : 'no contact found; the chat asks for details');
       state.resolved = true;
