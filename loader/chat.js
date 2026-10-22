@@ -1011,12 +1011,11 @@
 
   // CloseBot notes the details we send for the visitor with a bot message,
   // as its own widget does after its lead form, and keeps it in the history
-  // (it comes back on a reload or after a dropped connection). It always
-  // comes before the visitor's first message.
-  function isFormEcho(text, time) {
-    if (trim(text) !== FORM_ECHO) return false;
-    var first = ui.log.querySelector('.gmmc-lead');
-    return !first || !!(time && first._time && time <= first._time);
+  // (it comes back on a reload or after a dropped connection). It can come
+  // at any point, as when the conversation moves on to a new session, and
+  // means nothing to the visitor, so it never shows.
+  function isFormEcho(text) {
+    return trim(text) === FORM_ECHO;
   }
 
   function addIncoming(d) {
@@ -1041,7 +1040,7 @@
     }
     if (!text && !files.length) return;
     seen[id] = true;
-    if (sender === 'bot' && !files.length && isFormEcho(text, time)) return;
+    if (sender === 'bot' && !files.length && isFormEcho(text)) return;
     if (sender === 'bot' && !d.isHistory) { typing.ai = false; typing.human = ''; renderTyping(); }
     var who = sender === 'bot' ? trim(String(d.responderName || '')) : '';
     addMessage(sender, text, {
