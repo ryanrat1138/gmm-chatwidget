@@ -96,6 +96,15 @@
     return /^[A-Za-z0-9_-]+$/.test(v) ? v : '';
   }
 
+  // The header picture: an https address, or a small image the setup page
+  // put in the tag itself.
+  function avatarUrl(v) {
+    v = trim(v);
+    if (/^https:\/\/[^\s"'<>]+$/i.test(v)) return v;
+    if (v.length <= 200000 && /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+\/]+=*$/i.test(v)) return v;
+    return '';
+  }
+
   function inBody() {
     var parent = script && script.parentNode;
     return !!(parent && parent !== document.head && document.body && document.body.contains(script));
@@ -112,6 +121,7 @@
     height: lookSize(attr('height') || '') || '600px',
     look: parseLook(attr),
     title: trim(attr('title')),
+    avatar: avatarUrl(attr('avatar')),
     greeting: greetingSetting(attr('greeting')),
     timestamps: attr('timestamps') === 'on',
     note: attr('note') !== 'off',
@@ -1603,7 +1613,7 @@
     };
     ui.title.textContent = config.title || DEFAULT_TITLE;
     ui.input.placeholder = DEFAULT_PLACEHOLDER;
-    ui.avatar.innerHTML = ICONS.dots;
+    showAvatar(config.avatar);
     if (ui.launcher) q('.gmmc-ico-open').innerHTML = ICONS.chat;
     var cached = lookColor(getItem(local(), COLOR_KEY) || '');
     applyTheme(config.look.color || cached || DEFAULT_COLOR);
@@ -1615,6 +1625,21 @@
       script.parentNode.insertBefore(host, script.nextSibling);
     }
     log('mounted the ' + config.layout + ' chat');
+  }
+
+  // A picture that doesn't load falls back to the dots.
+  function showAvatar(url) {
+    ui.avatar.innerHTML = ICONS.dots;
+    if (!url) return;
+    var img = el('img');
+    img.alt = '';
+    img.onerror = function () {
+      var dots = el('span');
+      dots.innerHTML = ICONS.dots;
+      if (img.parentNode) img.parentNode.replaceChild(dots.firstChild, img);
+    };
+    img.src = url;
+    ui.avatar.replaceChild(img, ui.avatar.firstChild);
   }
 
   function applyTheme(accent) {
@@ -1686,18 +1711,9 @@
     ui.title.textContent = title;
     ui.panel.setAttribute('aria-label', title);
     ui.panel.removeAttribute('aria-labelledby');
-    var avatar = [s.avatarUrl, s.botAvatarUrl, s.avatar, s.logoUrl, s.iconUrl].filter(function (u) {
+    showAvatar(config.avatar || [s.avatarUrl, s.botAvatarUrl, s.avatar, s.logoUrl, s.iconUrl].filter(function (u) {
       return typeof u === 'string' && /^https:\/\//i.test(u);
-    })[0];
-    ui.avatar.innerHTML = '';
-    if (avatar) {
-      var img = el('img');
-      img.alt = '';
-      img.src = avatar;
-      ui.avatar.appendChild(img);
-    } else {
-      ui.avatar.innerHTML = ICONS.dots;
-    }
+    })[0]);
     var online = s.showOnlineStatus !== false;
     if (online) ui.avatar.appendChild(el('span', 'gmmc-dot'));
     ui.status.textContent = trim(String(s.headerSubtitle || s.subtitle || '')) || (online ? 'Online' : '');

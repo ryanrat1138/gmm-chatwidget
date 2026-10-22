@@ -204,6 +204,15 @@
   #ctaPreview { margin-top: 6px; padding: 18px; border-radius: 12px; background: #fff; color: #111827; border: 1px dashed var(--line-strong); overflow: hidden; }
   #ctaPreview .gmmcw-cta { margin: 0; animation: none; }
   #greeting { min-height: 0; font: inherit; }
+  .persona { display: flex; gap: 18px; align-items: flex-start; margin-top: 22px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--soft); }
+  .persona-pic { flex: none; width: 64px; height: 64px; margin-top: 30px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center;
+    background: var(--accent-ink); color: #fff; }
+  .persona-pic img { width: 100%; height: 100%; object-fit: cover; }
+  .persona-pic svg { width: 30px; height: 30px; }
+  .persona-fields { flex: 1; min-width: 0; }
+  .persona-fields > label:first-child { margin-top: 0; }
+  .persona .action { margin-top: 12px; }
+  @media (max-width: 480px) { .persona { flex-direction: column; } .persona-pic { margin-top: 0; } }
   .presets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0 0; font-size: 14px; color: var(--muted); }
   .presets button { padding: 5px 12px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--panel); color: var(--text); font: inherit; font-size: 13px; cursor: pointer; }
   .presets button:hover { border-color: var(--accent); }
@@ -238,6 +247,8 @@
   #preview .cb-panel.cb-container-mode { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
   #preview .cb-header { padding: 14px 16px; color: #fff; display: flex; align-items: center; gap: 8px; background: var(--cb-color); }
   #preview .cb-header-title { font-weight: 600; font-size: 15px; }
+  #preview .cb-header-avatar { flex: none; width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+  #preview .cb-header-avatar[hidden] { display: none; }
   #preview .cb-header-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
   #preview .cb-header-close { margin-left: auto; font-size: 18px; }
   #preview .cb-messages { flex: 1; overflow: hidden; padding: 12px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; background: var(--cb-bg); }
@@ -515,6 +526,23 @@
       <input id="height" type="text" value="600px" spellcheck="false">
     </div>
 
+    <div class="persona" id="persona">
+      <div class="persona-pic" id="avatarShow" aria-hidden="true"></div>
+      <div class="persona-fields">
+        <label for="persona-name">Assistant name</label>
+        <input id="persona-name" type="text" maxlength="60" autocomplete="off" placeholder="Your CloseBot chat title">
+        <div class="action">
+          <button type="button" class="btn btn-secondary btn-small" id="avatarPick">Upload a picture</button>
+          <button type="button" class="btn btn-secondary btn-small" id="avatarClear" hidden>Remove picture</button>
+          <input type="file" id="avatarFile" accept="image/*" hidden>
+        </div>
+        <label for="avatar-url">Or the picture's web address</label>
+        <input id="avatar-url" type="text" placeholder="https://" spellcheck="false" autocomplete="off">
+        <p class="field-msg" id="avatarMsg" role="status"></p>
+        <p class="hint">Shown at the top of the chat. Leave them empty to use the title and picture set in CloseBot. An uploaded picture is cropped to a small square and goes right in the code, so there's nothing to host.</p>
+      </div>
+    </div>
+
     <label for="greeting">Opening message</label>
     <textarea id="greeting" rows="3" autocomplete="off">Hey {first_name}, what can I help you with today?</textarea>
     <div class="presets" id="greetingPresets" role="group" aria-label="Opening message examples">
@@ -641,7 +669,7 @@
           <label>Preview</label>
           <div id="preview" class="inline" aria-hidden="true">
             <div class="cb-panel cb-container-mode" data-cb style="--cb-color:#3b82f6">
-              <div class="cb-header"><span class="cb-header-title">Chat</span><span class="cb-header-dot"></span><span class="cb-header-close">&#x2715;</span></div>
+              <div class="cb-header"><img class="cb-header-avatar" alt="" hidden><span class="cb-header-title">Chat with us</span><span class="cb-header-dot"></span><span class="cb-header-close">&#x2715;</span></div>
               <div class="cb-messages">
                 <div class="cb-msg-item bot"><div class="cb-msg bot">Hey Ryan, what can I help you with today?</div></div>
                 <div class="cb-msg-item lead"><div class="cb-msg lead">I'd like a quote for my HVAC business.</div></div>
@@ -785,6 +813,10 @@
     var f = fieldList();
     if (f) lines.push('  data-fields="' + f + '"');
     if (f && noteKey) lines.push('  data-note-key="' + noteKey + '"');
+    var name = personaName();
+    if (name) lines.push('  data-title="' + attrValue(name) + '"');
+    var pic = avatarValue();
+    if (pic) lines.push('  data-avatar="' + attrValue(pic) + '"');
     var g = $('greeting').value.replace(/\s+/g, ' ').trim();
     if (!g) lines.push('  data-greeting="off"');
     else if (g !== DEFAULT_GREETING) lines.push('  data-greeting="' + g.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;') + '"');
@@ -802,6 +834,7 @@
     out.textContent = lines.join('\n');
     renderPreview(inline, look);
     renderCtaPreview(inline, look);
+    renderPersona(look);
     copy.disabled = !id;
     $('aiNoteInfo').innerHTML = noteKey
       ? '<strong>Hidden note is on.</strong> The AI gets these answers as a note only it can see, from your CloseBot account connected in step 1.'
@@ -809,6 +842,104 @@
     copy.nextElementSibling.textContent = '';
     refreshWizard();
   }
+
+  // Name and picture: data-title and data-avatar. An uploaded picture goes
+  // in the tag as a small data: image; a typed one must be an https address.
+  var avatarData = '', badUrl = '';
+  var AVATAR_SIZE = 96; // twice the header's size, for sharp screens
+  var CHAT_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01" stroke-width="2.6"/></svg>';
+
+  function personaName() { return $('persona-name').value.replace(/\s+/g, ' ').trim(); }
+
+  function avatarUrlField() {
+    var v = $('avatar-url').value.trim();
+    return /^https:\/\/[^\s"'<>]+$/i.test(v) ? v : '';
+  }
+
+  function avatarValue() { return avatarData || avatarUrlField(); }
+
+  function avatarMsg(kind, text) {
+    var m = $('avatarMsg');
+    m.className = 'field-msg' + (kind ? ' ' + kind : '');
+    m.textContent = text || '';
+  }
+
+  function renderPersona(look) {
+    var pic = avatarValue(), show = $('avatarShow');
+    if (!avatarData) {
+      var typed = $('avatar-url').value.trim();
+      if (typed && !pic) avatarMsg('err', 'Use the picture\u2019s full address, starting with https://.');
+      else if (pic && pic === badUrl) avatarMsg('err', 'Couldn\u2019t load a picture from that address.');
+      else avatarMsg('', '');
+    }
+    $('avatarClear').hidden = !pic;
+    show.style.background = look.color || '';
+    if (show.getAttribute('data-src') !== pic) {
+      show.setAttribute('data-src', pic);
+      show.innerHTML = CHAT_ICON;
+      if (pic) {
+        var img = new Image();
+        img.alt = '';
+        img.onload = function () { if (show.getAttribute('data-src') === pic) { show.innerHTML = ''; show.appendChild(img); } };
+        img.onerror = function () { if (show.getAttribute('data-src') === pic) { badUrl = pic; renderPersona(look); } };
+        img.src = pic;
+      }
+    }
+    var head = $('preview').querySelector('.cb-header-avatar');
+    head.hidden = !pic;
+    if (pic) { if (head.getAttribute('src') !== pic) head.src = pic; } else head.removeAttribute('src');
+    $('preview').querySelector('.cb-header-title').textContent = personaName() || 'Chat with us';
+  }
+
+  // Crops the middle square and shrinks it, as WebP where the browser can
+  // make it (a few KB), else PNG, else JPEG on white.
+  function shrinkImage(file, done) {
+    var url = URL.createObjectURL(file), img = new Image();
+    img.onload = function () {
+      URL.revokeObjectURL(url);
+      var w = img.naturalWidth, h = img.naturalHeight, side = Math.min(w, h), S = AVATAR_SIZE;
+      if (!side) return done(null);
+      var c = document.createElement('canvas');
+      c.width = c.height = S;
+      var g = c.getContext('2d');
+      g.imageSmoothingQuality = 'high';
+      g.drawImage(img, (w - side) / 2, (h - side) / 2, side, side, 0, 0, S, S);
+      var data = c.toDataURL('image/webp', 0.85);
+      if (!/^data:image\/webp/.test(data) && data.length > 24000) {
+        g.globalCompositeOperation = 'destination-over';
+        g.fillStyle = '#fff';
+        g.fillRect(0, 0, S, S);
+        data = c.toDataURL('image/jpeg', 0.88);
+      }
+      done(data);
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); done(null); };
+    img.src = url;
+  }
+
+  $('avatarPick').addEventListener('click', function () { $('avatarFile').click(); });
+  $('avatarFile').addEventListener('change', function () {
+    var file = this.files && this.files[0];
+    this.value = '';
+    if (!file) return;
+    if (!/^image\//.test(file.type)) { avatarMsg('err', 'That file isn\u2019t a picture. Pick a PNG, JPG, WebP or GIF.'); return; }
+    avatarMsg('', 'Reading the picture\u2026');
+    shrinkImage(file, function (data) {
+      if (!data) { avatarMsg('err', 'Couldn\u2019t read that picture. Try a PNG or JPG.'); return; }
+      avatarData = data;
+      $('avatar-url').value = '';
+      avatarMsg('ok', 'Picture added.');
+      render();
+    });
+  });
+  $('avatar-url').addEventListener('input', function () { avatarData = ''; avatarMsg('', ''); });
+  $('avatarClear').addEventListener('click', function () {
+    avatarData = '';
+    $('avatar-url').value = '';
+    avatarMsg('', '');
+    render();
+    $('avatarPick').focus();
+  });
 
   var LOOK_FIELDS = ['color', 'background', 'text-color', 'bot-bubble', 'bot-text', 'visitor-bubble', 'visitor-text',
     'header-text', 'font-size', 'radius', 'shadow', 'border', 'header', 'position', 'width'];
@@ -1646,7 +1777,7 @@
   addEventListener('hashchange', function () { show(stepFromHash(), true); });
   [].forEach.call(document.querySelectorAll('input[name=formKind]'), function (r) { r.addEventListener('change', refreshWizard); });
 
-  [source, height, hl, $('fields'), $('ty-url'), $('greeting'), $('cta-on'), $('cta-title'), $('cta-text'), $('cta-video'), $('cta-button'), $('lk-font'), $('lk-font-name'), $('lk-window-height'), $('lk-css')]
+  [source, height, hl, $('fields'), $('ty-url'), $('persona-name'), $('avatar-url'), $('greeting'), $('cta-on'), $('cta-title'), $('cta-text'), $('cta-video'), $('cta-button'), $('lk-font'), $('lk-font-name'), $('lk-window-height'), $('lk-css')]
     .concat(LOOK_FIELDS.map(function (k) { return $('lk-' + k); })).concat([].slice.call(layouts)).forEach(function (el) {
     el.addEventListener('input', render); el.addEventListener('change', render);
   });

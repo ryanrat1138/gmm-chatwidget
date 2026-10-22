@@ -38,6 +38,11 @@ pages['head-tag'] = `<!doctype html><html><head><meta charset="utf-8">${tag()}</
 pages['form-page'] = doc('Form page', '<form action="/p/thanks-session" method="get" onsubmit="event.preventDefault(); location.href=\'/p/thanks-session\'">' +
   '<input name="first_name"><input name="email" type="email"><input name="phone" type="tel"><input name="business_info">' +
   '<button type="submit">Send</button></form><script src="/loader/chat.js" data-fields="business_info"></script>');
+const DOT_PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+pages.persona = doc('Persona', `<div id="slot">${tag('data-title="Jamie" data-avatar="https://pics.test/jamie.png" data-cta="off"')}</div>`);
+pages['persona-data'] = doc('Persona data', `<div id="slot">${tag(`data-avatar="${DOT_PNG}" data-cta="off"`)}</div>`);
+pages['persona-unsafe'] = doc('Persona unsafe', `<div id="slot">${tag('data-avatar="javascript:alert(1)" data-cta="off"')}</div>`);
+pages['persona-broken'] = doc('Persona broken', `<div id="slot">${tag('data-avatar="https://pics.test/missing.png" data-cta="off"')}</div>`);
 pages['thanks-session'] = doc('Thanks', `<div id="slot">${tag('data-fields="business_info" data-api="http://api.test"')}</div>`);
 
 function serve(port) {
@@ -620,6 +625,44 @@ test('reconnect: after the stream drops, missed messages arrive once', async (pa
   assert.deepStrictEqual((await state(page)).messages.map((m) => m.text), [
     'Hey there, what can I help you with today?', 'Before', 'You said: Before', 'Sorry, we got cut off']);
   assert.strictEqual(await inWidget(page, (root) => root.querySelector('.gmmc-banner').hidden), true);
+});
+
+async function pictures(page) {
+  await page.route('https://pics.test/**', (route) => (/missing/.test(route.request().url())
+    ? route.fulfill({ status: 404, body: 'gone' })
+    : route.fulfill({ status: 200, contentType: 'image/png', body: Buffer.from(DOT_PNG.split(',')[1], 'base64') })));
+}
+const header = (page) => inWidget(page, (root) => {
+  const img = root.querySelector('.gmmc-avatar img');
+  return { title: root.querySelector('.gmmc-title').textContent, img: img && img.getAttribute('src'),
+    loaded: !!(img && img.complete && img.naturalWidth), icon: !!root.querySelector('.gmmc-avatar svg'), dot: !!root.querySelector('.gmmc-avatar .gmmc-dot') };
+});
+
+test('persona: data-title and data-avatar replace CloseBot\u2019s name and picture', async (page) => {
+  mock.state.configs[KEY] = { chatTitle: 'Acme Help', avatarUrl: 'https://pics.test/closebot.png', showOnlineStatus: true };
+  await pictures(page);
+  await page.goto(P('persona') + '?email=a%40example.com');
+  await untilState(page, 's.started');
+  await until(page, () => { const i = document.querySelector('gmmc-chat').shadowRoot.querySelector('.gmmc-avatar img'); return i && i.complete; });
+  assert.deepStrictEqual(await header(page), { title: 'Jamie', img: 'https://pics.test/jamie.png', loaded: true, icon: false, dot: true });
+});
+
+test('persona: an uploaded picture in the tag shows; an unsafe one is ignored; a broken one falls back to the icon', async (page) => {
+  mock.state.configs[KEY] = { chatTitle: 'Acme Help', avatarUrl: 'https://pics.test/closebot.png', showOnlineStatus: true };
+  await pictures(page);
+  await page.goto(P('persona-data') + '?email=a%40example.com');
+  await untilState(page, 's.started');
+  let h = await header(page);
+  assert.strictEqual(h.img, DOT_PNG);
+  assert.strictEqual(h.title, 'Acme Help');
+  await page.goto(P('persona-unsafe') + '?email=a%40example.com');
+  await untilState(page, 's.started');
+  assert.strictEqual((await header(page)).img, 'https://pics.test/closebot.png', 'CloseBot\u2019s picture instead');
+  await page.goto(P('persona-broken') + '?email=a%40example.com');
+  await untilState(page, 's.started');
+  await until(page, () => !document.querySelector('gmmc-chat').shadowRoot.querySelector('.gmmc-avatar img'));
+  h = await header(page);
+  assert.deepStrictEqual([h.img, h.icon, h.dot], [null, true, true]);
 });
 
 test('attachments: images and files show; unsafe links are dropped', async (page) => {
