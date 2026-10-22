@@ -472,7 +472,7 @@ async function say(page, text) {
 test('note: form answers go to the AI with the first message only, unseen by the visitor', async (page) => {
   const posts = await captureFieldPosts(page);
   const sent = await captureMessages(page);
-  await page.goto(A('thanks-note.html?email=nn%40example.com&business_info=HVAC&team_size=6-20'));
+  await page.goto(A('thanks-note.html?email=nn%40example.com&first_name=Nia&last_name=North&phone=603-555-0100&business_info=HVAC&team_size=6-20'));
   await identity(page);
   await page.waitForSelector('.cb-input');
   await say(page, 'How much does it cost?');
@@ -481,7 +481,7 @@ test('note: form answers go to the AI with the first message only, unseen by the
   await page.waitForFunction(() => document.querySelectorAll('.cb-msg-item.lead').length === 2);
   await page.waitForTimeout(200);
   assert.deepStrictEqual(sent, [
-    'How much does it cost?\n\n[Form answers, for reference: Business info: HVAC; Team size: 6-20]',
+    'How much does it cost?\n\n[Form answers, for reference: Name: Nia North; Email: nn@example.com; Phone: 603-555-0100; Business info: HVAC; Team size: 6-20]',
     'Thanks'
   ]);
   const shown = await page.evaluate(() => [...document.querySelectorAll('.cb-msg-item.lead')].map((e) => e.textContent));
@@ -532,7 +532,7 @@ test('AI note: added through the service, so the first message goes as typed, an
   const sent = await captureMessages(page);
   await page.goto(A('thanks-note.html?email=ai%40example.com&business_info=HVAC&team_size=6-20'));
   await page.waitForFunction(() => window.GMMChat.noteAdded === true);
-  assert.deepStrictEqual(notes, [{ email: 'ai@example.com', phone: '', answers: { business_info: 'HVAC', team_size: '6-20' } }]);
+  assert.deepStrictEqual(notes, [{ name: '', email: 'ai@example.com', phone: '', answers: { business_info: 'HVAC', team_size: '6-20' } }]);
   await identity(page);
   await page.waitForSelector('.cb-input');
   await say(page, 'How much does it cost?');
@@ -548,7 +548,7 @@ test('AI note: a sealed key from the setup page goes with the request', async (p
   const notes = await captureNotePosts(page, { body: { added: true } });
   await page.goto(A('thanks-note-key.html?email=k%40example.com&business_info=HVAC'));
   await page.waitForFunction(() => window.GMMChat.noteAdded === true);
-  assert.deepStrictEqual(notes, [{ email: 'k@example.com', phone: '', answers: { business_info: 'HVAC' }, key: 'v1.sealed-test' }]);
+  assert.deepStrictEqual(notes, [{ name: '', email: 'k@example.com', phone: '', answers: { business_info: 'HVAC' }, key: 'v1.sealed-test' }]);
 });
 
 test('AI note: when the service has no CloseBot key, the answers go with the first message', async (page) => {
@@ -561,7 +561,7 @@ test('AI note: when the service has no CloseBot key, the answers go with the fir
   await say(page, 'Hi');
   await page.waitForFunction(() => window.__sendStatus === 200);
   assert.strictEqual(notes.length, 1);
-  assert.deepStrictEqual(sent, ['Hi\n\n[Form answers, for reference: Business info: HVAC]']);
+  assert.deepStrictEqual(sent, ['Hi\n\n[Form answers, for reference: Email: nk@example.com; Business info: HVAC]']);
 });
 
 test('AI note: not asked for without an email or phone', async (page) => {

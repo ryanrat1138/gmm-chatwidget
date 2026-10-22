@@ -574,7 +574,7 @@ test('note: with data-note-key the answers go to /api/note after identity, and t
   });
   await page.goto(P('note') + '?email=n%40example.com&business_info=HVAC&team_size=6-20');
   await until(page, () => window.GMMChatWidget.state().noteAdded === true);
-  assert.deepStrictEqual(notes.map((n) => n.body), [{ email: 'n@example.com', phone: '', answers: { business_info: 'HVAC', team_size: '6-20' }, key: 'v1.sealed-test' }]);
+  assert.deepStrictEqual(notes.map((n) => n.body), [{ name: '', email: 'n@example.com', phone: '', answers: { business_info: 'HVAC', team_size: '6-20' }, key: 'v1.sealed-test' }]);
   assert.ok(notes[0].at >= mock.requestsFor('identity')[0].at, 'the note waits until CloseBot knows the visitor');
   assert.ok(!/business_info/.test(page.url()), 'answers removed from the address bar');
   await page.fill('.gmmc-input', 'Hi');
@@ -597,7 +597,7 @@ test('note: without an AI note, the answers go with the first message only, unse
   await page.fill('.gmmc-input', 'Again');
   await page.keyboard.press('Enter');
   await until(page, () => window.GMMChatWidget.state().messages.length === 5);
-  assert.deepStrictEqual(messagesSent(), ['Hi\n\n[Form answers, for reference: Business info: HVAC]', 'Again']);
+  assert.deepStrictEqual(messagesSent(), ['Hi\n\n[Form answers, for reference: Email: n2@example.com; Business info: HVAC]', 'Again']);
   assert.deepStrictEqual(await bubbles(page, 'lead'), ['Hi', 'Again']);
   // And it stays hidden when the conversation comes back.
   await page.goto(P('note'));
@@ -734,6 +734,26 @@ test('reduced motion: no animations', async (page) => {
   await untilState(page, 's.started');
   const anim = await inWidget(page, (root) => getComputedStyle(root.querySelector('.gmmc-msg')).animationName);
   assert.strictEqual(anim, 'none');
+});
+
+test('note: details typed into the chat\u2019s own form join the answers sent with the first message', async (page) => {
+  mock.state.configs[KEY] = {
+    chatTitle: 'Acme', welcomeMessage: '',
+    leadCaptureForm: { isEnabled: true, fields: [{ key: 'firstName', label: 'First Name' }, { key: 'email', label: 'Email', required: true }] },
+  };
+  await page.route('http://api.test/api/note', (route) => route.fulfill({ status: 501, contentType: 'application/json',
+    headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ added: false, reason: 'not_configured' }) }));
+  await page.goto(P('note') + '?business_info=Dental');
+  await untilState(page, 's.formShown');
+  await page.fill('#gmmc-f-firstName', 'Ann');
+  await page.fill('#gmmc-f-email', 'ann.form@example.com');
+  await page.click('.gmmc-submit');
+  await until(page, () => !window.GMMChatWidget.state().formShown);
+  await until(page, () => window.GMMChatWidget.state().noteAdded === false);
+  await page.fill('.gmmc-input', 'Hi');
+  await page.keyboard.press('Enter');
+  await until(page, () => window.GMMChatWidget.state().messages.length >= 2);
+  assert.deepStrictEqual(messagesSent(), ['Hi\n\n[Form answers, for reference: Name: Ann; Email: ann.form@example.com; Business info: Dental]']);
 });
 
 const DEFAULTS = JSON.parse(JSON.stringify({ ...mock.state, configs: {}, sessions: undefined, requests: undefined, reply: undefined }));

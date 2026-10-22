@@ -45,7 +45,7 @@ const test = (name, fn) => tests.push({ name, fn });
 
 test('adds an AI-only note to the lead whose email matches', async () => {
   searches = [[lead('other', [['email', 'x@y.co']]), lead('L1', [['email', 'Ann@Example.com']])]];
-  const r = await call({ body: { email: 'ann@example.com', answers: { business_info: 'HVAC', team_size: '6-20' } } });
+  const r = await call({ body: { name: ' Ann  Lee ', email: 'ann@example.com', phone: '(603) 555-0100', answers: { business_info: 'HVAC', team_size: '6-20' } } });
   assert.strictEqual(r.status, 200);
   assert.deepStrictEqual(r.body, { added: true, matchedBy: 'email', aiVisible: true });
   assert.strictEqual(r.headers['access-control-allow-origin'], ORIGIN);
@@ -53,7 +53,8 @@ test('adds an AI-only note to the lead whose email matches', async () => {
   assert.ok(post.url.endsWith('/lead/L1/note'));
   assert.strictEqual(post.init.headers['X-CB-KEY'], 'cb-test');
   assert.deepStrictEqual(JSON.parse(post.init.body), {
-    body: 'Form answers from the thank-you page (given by the visitor, for reference):\n- Business info: HVAC\n- Team size: 6-20',
+    body: 'Form answers from the thank-you page (given by the visitor, for reference):\n- Name: Ann Lee\n- Email: ann@example.com\n' +
+      '- Phone: (603) 555-0100\n- Business info: HVAC\n- Team size: 6-20',
     aiVisible: true,
   });
   const search = JSON.parse(calls.find((c) => c.url.endsWith('/lead/search')).init.body);

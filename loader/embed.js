@@ -608,11 +608,23 @@
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
 
-  function setNote(extra) {
-    var parts = Object.keys(extra).map(function (k) {
+  // Who the visitor is, at the top of the note.
+  function contactParts(c) {
+    var parts = [];
+    if (!c) return parts;
+    var name = c.name || [c.firstName, c.lastName].filter(Boolean).join(' ');
+    if (name) parts.push('Name: ' + name);
+    if (c.email) parts.push('Email: ' + c.email);
+    if (c.phone) parts.push('Phone: ' + c.phone);
+    return parts;
+  }
+
+  function setNote(extra, contact) {
+    var answers = Object.keys(extra).map(function (k) {
       return fieldLabel(k) + ': ' + String(extra[k]).replace(/\s+/g, ' ').slice(0, 500);
     });
-    if (!parts.length) return;
+    if (!answers.length) return;
+    var parts = contactParts(contact).concat(answers);
     noteText = '\n\n' + NOTE_MARK + ' ' + parts.join('; ') + ']';
     var s = store();
     if (s) { try { s.setItem(NOTE_KEY, noteText); } catch (_) { /* ignore */ } }
@@ -662,7 +674,8 @@
   var NOTE_SENT_KEY = 'gmmcw_note_sent';
 
   function noteRequest(contact, extra) {
-    var r = { email: contact.email || '', phone: contact.phone || '', answers: extra };
+    var name = contact.name || [contact.firstName, contact.lastName].filter(Boolean).join(' ');
+    var r = { name: name, email: contact.email || '', phone: contact.phone || '', answers: extra };
     if (config.noteKey) r.key = config.noteKey; // the customer's own sealed CloseBot key
     return r;
   }
@@ -1397,7 +1410,7 @@
       [(contact && contact.extra) || {}, urlResult.extra].forEach(function (o) {
         Object.keys(o).forEach(function (k) { extra[k] = o[k]; });
       });
-      if (config.note) setNote(extra);
+      if (config.note) setNote(extra, contact);
       if (!contact) { log('no contact found; visitor fills the form'); return; }
       api.contact = { hasEmail: !!contact.email, hasPhone: !!contact.phone };
       log('contact found via', source);

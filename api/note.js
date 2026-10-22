@@ -5,8 +5,10 @@
 // CloseBot includes them in the AI's context.
 //
 // Body (JSON, sent as text/plain so browsers skip the CORS preflight):
-//   { "email": "...", "phone": "...", "answers": { "business_info": "HVAC" },
-//     "key": "v1...." }
+//   { "name": "...", "email": "...", "phone": "...",
+//     "answers": { "business_info": "HVAC" }, "key": "v1...." }
+//
+// The note lists the visitor's name, email and phone, then the answers.
 //
 // "key" is the customer's own CloseBot API key, sealed by the setup page
 // (api/closebot.js) together with the sites and sources it may be used for.
@@ -87,8 +89,16 @@ function label(key) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-function noteBody(answers) {
-  const lines = Object.keys(answers).map((k) => '- ' + label(k) + ': ' + answers[k]);
+function oneLine(v, max) {
+  return typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '';
+}
+
+function noteBody(answers, contact = {}) {
+  const lines = [];
+  if (contact.name) lines.push('- Name: ' + contact.name);
+  if (contact.email) lines.push('- Email: ' + contact.email);
+  if (contact.phone) lines.push('- Phone: ' + contact.phone);
+  Object.keys(answers).forEach((k) => lines.push('- ' + label(k) + ': ' + answers[k]));
   return NOTE_HEAD + '\n' + lines.join('\n');
 }
 
@@ -219,7 +229,12 @@ module.exports = async function handler(req, res) {
 
     const post = await cb('/lead/' + encodeURIComponent(found.lead.id) + '/note', key, {
       method: 'POST',
-      body: JSON.stringify({ body: noteBody(answers), aiVisible: true }),
+      body: JSON.stringify({ body: noteBody(answers, {
+        name: oneLine(body.name, 100),
+        email,
+        // As the visitor typed it, when it is a phone number.
+        phone: phone ? oneLine(body.phone, 40) : '',
+      }), aiVisible: true }),
     });
     if (post.status === 401 || post.status === 403) return send(res, 502, { added: false, reason: 'closebot_key_rejected' }, allowedOrigin);
     if (!post.ok) return send(res, 502, { added: false, reason: 'closebot_error', status: post.status }, allowedOrigin);
