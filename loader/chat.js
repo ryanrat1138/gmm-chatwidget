@@ -1031,13 +1031,15 @@
     if (!text && !files.length) return;
     seen[id] = true;
     if (sender === 'bot' && !d.isHistory) { typing.ai = false; typing.human = ''; renderTyping(); }
-    var who = sender === 'bot' ? trim(String(d.responderName || '')) : '';
+    // The name and picture from the setup stand in for CloseBot's agent
+    // persona; with no name set, the replies carry no name.
+    var who = sender === 'bot' ? config.title : '';
     addMessage(sender, text, {
       id: id,
       files: files,
       time: time || (d.isHistory ? null : new Date()),
       who: who,
-      icon: d.responderIconUrl,
+      icon: config.avatar,
       history: !!d.isHistory
     });
     if (sender === 'bot' && !d.isHistory) {
@@ -1846,7 +1848,7 @@
     item._time = opts.time || null;
     if (who) {
       var label = el('div', 'gmmc-who');
-      if (typeof opts.icon === 'string' && /^https:\/\//i.test(opts.icon)) {
+      if (opts.icon) {
         var icon = el('img');
         icon.alt = '';
         icon.src = opts.icon;
