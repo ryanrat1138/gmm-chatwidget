@@ -583,12 +583,14 @@ test('note: with data-note-key the answers go to /api/note after identity, and t
   assert.deepStrictEqual(messagesSent(), ['Hi']);
 });
 
-test('note: without an AI note, the answers go with the first message only, unseen by the visitor', async (page) => {
+test('note: without an AI note, the answers go with the first message only, unseen by the visitor; Typeform blanks are left out', async (page) => {
   await page.route('http://api.test/api/note', (route) => route.fulfill({ status: 501, contentType: 'application/json',
     headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ added: false, reason: 'not_configured' }) }));
   mock.state.reply = () => 'Got it';
-  await page.goto(P('note') + '?email=n2%40example.com&business_info=HVAC');
+  await page.goto(P('note') + '?email=n2%40example.com&phone=_____&business_info=HVAC&team_size=_____');
   await until(page, () => window.GMMChatWidget.state().noteAdded === false);
+  assert.ok(!identities().some((i) => JSON.stringify(i).includes('___')), 'no blank phone sent to CloseBot');
+  assert.ok(!/team_size|phone/.test(page.url()), 'blanks leave the address bar too');
   await page.fill('.gmmc-input', 'Hi');
   await page.keyboard.press('Enter');
   await until(page, () => window.GMMChatWidget.state().messages.length === 3);

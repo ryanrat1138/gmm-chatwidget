@@ -350,7 +350,9 @@
 
   // ---------- contact helpers ----------
 
-  function isUnrendered(v) { return !v || /\{\{.*\}\}/.test(v); }
+  // A merge field that wasn't filled in, or Typeform's _____ for a question
+  // the visitor skipped or never saw.
+  function isUnrendered(v) { return !v || /\{\{.*\}\}/.test(v) || /^_+$/.test(v); }
 
   function clean(c) {
     var out = {};
@@ -502,7 +504,8 @@
     var extra = {};
     config.fields.forEach(function (key) {
       if (params.has(key)) {
-        if (trim(params.get(key))) extra[key] = trim(params.get(key));
+        var v = trim(params.get(key));
+        if (!isUnrendered(v)) extra[key] = v;
         params['delete'](key);
         removed = true;
       }
