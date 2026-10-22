@@ -77,7 +77,7 @@ The source key in `data-source` is not the chat's key. Like cb.js, `chat.js` fir
 | `POST /chat-widget/{key}/session` `{visitorId, sessionId?}` | Start or resume a conversation: `{sessionId, resumedSession}` |
 | `GET /chat-widget/{key}/session/{id}/stream[?backfill=true]` | Server-sent events: `connected`, `backfill-done`, `message-sent`, `ai_typing`, `human_typing` (others ignored) |
 | `POST …/session/{id}/message` `{message}` | Visitor message |
-| `POST …/session/{id}/identity` `{firstName, lastName, name, email, phone}` | Tie the conversation to the HighLevel contact (only known fields; phone as +1… for ten-digit numbers) |
+| `POST …/session/{id}/identity` `{firstName, lastName, name, email, phone}` | Tie the conversation to the HighLevel contact (only known fields; phone as +1… for ten-digit numbers). CloseBot answers it with a "Thanks, got it!" bot message in the conversation, as after its own lead form; the chat doesn't show it when it comes before the visitor's first message |
 | `POST …/session/{id}/typing` `{active}` | Visitor typing, at most every 3 seconds |
 | `POST …/session/{id}/page-visit` `{url, title}` | The page, once per visit (after contact details are removed from the URL) |
 

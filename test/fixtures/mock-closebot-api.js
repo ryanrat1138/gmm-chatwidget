@@ -150,6 +150,8 @@ function createMock() {
       case 'identity':
         if (state.failIdentity) return json(res, 400, { error: 'invalid' });
         session.identity = body;
+        // CloseBot notes the lead form in the conversation, as its widget shows it.
+        post(session, { sender: 'bot', message: 'Thanks, got it!' });
         return json(res, 200, { success: true });
       case 'typing':
       case 'page-visit':
