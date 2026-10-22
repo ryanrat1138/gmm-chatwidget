@@ -184,6 +184,8 @@ function createMock() {
       s.streams.clear();
     },
     openStreams: (id) => state.sessions.get(id).streams.size,
+    // The connection stays open but nothing more comes down it.
+    muteStreams: (id) => state.sessions.get(id).streams.clear(),
   };
 }
 

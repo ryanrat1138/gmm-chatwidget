@@ -913,11 +913,15 @@
     settleOpening();
   }
 
-  var stream = { es: null, attempts: 0, timer: null, expectBy: 0 };
+  var stream = { es: null, attempts: 0, timer: null, expectBy: 0, lastEvent: 0 };
+  var REPLY_WAIT = 20000; // the visitor wrote and the stream went silent
+  var STALE_AFTER = 90000; // nothing at all came, as cb.js counts it
+  var AWAY_AFTER = 10000; // back on the page after this long: catch up
 
   function openStream(backfill) {
     closeStream();
     if (!state.sessionId) return;
+    stream.lastEvent = Date.now();
     stream.es = cb.stream(state.sessionId, backfill, handleEvent, streamFailed);
   }
 
@@ -964,22 +968,31 @@
     }
   }
 
-  // Watchdog: a stream that closed without telling us, or that has gone
-  // quiet after the visitor sent something, is opened again.
+  // Watchdog: a stream that closed without telling us, that has gone quiet
+  // while a reply is due, or that has sent nothing for a long time is opened
+  // again. A connection can stay open and still stop passing messages on;
+  // opening it again brings back the history, so a missed reply shows.
   function watchStream() {
     var check = function (now) {
       if (!state.sessionId || stream.timer) return;
       var closed = !stream.es || stream.es.readyState === 2;
       var stalled = stream.expectBy && Date.now() > stream.expectBy;
-      if (closed || stalled || now === true) {
+      var stale = stream.lastEvent && Date.now() - stream.lastEvent > STALE_AFTER;
+      if (closed || stalled || stale || now === true) {
         stream.expectBy = 0;
-        if (!state.connected || stalled || closed) reconnect();
+        if (!state.connected || stalled || stale || closed) reconnect();
       }
     };
     setInterval(check, 5000);
     window.addEventListener('online', function () { if (!state.connected) check(true); });
+    // Back on the page (another tab or window was in front): catch up.
+    var back = function () {
+      if (!state.sessionId || stream.timer) return;
+      if (!state.connected || Date.now() - stream.lastEvent > AWAY_AFTER) reconnect();
+    };
+    window.addEventListener('focus', back);
     document.addEventListener('visibilitychange', function () {
-      if (document.visibilityState === 'visible' && !state.connected) check(true);
+      if (document.visibilityState === 'visible') back();
     });
   }
 
@@ -989,7 +1002,10 @@
       d = d.data;
       d.type = d.type || type;
     }
-    stream.expectBy = 0;
+    stream.lastEvent = Date.now();
+    // Only the bot's reply ends the wait; typing and thinking along the way
+    // show the stream is alive, so the wait starts over.
+    if (stream.expectBy) stream.expectBy = d.type === 'message-sent' && d.sender !== 'lead' ? 0 : stream.lastEvent + REPLY_WAIT;
     switch (d.type) {
       case 'connected':
         state.connected = true;
@@ -1027,12 +1043,11 @@
 
   // CloseBot notes the details we send for the visitor with a bot message,
   // as its own widget does after its lead form, and keeps it in the history
-  // (it comes back on a reload or after a dropped connection). It always
-  // comes before the visitor's first message.
-  function isFormEcho(text, time) {
-    if (trim(text) !== FORM_ECHO) return false;
-    var first = ui.log.querySelector('.gmmc-lead');
-    return !first || !!(time && first._time && time <= first._time);
+  // (it comes back on a reload or after a dropped connection). It can come
+  // at any point, as when the conversation moves on to a new session, and
+  // means nothing to the visitor, so it never shows.
+  function isFormEcho(text) {
+    return trim(text) === FORM_ECHO;
   }
 
   function addIncoming(d) {
@@ -1057,7 +1072,7 @@
     }
     if (!text && !files.length) return;
     seen[id] = true;
-    if (sender === 'bot' && !files.length && isFormEcho(text, time)) return;
+    if (sender === 'bot' && !files.length && isFormEcho(text)) return;
     if (sender === 'bot' && !d.isHistory) { typing.ai = false; typing.human = ''; renderTyping(); }
     // The name and picture from the setup stand in for CloseBot's agent
     // persona; with no name set, the replies carry no name.
@@ -1101,7 +1116,7 @@
           seen[mid] = true;
           item.setAttribute('data-id', String(mid));
         }
-        stream.expectBy = Date.now() + 20000;
+        stream.expectBy = Date.now() + REPLY_WAIT;
       });
     }).then(null, function () {
       item.classList.remove('gmmc-pending');

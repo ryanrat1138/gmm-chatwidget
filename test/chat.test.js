@@ -71,6 +71,11 @@ const test = (name, fn) => tests.push({ name, fn });
 
 const state = (page) => page.evaluate(() => window.GMMChatWidget.state());
 const until = (page, fn, arg, timeout = 5000) => page.waitForFunction(fn, arg, { timeout });
+const waitFor = async (fn, timeout = 5000) => {
+  for (const end = Date.now() + timeout; !fn(); await new Promise((r) => setTimeout(r, 50))) {
+    if (Date.now() > end) throw new Error('timed out');
+  }
+};
 const untilState = (page, expr, timeout = 5000) =>
   page.waitForFunction(new Function('return (function (s) { return ' + expr + '; })(window.GMMChatWidget && window.GMMChatWidget.state())'), null, { timeout });
 // Inside the widget's shadow root.
@@ -608,7 +613,7 @@ test('note: without an AI note, the answers go with the first message only, unse
   assert.ok(!/Form answers/.test(shown), shown);
 });
 
-test('form echo: CloseBot\u2019s "Thanks, got it!" for the sent details never shows, now or on reload; the AI saying it later does', async (page) => {
+test('form echo: CloseBot\u2019s "Thanks, got it!" for the sent details never shows, at the start, later on, or on reload', async (page) => {
   mock.state.reply = () => 'Thanks, got it!';
   await page.goto(P('inline') + '?email=echo%40example.com');
   await untilState(page, 's.identified && s.connected');
@@ -618,11 +623,15 @@ test('form echo: CloseBot\u2019s "Thanks, got it!" for the sent details never sh
   assert.deepStrictEqual(await bubbles(page, 'bot'), ['Hey there, what can I help you with today?']);
   await page.fill('.gmmc-input', 'Can you note my email?');
   await page.keyboard.press('Enter');
+  await until(page, () => window.GMMChatWidget.state().messages.length === 2);
+  mock.botSay(sid, 'Perfect, talk soon.');
   await until(page, () => window.GMMChatWidget.state().messages.length === 3);
+  const live = (await state(page)).messages.map((m) => m.text);
+  assert.deepStrictEqual(live.slice(1), ['Can you note my email?', 'Perfect, talk soon.']);
   await page.goto(P('inline'));
   await untilState(page, 's.resumed && s.connected');
   await page.waitForTimeout(300);
-  assert.deepStrictEqual((await state(page)).messages.map((m) => m.text), ['Can you note my email?', 'Thanks, got it!']);
+  assert.deepStrictEqual((await state(page)).messages.map((m) => m.text), ['Can you note my email?', 'Perfect, talk soon.']);
 });
 
 test('reconnect: after the stream drops, missed messages arrive once', async (page) => {
@@ -644,6 +653,42 @@ test('reconnect: after the stream drops, missed messages arrive once', async (pa
   assert.deepStrictEqual((await state(page)).messages.map((m) => m.text), [
     'Hey there, what can I help you with today?', 'Before', 'You said: Before', 'Sorry, we got cut off']);
   assert.strictEqual(await inWidget(page, (root) => root.querySelector('.gmmc-banner').hidden), true);
+});
+
+test('reconnect: a stream that stays open but goes quiet during a reply catches up', async (page) => {
+  await page.clock.install();
+  mock.state.replyDelay = 1500;
+  try {
+    await page.goto(P('inline') + '?email=quiet%40example.com');
+    await untilState(page, 's.connected');
+    const sid = (await state(page)).sessionId;
+    await page.fill('.gmmc-input', 'Still good?');
+    await page.keyboard.press('Enter');
+    await untilState(page, 's.typing');
+    mock.muteStreams(sid);
+    await waitFor(() => mock.session(sid).messages.some((m) => m.message === 'You said: Still good?'));
+    await page.waitForTimeout(300);
+    assert.ok(!(await state(page)).messages.some((m) => m.text === 'You said: Still good?'), 'the reply is lost on the quiet stream');
+    await page.clock.fastForward(30000);
+    await until(page, () => window.GMMChatWidget.state().messages.some((m) => m.text === 'You said: Still good?'));
+  } finally {
+    mock.state.replyDelay = 250;
+  }
+});
+
+test('reconnect: back on the page after a while, a reply the quiet stream missed shows', async (page) => {
+  await page.clock.install();
+  await page.goto(P('inline') + '?email=away%40example.com');
+  await untilState(page, 's.connected');
+  const sid = (await state(page)).sessionId;
+  mock.muteStreams(sid);
+  mock.botSay(sid, 'Perfect, you will get a text from us.');
+  await page.clock.fastForward(12000);
+  assert.ok(!(await state(page)).messages.some((m) => /Perfect/.test(m.text)));
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await until(page, () => window.GMMChatWidget.state().messages.some((m) => /Perfect/.test(m.text)));
+  await page.waitForTimeout(200);
+  assert.strictEqual((await state(page)).messages.filter((m) => /Perfect/.test(m.text)).length, 1);
 });
 
 async function pictures(page) {
