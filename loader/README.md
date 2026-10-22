@@ -97,6 +97,8 @@ As soon as the page is ready, the embed adds a card to the page that greets the 
 | `data-closebot-src` | CloseBot's script URL | Override for testing |
 | `data-debug` | `false` | Logs what it found and did to the console (never the values) |
 
+CloseBot's agent persona (the name and picture of the agent that answered, next to the header title) is always hidden; the header shows CloseBot's chat title, "Chat" unless it's set in CloseBot.
+
 `window.GMMChat` exposes `version`, `source` (which of the above was used), `contact.hasEmail` / `contact.hasPhone`, `fill(contact)` and `clear()`, plus `lookCss(options)` and `ctaPreview(options, name)` for the setup page.
 
 ## Known limits

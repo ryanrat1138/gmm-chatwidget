@@ -29,7 +29,10 @@
   function mount() {
     var box = document.getElementById('cb-widget-container');
     var panel = el('div', { class: 'cb-panel' + (box ? ' cb-container-mode' : ''), 'data-cb': '' });
-    panel.appendChild(el('div', { class: 'cb-header' }, 'Chat'));
+    var header = el('div', { class: 'cb-header' }, 'Chat');
+    // The agent persona that answered, as cb.js shows it.
+    header.appendChild(el('div', { class: 'cb-header-chatter' }, 'Jared'));
+    panel.appendChild(header);
     if (!box) document.body.appendChild(el('button', { class: 'cb-btn', 'data-cb': '', style: 'background:#3b82f6;right:20px' }));
     var messages = el('div', { class: 'cb-messages' });
     panel.appendChild(messages);

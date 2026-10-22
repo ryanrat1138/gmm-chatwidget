@@ -299,7 +299,7 @@ test('send: Enter sends, Shift+Enter adds a line, and the bot reply streams in o
     pending: root.querySelectorAll('.gmmc-pending').length,
     who: Array.from(root.querySelectorAll('.gmmc-who')).map((w) => w.textContent),
   }));
-  assert.deepStrictEqual(ui, { input: '', send: true, pending: 0, who: ['Assistant'] });
+  assert.deepStrictEqual(ui, { input: '', send: true, pending: 0, who: [] }, 'no name set in the setup: CloseBot\u2019s agent name doesn\u2019t show');
   // Links in bot replies become safe links.
   mock.state.reply = () => 'See **this** https://example.com/page. Or [the guide](https://example.com/guide)';
   await page.fill('.gmmc-input', 'link?');
@@ -664,6 +664,12 @@ test('persona: data-title and data-avatar replace CloseBot\u2019s name and pictu
   await untilState(page, 's.started');
   await until(page, () => { const i = document.querySelector('gmmc-chat').shadowRoot.querySelector('.gmmc-avatar img'); return i && i.complete; });
   assert.deepStrictEqual(await header(page), { title: 'Jamie', img: 'https://pics.test/jamie.png', loaded: true, icon: false, dot: true });
+  // Replies carry the same name and picture, not CloseBot's agent persona.
+  await page.fill('.gmmc-input', 'Hi');
+  await page.keyboard.press('Enter');
+  await until(page, () => window.GMMChatWidget.state().messages.length === 3);
+  const who = await inWidget(page, (root) => Array.from(root.querySelectorAll('.gmmc-who')).map((w) => [w.textContent, w.querySelector('img') && w.querySelector('img').getAttribute('src')]));
+  assert.deepStrictEqual(who, [['Jamie', 'https://pics.test/jamie.png']]);
 });
 
 test('persona: an uploaded picture in the tag shows; an unsafe one is ignored; a broken one falls back to the icon', async (page) => {

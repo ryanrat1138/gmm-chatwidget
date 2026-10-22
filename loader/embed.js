@@ -264,6 +264,18 @@
     log('applied look');
   }
 
+  // CloseBot's chat names the agent persona that answered (with its picture)
+  // in the header next to the title, and has a slot for a picture by each
+  // message. Neither shows: the header keeps just CloseBot's chat title.
+  // Class names from cb.js as inspected on 2026-10-22.
+  function hidePersona() {
+    if (document.getElementById('gmmcw-persona')) return;
+    var style = document.createElement('style');
+    style.id = 'gmmcw-persona';
+    style.textContent = '[data-cb] .cb-header-chatter,[data-cb] .cb-msg-avatar{display:none!important}';
+    (document.head || document.documentElement).appendChild(style);
+  }
+
   // CloseBot's corner button shows the JARchat jar instead of CloseBot's icon
   // (data-launcher-icon="closebot" keeps CloseBot's). CloseBot rebuilds the
   // button's icon, so this is CSS: its icon is hidden and the jar drawn in white.
@@ -1340,6 +1352,7 @@
   placeContainer();
   applyLook();
   applyLauncherIcon();
+  hidePersona();
   addNoteToFirstMessage();
   // Wait for the page to finish parsing, so a CloseBot tag further down the
   // page is seen and CloseBot is not loaded twice.

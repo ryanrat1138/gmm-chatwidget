@@ -393,6 +393,13 @@ test('look: bubble options move the button, size the window, and reject unsafe v
   assert.strictEqual(st.bodyShown, 'block');
 });
 
+test('persona: CloseBot\u2019s agent name and picture don\u2019t show; the title does', async (page) => {
+  await page.goto(A('embed-inline.html'));
+  await page.waitForSelector('.cb-header-chatter', { state: 'attached' });
+  assert.strictEqual(await page.isVisible('.cb-header-chatter'), false);
+  assert.strictEqual(await page.isVisible('.cb-header'), true);
+});
+
 test('look: no look options adds no styles, and lookCss is available for the setup page', async (page) => {
   await page.goto(A('embed-inline.html'));
   await page.waitForSelector('.cb-panel');
