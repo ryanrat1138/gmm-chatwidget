@@ -42,6 +42,7 @@
   var DEFAULT_GREETING = 'Hey {first_name}, what can I help you with today?';
   var DEFAULT_FORM_TEXT = 'Before we chat, can I get your name and the best way to reach you?';
   var DEFAULT_SUBMIT = 'Start chat';
+  var FORM_ECHO = 'Thanks, got it!';
 
   // Shared with embed.js: same keys, same format.
   var STORE_KEY = 'gmmcw_contact';
@@ -1008,6 +1009,16 @@
     return date && !isNaN(date.getTime()) ? date : null;
   }
 
+  // CloseBot notes the details we send for the visitor with a bot message,
+  // as its own widget does after its lead form, and keeps it in the history
+  // (it comes back on a reload or after a dropped connection). It always
+  // comes before the visitor's first message.
+  function isFormEcho(text, time) {
+    if (trim(text) !== FORM_ECHO) return false;
+    var first = ui.log.querySelector('.gmmc-lead');
+    return !first || !!(time && first._time && time <= first._time);
+  }
+
   function addIncoming(d) {
     var sender = d.sender === 'lead' ? 'lead' : 'bot';
     var text = typeof d.message === 'string' ? d.message : String(d.text || '');
@@ -1030,6 +1041,7 @@
     }
     if (!text && !files.length) return;
     seen[id] = true;
+    if (sender === 'bot' && !files.length && isFormEcho(text, time)) return;
     if (sender === 'bot' && !d.isHistory) { typing.ai = false; typing.human = ''; renderTyping(); }
     var who = sender === 'bot' ? trim(String(d.responderName || '')) : '';
     addMessage(sender, text, {

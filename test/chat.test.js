@@ -606,6 +606,23 @@ test('note: without an AI note, the answers go with the first message only, unse
   assert.ok(!/Form answers/.test(shown), shown);
 });
 
+test('form echo: CloseBot\u2019s "Thanks, got it!" for the sent details never shows, now or on reload; the AI saying it later does', async (page) => {
+  mock.state.reply = () => 'Thanks, got it!';
+  await page.goto(P('inline') + '?email=echo%40example.com');
+  await untilState(page, 's.identified && s.connected');
+  await page.waitForTimeout(300);
+  const sid = (await state(page)).sessionId;
+  assert.ok(mock.state.sessions.get(sid).messages.some((m) => m.message === 'Thanks, got it!'), 'CloseBot keeps it in the conversation');
+  assert.deepStrictEqual(await bubbles(page, 'bot'), ['Hey there, what can I help you with today?']);
+  await page.fill('.gmmc-input', 'Can you note my email?');
+  await page.keyboard.press('Enter');
+  await until(page, () => window.GMMChatWidget.state().messages.length === 3);
+  await page.goto(P('inline'));
+  await untilState(page, 's.resumed && s.connected');
+  await page.waitForTimeout(300);
+  assert.deepStrictEqual((await state(page)).messages.map((m) => m.text), ['Can you note my email?', 'Thanks, got it!']);
+});
+
 test('reconnect: after the stream drops, missed messages arrive once', async (page) => {
   await page.goto(P('inline') + '?email=rc%40example.com');
   await untilState(page, 's.connected');
